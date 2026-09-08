@@ -23,6 +23,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -57,6 +58,19 @@ from economic_regime_forecasting.models.state_selection import sweep_state_count
 logger = logging.getLogger("economic_regime_forecasting")
 
 SUBMISSION_DIRECTORY = PROJECT_ROOT / "submission"
+
+
+def _display_path(path: Path) -> str:
+    """A path relative to the project when it is inside it, absolute otherwise.
+
+    Only ever used for printing. A path that happens to live elsewhere -- a test
+    running against a temporary directory, say -- must not be able to end a
+    command that has already done its work.
+    """
+    try:
+        return str(path.relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(path)
 
 
 @dataclass(frozen=True)
@@ -457,7 +471,7 @@ def submit(workspace: Workspace, today: date) -> int:
     print(
         submission[["indicator", "horizon_years", "probability", "source"]].to_string(index=False)
     )
-    print(f"\nwritten to {SUBMISSION_DIRECTORY.relative_to(PROJECT_ROOT)}/")
+    print(f"\nwritten to {_display_path(SUBMISSION_DIRECTORY)}/")
     return 0
 
 
