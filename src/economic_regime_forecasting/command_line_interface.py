@@ -157,7 +157,15 @@ def fetch_data(workspace: Workspace, today: date, workers: int) -> int:
             for line in failures[:5]:
                 print(f"  {line}")
             print("Re-run fetch-data to retry them; anything already cached is skipped.")
+    still_missing = _missing_vintages(workspace, schedule)
     print(f"cache holds {len(workspace.cache.entries())} entries")
+    if still_missing:
+        print(
+            f"{len(still_missing)} vintages the backtest needs are still absent. Re-run this "
+            "command; the service blocks an address that asks too fast, and the block clears."
+        )
+        return 1
+    print("every vintage the backtest needs is cached")
     return 0
 
 
@@ -217,25 +225,30 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     """Gate 3. The current probability grid, with its evidence attached."""
     settings = workspace.settings
     matrix = workspace.observation_matrix_as_of(today)
-    model = GaussianHiddenMarkovModel.from_dictionary(
+    selected = GaussianHiddenMarkovModel.from_dictionary(
         workspace.artifacts.read_json(ARTIFACTS.selected_model)
     )
-    filtered = model.filtered_state_probabilities(matrix.values)
     histories = walk_forward.prepare_indicator_history(
         workspace.indicators,
         workspace.registry,
         workspace.cache,
         settings.forecast_horizons_in_months,
     )
+    # The sweep chose how many regimes; the model that issues today's forecast is
+    # the one the walk-forward would fit at today's date, so the submission comes
+    # out of the same code path that was backtested. Every quantity below reads
+    # from that single model: mixing a state distribution from one fit with a
+    # transition matrix from another would be quietly incoherent.
     fitted = walk_forward.fit_regime_model(
         today,
         workspace.registry,
         workspace.cache,
         histories,
         settings,
-        model.state_count,
+        selected.state_count,
         workspace.artifacts,
     )
+    filtered = fitted.model.filtered_state_probabilities(matrix.values)
 
     rows = []
     for indicator in workspace.indicators:
@@ -275,6 +288,21 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     return (0 if report.passed else 1), report
 
 
+def _missing_vintages(
+    workspace: Workspace, schedule: schedule_module.ForecastSchedule
+) -> list[tuple[str, date]]:
+    """Which archival vintages the walk-forward will ask for and the cache lacks."""
+    return [
+        (entry.series_id, stamp.date())
+        for entry in workspace.registry.model_inputs
+        if entry.is_revised
+        for stamp in schedule.forecast_dates
+        if not workspace.cache.contains(
+            federal_reserve_client.build_request(entry.series_id, stamp.date())
+        )
+    ]
+
+
 def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:
     """Gate 4. Walk the whole method through history."""
     settings = workspace.settings
@@ -283,6 +311,17 @@ def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     )
     schedule = workspace.backtest_schedule(today)
     print(f"{schedule.describe()}, {model.state_count} regimes")
+
+    # Check up front rather than discovering a gap forty minutes into a run. A
+    # missing vintage is not fatal to the method -- the publication-lag fallback
+    # covers it -- but it is fatal to an unattended run, because filling it needs
+    # the network.
+    missing = _missing_vintages(workspace, schedule)
+    if missing:
+        raise SystemExit(
+            f"{len(missing)} archival vintages the run needs are not cached, first few "
+            f"{missing[:3]}. Run `forecast fetch-data` first; it skips anything already there."
+        )
 
     results = walk_forward.run_walk_forward(
         workspace.registry,

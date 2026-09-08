@@ -66,8 +66,14 @@ class RunSettings:
     random_seed: int = 20260908
     """Seed for every stochastic step. Recorded in each run manifest."""
 
-    hidden_state_counts_to_search: tuple[int, ...] = (2, 3, 4, 5, 6)
-    """The candidate numbers of latent regimes swept during model selection."""
+    hidden_state_counts_to_search: tuple[int, ...] = (1, 2, 3, 4, 5, 6)
+    """The candidate numbers of latent regimes swept during model selection.
+
+    One is in the list deliberately. A single-state model is not a regime model at
+    all, it is a plain Gaussian, and it is the null the first acceptance gate tests
+    against. Sweeping from two upward would have left the question "do regimes
+    exist" with nothing to answer it, which is exactly what the gate caught the
+    first time this ran."""
 
     expectation_maximisation_restarts: int = 20
     """Random restarts per fit. The best log likelihood wins."""

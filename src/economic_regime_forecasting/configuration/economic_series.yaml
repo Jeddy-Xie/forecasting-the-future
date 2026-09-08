@@ -140,12 +140,19 @@ observation_series:
       the fact. It is never a model input, because recession dates are announced
       six to eighteen months late and using them as a feature would be
       look-ahead of the worst kind.
+
+      The publication lag below is unusually long and is meant to be. The Bureau's
+      dating committee announces a turning point six to eighteen months after it
+      happens, so a forecaster in a given month does not know whether the year just
+      past was a recession. Four hundred days is a fair middle of that range. It
+      matters because the per-regime rates the forecaster learns are estimated only
+      from conditions already announced.
     role: outcome_only
     model_dimension: null
     frequency: monthly
     units: binary flag
     transform: level
-    publication_lag_days: 0
+    publication_lag_days: 400
     observation_start: 1854-12-01
     is_revised: true
 

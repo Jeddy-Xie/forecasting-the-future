@@ -23,7 +23,7 @@ from economic_regime_forecasting.configuration.registry import (
 )
 from economic_regime_forecasting.data.cache import SeriesCache, SeriesSnapshot
 from economic_regime_forecasting.data.vintage import (
-    COVERAGE_TOLERANCE_DAYS,
+    MINIMUM_USABLE_VINTAGE_MONTHS,
     LookAheadError,
     PointInTimeSeries,
     VintagePolicy,
@@ -120,21 +120,38 @@ def test_a_truncated_archive_entry_falls_back_instead_of_fitting_on_twenty_rows(
     assert result.policy is VintagePolicy.PUBLICATION_LAG_FALLBACK
     assert result.observations.size > 300
     assert "1988-05-01" in result.note
+    assert "19 months" in result.note
     assert result.observations.index[-1] == pd.Timestamp("1989-11-01")
 
 
-def test_a_vintage_starting_inside_the_tolerance_is_still_used(
+def test_a_vintage_that_was_never_backfilled_is_still_used_if_it_is_long_enough(
     cache: SeriesCache, rising_series: pd.Series, snapshot_factory: Callable[..., SeriesSnapshot]
 ) -> None:
-    """Old vintages are often not fully backfilled. A little slack is not a
-    truncated archive entry, and must not trigger the fallback."""
+    """Old vintages routinely start decades after the series does. The 1971
+    industrial production vintage begins in 1954, not 1919, and that is a normal
+    vintage rather than a broken one. What decides usability is whether there is
+    enough history to fit on."""
     as_of = date(1990, 1, 1)
-    start = pd.Timestamp(date(1960, 1, 1) + timedelta(days=COVERAGE_TOLERANCE_DAYS - 40))
-    nearly_complete = rising_series[
-        (rising_series.index >= start) & (rising_series.index < pd.Timestamp("1989-12-01"))
+    not_backfilled = rising_series[
+        (rising_series.index >= pd.Timestamp("1965-01-01"))
+        & (rising_series.index < pd.Timestamp("1989-12-01"))
     ]
-    cache.write(snapshot_factory(nearly_complete, vintage_date=as_of))
+    assert not_backfilled.size >= MINIMUM_USABLE_VINTAGE_MONTHS
+    cache.write(snapshot_factory(not_backfilled, vintage_date=as_of))
     assert observe(_series_entry(), as_of, cache).policy is VintagePolicy.ARCHIVAL_VINTAGE
+
+
+def test_a_vintage_just_short_of_the_bar_falls_back(
+    cache: SeriesCache, rising_series: pd.Series, snapshot_factory: Callable[..., SeriesSnapshot]
+) -> None:
+    """A vintage too short to fit on is no use however faithful it is."""
+    as_of = date(1990, 1, 1)
+    too_short = rising_series[rising_series.index < pd.Timestamp("1989-12-01")].iloc[
+        -(MINIMUM_USABLE_VINTAGE_MONTHS - 1) :
+    ]
+    cache.write(snapshot_factory(too_short, vintage_date=as_of))
+    cache.write(snapshot_factory(rising_series))
+    assert observe(_series_entry(), as_of, cache).policy is VintagePolicy.PUBLICATION_LAG_FALLBACK
 
 
 def test_the_boundary_assertion_fires_on_an_observation_from_the_future() -> None:
@@ -181,9 +198,15 @@ def test_every_shipped_series_declares_a_lag_that_withholds_the_current_month() 
     that had not been released, which is the classic off-by-one look-ahead."""
     registry = load_economic_series_registry()
     for series in registry.series:
-        if series.role == "outcome_only":
-            continue
         assert series.publication_lag_days >= 30, series.name
+
+
+def test_recession_dating_carries_the_long_lag_the_committee_actually_takes() -> None:
+    """The dating committee announces a turning point six to eighteen months after
+    it happens. Treating recession status as known in real time would hand the
+    forecaster the single most useful fact it could not have had."""
+    registry = load_economic_series_registry()
+    assert registry["recession_indicator"].publication_lag_days >= 365
 
 
 def test_policy_counts_cover_every_policy(rising_series: pd.Series) -> None:

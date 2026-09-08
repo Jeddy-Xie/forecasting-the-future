@@ -135,7 +135,10 @@ def audit_revisions(
     """Compare each revisable series' past vintages with today's, in growth terms."""
     audits: list[RevisionAudit] = []
     for entry in registry.series:
-        if not entry.is_revised:
+        if not entry.is_revised or entry.role == "outcome_only":
+            # An outcome series is resolved with hindsight on purpose and never
+            # enters a training panel, so it has no point-in-time reconstruction
+            # to measure revisions against.
             continue
         latest = _transformed_today(entry, cache)
         for vintage_date in vintage_dates:

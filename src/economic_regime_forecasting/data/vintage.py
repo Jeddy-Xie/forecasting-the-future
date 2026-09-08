@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
 from enum import Enum
 
 import pandas as pd
@@ -40,14 +40,21 @@ from economic_regime_forecasting.data.cache import SeriesCache
 
 logger = logging.getLogger(__name__)
 
-COVERAGE_TOLERANCE_DAYS = 730
-"""How much later than its declared start a vintage may begin and still be used.
+MINIMUM_USABLE_VINTAGE_MONTHS = 240
+"""The shortest archival vintage worth using instead of the fallback.
 
-Two years of slack absorbs the ordinary case where an old vintage simply had not
-yet been backfilled. Anything worse is a truncated archive entry, not a vintage:
-the archival service returns twenty rows of recent history for some pre-1997
-consumer price index vintages, and fitting on twenty rows would be a disaster
-that no exception would announce.
+The first version of this rule compared a vintage's start date to the registry's
+declared start, which turned out to answer the wrong question. Old vintages are
+routinely not backfilled -- the 1971 industrial production vintage begins in 1954
+rather than 1919 -- and that is a normal vintage, not a broken one. What decides
+usability is whether there is enough history to fit a model on.
+
+Twenty years is that bar, and it is the same twenty years the model's burn-in
+requires, deliberately: a vintage too short to fit on is no use however faithful
+it is. It also catches the case this check exists for, where the archive answers
+a pre-1997 consumer price index request with twenty rows of recent history. That
+response parses cleanly and would produce a model fitted on twenty months with no
+exception raised anywhere.
 """
 
 
@@ -108,14 +115,9 @@ def censor_by_publication_lag(
     return observations[publication_dates <= pd.Timestamp(as_of)]
 
 
-def _vintage_is_usable(observations: pd.Series, series: EconomicSeries) -> bool:
+def _vintage_is_usable(observations: pd.Series) -> bool:
     """Does this vintage response cover enough history to fit on?"""
-    if observations.empty:
-        return False
-    latest_acceptable_start = pd.Timestamp(
-        series.observation_start + timedelta(days=COVERAGE_TOLERANCE_DAYS)
-    )
-    return bool(observations.index[0] <= latest_acceptable_start)
+    return int(observations.dropna().size) >= MINIMUM_USABLE_VINTAGE_MONTHS
 
 
 def observe(
@@ -151,7 +153,7 @@ def observe(
         federal_reserve_client.build_request(series.series_id, vintage_date=as_of),
         federal_reserve_client.fetcher_for(series.units),
     )
-    if _vintage_is_usable(archival.observations, series):
+    if _vintage_is_usable(archival.observations):
         result = PointInTimeSeries(
             name=series.name,
             series_id=series.series_id,
@@ -165,7 +167,8 @@ def observe(
         return result
 
     covered_from = (
-        archival.observations.index[0].date().isoformat()
+        f"{archival.observations.index[0].date().isoformat()} "
+        f"({archival.observations.dropna().size} months)"
         if not archival.observations.empty
         else "nothing"
     )
@@ -188,8 +191,8 @@ def observe(
         policy=VintagePolicy.PUBLICATION_LAG_FALLBACK,
         vintage_date_used=None,
         note=(
-            f"The archive's vintage for this date covers only from {covered_from}, against a "
-            f"declared start of {series.observation_start.isoformat()}. Fell back to the current "
+            f"The archive's vintage for this date covers only {covered_from}, fewer than the "
+            f"{MINIMUM_USABLE_VINTAGE_MONTHS} months needed to fit on. Fell back to the current "
             f"series censored at a {series.publication_lag_days} day publication lag: the timing "
             "is right, the values are revised."
         ),
