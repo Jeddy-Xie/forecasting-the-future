@@ -111,6 +111,72 @@ def to_month_start(series: pd.Series) -> pd.Series:
     return normalised[~normalised.index.duplicated(keep="last")].sort_index()
 
 
+MAXIMUM_BRIDGEABLE_GAP_IN_MONTHS = 1
+"""How long a hole in a series may be before it stops being a plumbing problem.
+
+October 2025 has no consumer price index and no unemployment rate: the federal
+government shut down, the Bureau of Labor Statistics did not run the surveys, and
+the value does not exist and never will. It is one month in the middle of an
+otherwise complete series, with eleven months of data after it.
+
+Ending the panel in September 2025 would discard nearly a year of history to
+avoid one hole. Interpolating across it is an imputation, which is a modelling
+choice and not plumbing, so it is done in one named place, bounded to a single
+month, recorded in the run manifest, and refused for anything longer."""
+
+
+def bridge_isolated_missing_months(
+    series: pd.Series,
+    maximum_gap_in_months: int = MAXIMUM_BRIDGEABLE_GAP_IN_MONTHS,
+) -> tuple[pd.Series, tuple[pd.Timestamp, ...]]:
+    """Fill single-month holes by linear interpolation; refuse longer ones.
+
+    Returns the repaired series and the months that were filled, so the caller can
+    put them in the manifest. A run of missing months longer than the limit raises,
+    because a quarter-long hole is a different kind of problem and deserves a
+    different decision than a silent straight line.
+    """
+    if series.empty:
+        return series, ()
+    on_a_complete_grid = series.reindex(pd.date_range(series.index[0], series.index[-1], freq="MS"))
+    missing = on_a_complete_grid.index[on_a_complete_grid.isna()]
+    if len(missing) == 0:
+        return on_a_complete_grid, ()
+
+    for month in missing:
+        run_length = 1
+        forward = month + pd.DateOffset(months=1)
+        while forward in missing:
+            run_length += 1
+            forward = forward + pd.DateOffset(months=1)
+        backward = month - pd.DateOffset(months=1)
+        while backward in missing:
+            run_length += 1
+            backward = backward - pd.DateOffset(months=1)
+        if run_length > maximum_gap_in_months:
+            raise TransformError(
+                f"{series.name} is missing {run_length} consecutive months around "
+                f"{month:%Y-%m}, more than the {maximum_gap_in_months} this project will "
+                "interpolate across. Decide explicitly what to do with that hole rather than "
+                "drawing a straight line through it."
+            )
+
+    # Interpolate only between the first and last real observation. Extending a
+    # straight line past either end would be extrapolation wearing a disguise.
+    observed_positions = np.flatnonzero(on_a_complete_grid.notna().to_numpy())
+    if observed_positions.size == 0:
+        return on_a_complete_grid, ()
+    first, last = int(observed_positions[0]), int(observed_positions[-1])
+    repaired = on_a_complete_grid.copy()
+    repaired.iloc[first : last + 1] = on_a_complete_grid.iloc[first : last + 1].interpolate(
+        method="linear"
+    )
+    first_stamp = on_a_complete_grid.index[first]
+    last_stamp = on_a_complete_grid.index[last]
+    bridged = tuple(month for month in missing if first_stamp <= month <= last_stamp)
+    return repaired.astype("float64"), bridged
+
+
 def expanding_window_standardisation(
     frame: pd.DataFrame,
     minimum_periods: int = MINIMUM_PERIODS_FOR_STANDARDISATION,

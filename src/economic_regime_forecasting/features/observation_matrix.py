@@ -54,6 +54,10 @@ class ObservationMatrix:
     transformed: pd.DataFrame
     """The same months in their natural units, kept for interpreting regimes."""
 
+    bridged_months: tuple[pd.Timestamp, ...]
+    """Months whose raw value was interpolated across a one-month hole in the
+    source data. Recorded so the manifest can say which numbers were imputed."""
+
     @property
     def values(self) -> np.ndarray:
         """The matrix a model fit consumes, shaped observations by dimensions."""
@@ -84,10 +88,13 @@ def build_observation_matrix(
     inputs = {item.model_dimension: item for item in registry.model_inputs}
 
     columns: dict[str, pd.Series] = {}
+    bridged: list[pd.Timestamp] = []
     for dimension in DIMENSION_ORDER:
         entry = inputs[dimension]
         raw = transforms.to_month_start(panel[entry.name])
-        columns[dimension.value] = transforms.apply_transform(raw, entry.transform)
+        repaired, filled = transforms.bridge_isolated_missing_months(raw)
+        bridged.extend(filled)
+        columns[dimension.value] = transforms.apply_transform(repaired, entry.transform)
 
     transformed = pd.DataFrame(columns).dropna(how="any")
     if transformed.empty:
@@ -119,4 +126,5 @@ def build_observation_matrix(
         as_of=panel.as_of,
         standardised=standardised[list(COLUMN_NAMES)],
         transformed=transformed.loc[standardised.index, list(COLUMN_NAMES)],
+        bridged_months=tuple(sorted(set(bridged))),
     )
