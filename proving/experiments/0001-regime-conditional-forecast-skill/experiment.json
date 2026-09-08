@@ -1,0 +1,68 @@
+{
+  "name": "regime-conditional-forecast-skill",
+  "status": "protocol-drafted",
+  "registered": "2026-09-08",
+  "registered_before": "any backtest was run. The commit that adds this file contains no results, and the walk-forward engine had never been executed when it was written.",
+
+  "hypothesis": "Conditioning a binary macroeconomic forecast on the latent regime inferred by a Gaussian hidden Markov model, and projecting that regime forward through its transition matrix, beats an expanding-window climatological base rate at a one-year horizon; is marginal at five years; and reduces to the base rate at ten years because the transition matrix has mixed.",
+
+  "metric": "Brier skill score against an expanding-window climatology, per indicator and horizon, on out-of-sample walk-forward forecasts. Calibration is measured alongside, because a cheaper wrong answer is not a win and a better-discriminating badly-calibrated forecast loses under Brier scoring anyway.",
+
+  "decision_rule": {
+    "evaluated_per": "horizon",
+    "verdict_values": ["SHIP MODEL", "SHIP BASE RATE"],
+    "all_must_hold": true,
+    "gates": {
+      "regimes_exist": {
+        "requirement": "More than one latent state beats a single state on held-out log likelihood AND on the Bayesian information criterion.",
+        "scope": "whole run, not per horizon"
+      },
+      "skill": {
+        "requirement": "Mean Brier skill score across the ten indicators exceeds 0.02, and the 90 percent moving-block bootstrap interval on that mean excludes zero.",
+        "minimum_mean_skill_score": 0.02,
+        "confidence_level": 0.90,
+        "interval_must_exclude_zero": true,
+        "bootstrap": {
+          "kind": "moving_block",
+          "block_length_rule": "at least the horizon in months",
+          "resamples": 10000,
+          "seed": 20260908
+        }
+      },
+      "calibration": {
+        "requirement": "Expected calibration error below 0.10 and a reliability curve with no reversal larger than sampling noise.",
+        "maximum_expected_calibration_error": 0.10,
+        "bin_count": 10,
+        "monotonicity_noise_tolerance_in_standard_errors": 2.0
+      },
+      "robustness": {
+        "requirement": "The sign of the mean Brier skill score is positive in at least three of four disjoint, chronologically contiguous sub-periods of the walk-forward sample.",
+        "sub_periods": 4,
+        "minimum_positive_sub_periods": 3
+      },
+      "honesty": {
+        "requirement": "The mean total variation distance between the projected regime distribution and the model's stationary distribution exceeds 0.05 at this horizon. Below that the forecast is the unconditional base rate wearing a model's clothes, and shipping it as a prediction would misrepresent what it is.",
+        "minimum_total_variation_distance": 0.05
+      }
+    },
+    "on_failure": "Ship the expanding-window climatological base rate for that horizon and record which gate failed. A well-calibrated base rate beats an overconfident model under Brier scoring, so this is a result, not a fallback."
+  },
+
+  "stated_in_advance": {
+    "expected_outcome": "One year passes. Five years is marginal. Ten years fails the honesty gate and reduces to the base rate. This is written down before the run so that the ten-year result is read as a measured property of Markov mixing rather than as a disappointing surprise.",
+    "why_a_negative_result_is_acceptable": "The project's deliverable is a calibrated forecast and an honest account of where the method has information. A method that knows the horizon beyond which it has nothing to say is more useful than one that does not.",
+    "the_one_forbidden_act": "Changing any threshold in decision_rule after seeing results. The thresholds were chosen from the structure of the problem, not from the data: 0.02 because a skill score below that is not worth the machinery; 0.10 calibration error because a forecast off by more than ten points in a bin is misleading; three of four sub-periods because two of four is a coin flip; 0.05 total variation because that is the point at which a projection stops being distinguishable from the stationary distribution."
+  },
+
+  "determinism": {
+    "seed": 20260908,
+    "requirement": "Two runs of the same configuration produce identical outputs. The configuration hash is recorded on every result row."
+  },
+
+  "known_limitations_declared_in_advance": [
+    "Overlapping monthly forecasts at a ten-year horizon leave roughly five independent observations in fifty-five years of data. Every long-horizon interval is correspondingly wide, and the effective independent sample size is reported next to it.",
+    "The consumer price index has no usable archival vintage before 1997 through the keyless endpoint, so forecasts before then use the publication-lag fallback: correct timing, revised values.",
+    "Conditions and outcomes are read from final-revision data with publication timing enforced. For market rates and recession dating this is exact; for industrial production it is an approximation whose size is measured in the data audit.",
+    "The any-time-within-horizon composition assumes the condition depends on last month's condition and this month's regime and nothing else. The assumption is stated in the module that implements it, and its failure would show up as miscalibration, which the calibration gate tests."
+  ]
+}

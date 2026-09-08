@@ -1,27 +1,34 @@
 # The ten binary indicators this project forecasts, at one, five and ten years.
 #
-# Every indicator must be resolvable from history, because a conditional base
-# rate P(indicator = 1 | regime) cannot be estimated without knowing what
-# actually happened. Each one therefore names a series, an optional transform,
-# and a rule that turns the series into a zero or a one for a given forecast
-# date and horizon. Adding an eleventh indicator is an edit to this file; it
-# needs no code change as long as it uses one of the six resolution rules.
+# Every indicator is phrased as a condition on the state of the economy in a
+# single month: a series above a threshold, or below one. That restriction is
+# deliberate and it is what makes the whole method coherent. A condition of that
+# shape has a probability given the regime, so it composes through the transition
+# matrix exactly, at any horizon, without a further assumption.
 #
-# composition says how the forecast is put together, and it is not cosmetic:
+# Questions phrased relative to today's level -- "will unemployment rise two
+# points from where it is now" -- are deliberately absent. They are perfectly good
+# forecasting questions, but their probability depends on today's level as well as
+# on the regime, which needs a conditional distribution of the level given the
+# regime rather than an event probability. That is a different and larger model.
+# The exclusion is a scope decision, recorded here and in the report, not an
+# oversight.
 #
-#   point_in_time            the indicator depends only on the regime at the
-#                            horizon date, so the forecast is the projected
-#                            regime distribution dotted with the conditional
-#                            rates.
-#   any_time_within_horizon  the indicator asks whether something happens at any
-#                            month between the forecast date and the horizon, so
-#                            the forecast integrates over the whole regime path
-#                            rather than looking only at its end. Treating one of
-#                            these as point-in-time understates the probability,
+# composition says how a monthly condition becomes a horizon forecast:
+#
+#   point_in_time            asks whether the condition holds in the single month
+#                            of the horizon date. The forecast is the projected
+#                            regime distribution dotted with the per-regime rate.
+#
+#   any_time_within_horizon  asks whether the condition holds in any month between
+#                            now and the horizon. The forecast integrates over the
+#                            whole regime path, tracking the probability that the
+#                            condition has still not occurred. Treating one of
+#                            these as point-in-time understates its probability
 #                            badly and systematically.
 #
-# The set is deliberately balanced five and five so both composition paths carry
-# real weight in the evaluation.
+# The set is balanced five and five so both paths carry real weight in the
+# evaluation.
 
 schema_version: 1
 
@@ -33,7 +40,8 @@ indicators:
       Economic Research at any point between now and the horizon?
     resolution:
       series: recession_indicator
-      rule: flag_positive_within_horizon
+      rule: level_above_threshold_within_horizon
+      threshold: 0.5
     composition: any_time_within_horizon
     horizons_in_years: [1, 5, 10]
 
@@ -57,14 +65,14 @@ indicators:
     composition: point_in_time
     horizons_in_years: [1, 5, 10]
 
-  - name: unemployment_rate_rises_two_points_within_horizon
+  - name: unemployment_rate_above_seven_percent_within_horizon
     question: >-
-      Does the unemployment rate rise at least two percentage points above its
-      level today, at any point between now and the horizon?
+      Does the unemployment rate exceed seven percent at any point between now and
+      the horizon?
     resolution:
       series: unemployment_rate
-      rule: rise_from_forecast_date_within_horizon
-      threshold: 2.0
+      rule: level_above_threshold_within_horizon
+      threshold: 7.0
     composition: any_time_within_horizon
     horizons_in_years: [1, 5, 10]
 
@@ -123,12 +131,14 @@ indicators:
     composition: any_time_within_horizon
     horizons_in_years: [1, 5, 10]
 
-  - name: industrial_production_higher_at_horizon_than_today
+  - name: industrial_production_growth_above_two_percent_at_horizon
     question: >-
-      Is the industrial production index higher in the horizon month than it is
-      today?
+      Is industrial production growing more than two percent year over year in the
+      horizon month?
     resolution:
       series: industrial_production
-      rule: higher_than_forecast_date_at_horizon
+      transform: year_over_year_percent_change
+      rule: level_above_threshold_at_horizon
+      threshold: 2.0
     composition: point_in_time
     horizons_in_years: [1, 5, 10]

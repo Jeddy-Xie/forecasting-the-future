@@ -30,11 +30,6 @@ from economic_regime_forecasting.configuration.registry import (
 )
 from economic_regime_forecasting.features import transforms
 
-FLAG_POSITIVE_THRESHOLD = 0.5
-"""A binary flag series is treated as positive above this. The series holds exact
-zeros and ones, so any cut between them works; naming it stops a future reader
-wondering whether 0.9 counts."""
-
 
 class ResolutionError(ValueError):
     """An indicator could not be resolved against the series it names."""
@@ -100,15 +95,12 @@ def resolve(
 
     rule = indicator.resolution.rule
     threshold = indicator.resolution.threshold
+    if threshold is None:  # pragma: no cover - the registry validates this
+        raise ResolutionError(f"indicator {indicator.name!r} has no threshold")
 
     if rule is ResolutionRule.LEVEL_ABOVE_THRESHOLD_AT_HORIZON:
         at_horizon = _value_at_horizon(prepared, horizon_in_months)
         outcomes = (at_horizon > threshold).where(at_horizon.notna())
-
-    elif rule is ResolutionRule.HIGHER_THAN_FORECAST_DATE_AT_HORIZON:
-        at_horizon = _value_at_horizon(prepared, horizon_in_months)
-        comparable = at_horizon.notna() & prepared.notna()
-        outcomes = (at_horizon > prepared).where(comparable)
 
     elif rule is ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON:
         highest = _forward_extreme(prepared, horizon_in_months, "max")
@@ -117,15 +109,6 @@ def resolve(
     elif rule is ResolutionRule.LEVEL_BELOW_THRESHOLD_WITHIN_HORIZON:
         lowest = _forward_extreme(prepared, horizon_in_months, "min")
         outcomes = (lowest < threshold).where(lowest.notna())
-
-    elif rule is ResolutionRule.RISE_FROM_FORECAST_DATE_WITHIN_HORIZON:
-        highest = _forward_extreme(prepared, horizon_in_months, "max")
-        comparable = highest.notna() & prepared.notna()
-        outcomes = ((highest - prepared) >= threshold).where(comparable)
-
-    elif rule is ResolutionRule.FLAG_POSITIVE_WITHIN_HORIZON:
-        highest = _forward_extreme(prepared, horizon_in_months, "max")
-        outcomes = (highest > FLAG_POSITIVE_THRESHOLD).where(highest.notna())
 
     else:  # pragma: no cover - the enum is exhaustive and the registry validates it
         raise ResolutionError(f"no implementation for resolution rule {rule!r}")
@@ -165,3 +148,39 @@ def required_series_names(indicators: Sequence[BinaryIndicator]) -> list[str]:
         if indicator.resolution.series not in seen:
             seen.append(indicator.resolution.series)
     return seen
+
+
+def monthly_condition(indicator: BinaryIndicator, series: pd.Series) -> pd.Series:
+    """Does this indicator's condition hold in each individual month?
+
+    Every indicator reduces to one condition on one month: a value above a
+    threshold, or below one. The horizon question is then built from that
+    condition, either by asking about the horizon month alone or by asking whether
+    it ever holds along the way.
+
+    Separating the monthly condition from the horizon question is what lets a
+    single per-regime rate serve all three horizons. The alternative, estimating a
+    separate rate for each horizon, starves at ten years: an outcome resolved by a
+    given date needs ten years of history after the forecast, so there are barely
+    a handful of independent observations behind it.
+    """
+    monthly = transforms.to_month_start(series)
+    if monthly.empty:
+        raise ResolutionError(
+            f"indicator {indicator.name!r} resolves against an empty series "
+            f"{indicator.resolution.series!r}"
+        )
+    complete_grid = pd.date_range(monthly.index[0], monthly.index[-1], freq="MS")
+    prepared = transforms.apply_transform(
+        monthly.reindex(complete_grid), indicator.resolution.transform
+    )
+    threshold = indicator.resolution.threshold
+    if threshold is None:  # pragma: no cover - the registry validates this
+        raise ResolutionError(f"indicator {indicator.name!r} has no threshold")
+
+    holds = (
+        prepared > threshold
+        if indicator.resolution.rule.condition_is_above_threshold
+        else prepared < threshold
+    )
+    return holds.where(prepared.notna()).astype("float64").rename(indicator.name)

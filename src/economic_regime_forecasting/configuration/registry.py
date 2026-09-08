@@ -70,26 +70,22 @@ class ResolutionRule(str, Enum):
     """
 
     LEVEL_ABOVE_THRESHOLD_AT_HORIZON = "level_above_threshold_at_horizon"
-    HIGHER_THAN_FORECAST_DATE_AT_HORIZON = "higher_than_forecast_date_at_horizon"
     LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON = "level_above_threshold_within_horizon"
     LEVEL_BELOW_THRESHOLD_WITHIN_HORIZON = "level_below_threshold_within_horizon"
-    RISE_FROM_FORECAST_DATE_WITHIN_HORIZON = "rise_from_forecast_date_within_horizon"
-    FLAG_POSITIVE_WITHIN_HORIZON = "flag_positive_within_horizon"
 
     @property
     def reads_whole_path(self) -> bool:
         """True when the rule inspects every month up to the horizon."""
         return self.value.endswith("_within_horizon")
 
+    @property
+    def condition_is_above_threshold(self) -> bool:
+        """Whether the monthly condition is a value above the threshold or below it.
 
-_RULES_REQUIRING_A_THRESHOLD: Final[frozenset[ResolutionRule]] = frozenset(
-    {
-        ResolutionRule.LEVEL_ABOVE_THRESHOLD_AT_HORIZON,
-        ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON,
-        ResolutionRule.LEVEL_BELOW_THRESHOLD_WITHIN_HORIZON,
-        ResolutionRule.RISE_FROM_FORECAST_DATE_WITHIN_HORIZON,
-    }
-)
+        Every rule reduces to one monthly condition of one of these two shapes,
+        which is what lets a single per-regime rate serve every horizon.
+        """
+        return "above" in self.value
 
 
 @dataclass(frozen=True)
@@ -209,7 +205,7 @@ class EconomicSeriesRegistry:
                     "correct the name in binary_indicators.yaml."
                 )
             rule = indicator.resolution.rule
-            if rule in _RULES_REQUIRING_A_THRESHOLD and indicator.resolution.threshold is None:
+            if indicator.resolution.threshold is None:
                 raise RegistryError(
                     f"indicator {indicator.name!r} uses rule {rule.value!r}, which needs a "
                     "threshold. Add `threshold:` under its resolution block."
