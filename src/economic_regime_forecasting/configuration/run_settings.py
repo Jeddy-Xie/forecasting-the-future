@@ -118,4 +118,25 @@ class RunSettings:
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:16]
 
 
+@dataclass(frozen=True)
+class ArtifactNames:
+    """The file each stage writes, named once so notebooks and the command line
+    interface cannot drift apart on a string."""
+
+    data_audit: str = "data_audit.parquet"
+    revision_audit: str = "revision_audit.parquet"
+    state_count_sweep: str = "state_count_sweep.parquet"
+    selected_model: str = "selected_model.json"
+    regime_descriptions: str = "regime_descriptions.parquet"
+    mixing_diagnostics: str = "mixing_diagnostics.parquet"
+    current_forecasts: str = "current_forecasts.parquet"
+    backtest_results: str = "backtest_results.parquet"
+    evaluation_metrics: str = "evaluation_metrics.parquet"
+    verdicts: str = "verdicts.parquet"
+    gate_reports: str = "gate_reports.parquet"
+    run_manifest: str = "run_manifest.json"
+
+
+ARTIFACTS = ArtifactNames()
+
 DEFAULT_RUN_SETTINGS = RunSettings()

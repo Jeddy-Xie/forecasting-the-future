@@ -169,7 +169,7 @@ def _expanding_climatology(outcomes: pd.Series, horizon_in_months: int) -> pd.Se
     return available.rename("climatology")
 
 
-def _condition_available_at(history: IndicatorHistory, as_of: date) -> pd.Series:
+def condition_available_at(history: IndicatorHistory, as_of: date) -> pd.Series:
     """The indicator's monthly condition, censored to what had been published."""
     condition = history.monthly_condition.dropna()
     publication_dates = condition.index + pd.Timedelta(days=history.publication_lag_days)
@@ -224,7 +224,7 @@ def fit_regime_model(
 
     rates: dict[str, ConditionalRates] = {}
     for name, history in histories.items():
-        condition = _condition_available_at(history, as_of)
+        condition = condition_available_at(history, as_of)
         aligned_condition, aligned_states = condition.align(filtered_series, join="inner", axis=0)
         if aligned_condition.empty:
             raise BacktestError(
@@ -286,7 +286,7 @@ def run_walk_forward(
 
         for indicator in indicators:
             history = histories[indicator.name]
-            condition_now = _condition_available_at(history, forecast_date)
+            condition_now = condition_available_at(history, forecast_date)
             condition_holds_now = (
                 bool(condition_now.iloc[-1] > 0.5) if not condition_now.empty else False
             )
@@ -362,3 +362,34 @@ def validate_results(results: pd.DataFrame) -> None:
     unexpected = [value for value in realised if value not in (0.0, 1.0)]
     if unexpected:
         raise BacktestError(f"realised outcomes must be zero or one; found {unexpected[:5]}")
+
+
+def find_first_forecast_date(
+    registry: EconomicSeriesRegistry,
+    cache: SeriesCache,
+    settings: RunSettings,
+    earliest_candidate: date,
+    latest_candidate: date,
+) -> date:
+    """The first month whose point-in-time panel is long enough to fit on.
+
+    The obvious shortcut, counting months in today's panel, is wrong. A panel
+    built as of 1970 is shorter than the same window of today's data, because the
+    consumer price index has no usable vintage that far back and falls back to a
+    publication-lag view that stops earlier. So the search asks the actual
+    point-in-time panel, stepping forward a year at a time until one is long
+    enough.
+    """
+    candidate = earliest_candidate
+    while candidate <= latest_candidate:
+        matrix = build_observation_matrix(
+            assemble_point_in_time_panel(registry, candidate, cache), registry
+        )
+        if len(matrix) >= settings.minimum_observations_before_first_fit:
+            return candidate
+        candidate = (pd.Timestamp(candidate) + pd.DateOffset(years=1)).date()
+    raise BacktestError(
+        f"no month between {earliest_candidate} and {latest_candidate} has a point-in-time panel "
+        f"with {settings.minimum_observations_before_first_fit} observations. Either the data "
+        "starts later than expected or the burn-in is set too high."
+    )

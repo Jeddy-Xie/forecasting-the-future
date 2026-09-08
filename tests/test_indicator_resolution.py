@@ -20,6 +20,7 @@ from economic_regime_forecasting.configuration.registry import (
 )
 from economic_regime_forecasting.data.indicator_outcomes import (
     ResolutionError,
+    monthly_condition,
     required_series_names,
     resolve,
     resolve_all,
@@ -90,7 +91,7 @@ def test_the_horizon_window_excludes_the_forecast_month_itself() -> None:
     already under way this month."""
     already_happening = _series([1.0, 0.0, 0.0, 0.0])
     outcomes = resolve(
-        _indicator(ResolutionRule.FLAG_POSITIVE_WITHIN_HORIZON),
+        _indicator(ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON, threshold=0.5),
         already_happening,
         horizon_in_months=2,
     ).outcomes
@@ -106,24 +107,32 @@ def test_level_below_threshold_within_horizon_finds_a_dip() -> None:
     assert list(outcomes.dropna()) == [1.0, 1.0]
 
 
-def test_rise_from_forecast_date_is_measured_against_today_not_a_fixed_level() -> None:
-    """The same absolute peak counts for one starting point and not another."""
-    outcomes = resolve(
-        _indicator(ResolutionRule.RISE_FROM_FORECAST_DATE_WITHIN_HORIZON, threshold=2.0),
-        _series([3.0, 4.0, 5.5, 5.0]),
-        horizon_in_months=2,
-    ).outcomes
-    assert outcomes.iloc[0] == 1.0
-    assert outcomes.iloc[1] == 0.0
+def test_every_rule_reduces_to_one_monthly_condition() -> None:
+    """The property that makes both composition paths exact: each rule is a
+    threshold on a single month, so one per-regime rate serves every horizon."""
+    series = _series([5.0, 5.0, 0.5, 5.0])
+    above = monthly_condition(
+        _indicator(ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON, threshold=1.0), series
+    )
+    below = monthly_condition(
+        _indicator(ResolutionRule.LEVEL_BELOW_THRESHOLD_WITHIN_HORIZON, threshold=1.0), series
+    )
+    assert list(above) == [1.0, 1.0, 0.0, 1.0]
+    assert list(below) == [0.0, 0.0, 1.0, 0.0]
 
 
-def test_higher_than_forecast_date_at_horizon_compares_two_months() -> None:
-    outcomes = resolve(
-        _indicator(ResolutionRule.HIGHER_THAN_FORECAST_DATE_AT_HORIZON),
-        _series([10.0, 10.0, 11.0, 9.0]),
-        horizon_in_months=2,
-    ).outcomes
-    assert list(outcomes.dropna()) == [1.0, 0.0]
+def test_a_monthly_condition_applies_its_transform_first() -> None:
+    """Inflation thresholds are quoted on the year-over-year change, not the index."""
+    condition = monthly_condition(
+        _indicator(
+            ResolutionRule.LEVEL_ABOVE_THRESHOLD_AT_HORIZON,
+            threshold=3.0,
+            transform=Transform.YEAR_OVER_YEAR_PERCENT_CHANGE,
+        ),
+        _series([100.0] * 12 + [104.0]),
+    )
+    assert bool(pd.isna(condition.iloc[0]))
+    assert condition.iloc[12] == 1.0
 
 
 def test_an_outcome_running_past_the_data_is_unknown_and_not_zero() -> None:
@@ -180,12 +189,16 @@ def test_base_rate_and_counts_are_reported_together() -> None:
 
 def test_an_indicator_whose_series_was_not_loaded_is_reported_by_name() -> None:
     with pytest.raises(ResolutionError, match="test_series"):
-        resolve_all([_indicator(ResolutionRule.FLAG_POSITIVE_WITHIN_HORIZON)], {}, (12,))
+        resolve_all(
+            [_indicator(ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON, threshold=0.5)],
+            {},
+            (12,),
+        )
 
 
 def test_required_series_names_are_unique_and_ordered() -> None:
     indicators = [
-        _indicator(ResolutionRule.FLAG_POSITIVE_WITHIN_HORIZON),
+        _indicator(ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON, threshold=0.5),
         _indicator(ResolutionRule.LEVEL_ABOVE_THRESHOLD_AT_HORIZON, threshold=1.0),
     ]
     assert required_series_names(indicators) == ["test_series"]
@@ -194,7 +207,7 @@ def test_required_series_names_are_unique_and_ordered() -> None:
 def test_an_empty_series_is_reported_rather_than_silently_resolving_nothing() -> None:
     with pytest.raises(ResolutionError, match="empty series"):
         resolve(
-            _indicator(ResolutionRule.FLAG_POSITIVE_WITHIN_HORIZON),
+            _indicator(ResolutionRule.LEVEL_ABOVE_THRESHOLD_WITHIN_HORIZON, threshold=0.5),
             pd.Series([], index=pd.DatetimeIndex([]), dtype="float64", name="test_series"),
             horizon_in_months=12,
         )

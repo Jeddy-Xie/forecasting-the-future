@@ -118,8 +118,15 @@ def _shrink(
     months lands almost on the pooled rate, which is the honest answer when there
     is nothing else to go on.
     """
-    shrunk: np.ndarray = (weighted_successes + shrinkage_strength * pooled_rate) / (
-        weighted_totals + shrinkage_strength
+    denominator = weighted_totals + shrinkage_strength
+    # A zero denominator needs both no prior weight and a regime with no months
+    # behind it. The pooled rate is then the only information there is, and
+    # answering with it is a decision rather than a not-a-number that travels.
+    shrunk: np.ndarray = np.where(
+        denominator > 0.0,
+        (weighted_successes + shrinkage_strength * pooled_rate)
+        / np.where(denominator > 0.0, denominator, 1.0),
+        pooled_rate,
     )
     return shrunk
 

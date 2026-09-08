@@ -1,0 +1,326 @@
+"""The five stage gates, written as checks a machine runs rather than notes a
+person reads.
+
+The brief this project was built from ends each phase with a gate and says to
+stop rather than work around a failure. A gate that lives only in prose is
+advisory, and advisory rules get followed about half the time. These are
+executable: ``forecast check-gates`` runs them in order and exits non-zero at the
+first failure, so the pipeline cannot advance past a stage that did not produce
+what the next stage needs.
+
+They are separate from the five *acceptance* gates in ``evaluation.verdict``,
+which decide whether the finished model is worth shipping. These decide whether
+each stage did its job at all.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+
+from economic_regime_forecasting.backtest.walk_forward import RESULT_COLUMNS
+from economic_regime_forecasting.configuration.registry import (
+    BinaryIndicator,
+    EconomicSeriesRegistry,
+)
+from economic_regime_forecasting.data.audit import SeriesAudit
+from economic_regime_forecasting.data.cache import CacheStatistics
+from economic_regime_forecasting.models.regime_forecast import MixingDiagnostics
+from economic_regime_forecasting.models.state_selection import StateCountSweep
+
+MAXIMUM_REGIME_SWITCHES_PER_YEAR = 2.0
+"""How often the most likely regime may change before the fit is calling noise a
+regime. Two switches a year is already fast for an economic regime; the fitted
+model runs at a small fraction of it."""
+
+
+@dataclass(frozen=True)
+class Check:
+    """One thing that must be true, and the evidence either way."""
+
+    requirement: str
+    passed: bool
+    evidence: str
+
+
+@dataclass(frozen=True)
+class GateReport:
+    """One stage gate: its checks and whether the stage may be left."""
+
+    number: int
+    name: str
+    checks: tuple[Check, ...]
+
+    @property
+    def passed(self) -> bool:
+        return all(check.passed for check in self.checks)
+
+    def describe(self) -> str:
+        status = "PASS" if self.passed else "FAIL"
+        lines = [f"Gate {self.number} — {self.name}: {status}"]
+        for check in self.checks:
+            marker = "  ok  " if check.passed else "  FAIL"
+            lines.append(f"{marker}  {check.requirement}")
+            lines.append(f"        {check.evidence}")
+        return "\n".join(lines)
+
+    def table(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                {
+                    "gate": self.number,
+                    "requirement": item.requirement,
+                    "passed": item.passed,
+                    "evidence": item.evidence,
+                }
+                for item in self.checks
+            ]
+        )
+
+
+def gate_one_data(
+    registry: EconomicSeriesRegistry,
+    audits: list[SeriesAudit],
+    reload_statistics: CacheStatistics,
+) -> GateReport:
+    """Every registry entry fetches, caches, and reloads identically from cache."""
+    audited_names = {item.name for item in audits}
+    expected_names = {item.name for item in registry.series}
+    mismatched = [item.name for item in audits if not item.start_matches_registry]
+
+    return GateReport(
+        number=1,
+        name="data",
+        checks=(
+            Check(
+                requirement="every series in the registry was fetched and audited",
+                passed=audited_names == expected_names,
+                evidence=(
+                    f"{len(audited_names)} of {len(expected_names)} audited"
+                    + (
+                        f"; missing {sorted(expected_names - audited_names)}"
+                        if expected_names - audited_names
+                        else ""
+                    )
+                ),
+            ),
+            Check(
+                requirement="each series starts where the registry says it does",
+                passed=not mismatched,
+                evidence=(
+                    "every declared start date matches the service"
+                    if not mismatched
+                    else f"disagreements: {mismatched}"
+                ),
+            ),
+            Check(
+                requirement="a second pass over the same series is served entirely from cache",
+                passed=reload_statistics.lookups > 0 and reload_statistics.hit_rate == 1.0,
+                evidence=reload_statistics.summary(),
+            ),
+            Check(
+                requirement="every series has at least twenty years of monthly history",
+                passed=all(item.observation_count >= 240 for item in audits),
+                evidence=(
+                    "shortest is "
+                    + min(
+                        (
+                            f"{item.name} with {item.observation_count} observations"
+                            for item in audits
+                        ),
+                        key=lambda text: int(text.split()[-2]),
+                    )
+                    if audits
+                    else "no series audited"
+                ),
+            ),
+        ),
+    )
+
+
+def gate_two_regime_model(
+    sweep: StateCountSweep, most_likely_state_path: np.ndarray, months: int
+) -> GateReport:
+    """The fitted regimes are persistent, populated, and recognisably economic."""
+    chosen = sweep.evaluation_for(sweep.recommended_state_count)
+    switches = int(np.sum(np.diff(most_likely_state_path) != 0))
+    switches_per_year = switches / max(months / 12.0, 1.0)
+
+    return GateReport(
+        number=2,
+        name="regime model",
+        checks=(
+            Check(
+                requirement="more than one regime beats a single regime out of sample",
+                passed=sweep.more_than_one_state_is_preferred_on_the_holdout,
+                evidence=(
+                    "held-out log likelihood per month: "
+                    + ", ".join(
+                        f"{item.state_count} states {item.held_out_log_likelihood_per_month:+.4f}"
+                        for item in sweep.evaluations
+                    )
+                ),
+            ),
+            Check(
+                requirement="the information criterion agrees that regimes exist",
+                passed=sweep.more_than_one_state_is_preferred_on_the_criterion,
+                evidence=(
+                    "criterion: "
+                    + ", ".join(
+                        f"{item.state_count} states {item.bayesian_information_criterion:,.0f}"
+                        for item in sweep.evaluations
+                    )
+                ),
+            ),
+            Check(
+                requirement="no regime lasts less than three months on average",
+                passed=chosen.is_persistent_enough,
+                evidence=(
+                    f"shortest expected visit is "
+                    f"{chosen.shortest_expected_duration_in_months:.1f} months"
+                ),
+            ),
+            Check(
+                requirement="no regime holds less than five percent of months",
+                passed=chosen.is_populated_enough,
+                evidence=f"smallest regime holds {chosen.smallest_population_share:.1%} of months",
+            ),
+            Check(
+                requirement="the regime path does not flicker month to month",
+                passed=switches_per_year <= MAXIMUM_REGIME_SWITCHES_PER_YEAR,
+                evidence=(
+                    f"{switches} switches over {months} months, "
+                    f"{switches_per_year:.2f} a year against a ceiling of "
+                    f"{MAXIMUM_REGIME_SWITCHES_PER_YEAR:.1f}"
+                ),
+            ),
+        ),
+    )
+
+
+def gate_three_forecasts(
+    forecasts: pd.DataFrame,
+    indicators: list[BinaryIndicator],
+    horizons_in_months: tuple[int, ...],
+    mixing: MixingDiagnostics,
+) -> GateReport:
+    """Every indicator produces a usable probability at every horizon, with its
+    evidence and its distance to the base rate attached."""
+    expected_rows = len(indicators) * len(horizons_in_months)
+    probabilities = forecasts["probability"].to_numpy(dtype="float64")
+
+    return GateReport(
+        number=3,
+        name="forecasts",
+        checks=(
+            Check(
+                requirement="every indicator has a forecast at every horizon",
+                passed=len(forecasts) == expected_rows,
+                evidence=f"{len(forecasts)} forecasts against {expected_rows} expected",
+            ),
+            Check(
+                requirement="every probability lies in the unit interval and is finite",
+                passed=bool(
+                    np.isfinite(probabilities).all()
+                    and probabilities.min() >= 0.0
+                    and probabilities.max() <= 1.0
+                ),
+                evidence=f"range {probabilities.min():.4f} to {probabilities.max():.4f}",
+            ),
+            Check(
+                requirement="every forecast carries an effective sample size",
+                passed=bool((forecasts["effective_sample_size"] > 0).all()),
+                evidence=(
+                    f"smallest effective sample size "
+                    f"{forecasts['effective_sample_size'].min():.1f} months"
+                ),
+            ),
+            Check(
+                requirement="every forecast carries its distance to the stationary distribution",
+                passed=bool(forecasts["distance_to_stationary"].notna().all()),
+                evidence=mixing.describe(),
+            ),
+        ),
+    )
+
+
+def gate_four_backtest(results: pd.DataFrame) -> GateReport:
+    """The walk-forward run produced a tidy, complete, reproducible results frame."""
+    duplicated = int(
+        results.duplicated(subset=["indicator", "forecast_date", "horizon_months"]).sum()
+    )
+    resolved = int(results["realised_outcome"].notna().sum())
+    hashes = results["configuration_hash"].unique()
+
+    return GateReport(
+        number=4,
+        name="backtest",
+        checks=(
+            Check(
+                requirement="the results frame carries every column the evaluation needs",
+                passed=all(column in results.columns for column in RESULT_COLUMNS),
+                evidence=f"{len(results.columns)} columns, {len(results):,} rows",
+            ),
+            Check(
+                requirement="each indicator, date and horizon appears exactly once",
+                passed=duplicated == 0,
+                evidence=f"{duplicated} duplicate rows",
+            ),
+            Check(
+                requirement="a single configuration produced the whole run",
+                passed=len(hashes) == 1,
+                evidence=f"configuration hash {hashes[0]}"
+                if len(hashes) == 1
+                else f"{len(hashes)} different configurations appear",
+            ),
+            Check(
+                requirement="enough forecasts have resolved outcomes to score",
+                passed=resolved > 0,
+                evidence=f"{resolved:,} of {len(results):,} forecasts have resolved",
+            ),
+        ),
+    )
+
+
+def gate_five_evaluation(
+    verdict_table: pd.DataFrame, horizons_in_months: tuple[int, ...]
+) -> GateReport:
+    """Every horizon reached a verdict, and every verdict names its reasoning."""
+    covered = set(verdict_table["horizon_months"])
+    return GateReport(
+        number=5,
+        name="evaluation",
+        checks=(
+            Check(
+                requirement="every horizon reached a verdict",
+                passed=covered == set(horizons_in_months),
+                evidence=(
+                    "verdicts: "
+                    + ", ".join(
+                        f"{int(record['horizon_months']) // 12} year {record['verdict']}"
+                        for record in verdict_table.to_dict("records")
+                    )
+                ),
+            ),
+            Check(
+                requirement="every verdict is one of the two the rule allows",
+                passed=set(verdict_table["verdict"]) <= {"SHIP MODEL", "SHIP BASE RATE"},
+                evidence=f"values seen: {sorted(set(verdict_table['verdict']))}",
+            ),
+            Check(
+                requirement="a horizon that ships the base rate names the gate that failed",
+                passed=bool(
+                    (
+                        (verdict_table["verdict"] == "SHIP MODEL")
+                        | (verdict_table["failing_gates"] != "none")
+                    ).all()
+                ),
+                evidence="; ".join(
+                    f"{int(record['horizon_months']) // 12} year: {record['failing_gates']}"
+                    for record in verdict_table.to_dict("records")
+                ),
+            ),
+        ),
+    )

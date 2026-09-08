@@ -131,18 +131,34 @@ class MurphyDecomposition:
     ``reliability`` is miscalibration and should be near zero. ``resolution`` is
     the ability to tell high-probability situations from low-probability ones, and
     bigger is better. ``uncertainty`` is a property of the events themselves that
-    no forecaster can change. The identity is reliability minus resolution plus
-    uncertainty, and it is checked rather than asserted.
+    no forecaster can change.
+
+    A note on the identity, because it is widely quoted in a form that is not
+    quite true. Reliability minus resolution plus uncertainty equals the Brier
+    score exactly only when every forecast inside a bin has the same value.
+    Binning continuous forecasts leaves a residual: the spread of forecasts within
+    their bins, and their covariance with outcomes inside those bins. Rather than
+    claim an identity that does not hold, this carries ``binning_residual``, which
+    is the gap, measured. It shrinks as the bins get finer and is exactly zero
+    when forecasts are constant within bins.
     """
 
+    brier_score: float
     reliability: float
     resolution: float
     uncertainty: float
+    binning_residual: float
     bin_count: int
 
-    @property
-    def implied_brier_score(self) -> float:
-        return self.reliability - self.resolution + self.uncertainty
+    def as_row(self) -> dict[str, object]:
+        return {
+            "brier_score": self.brier_score,
+            "reliability": self.reliability,
+            "resolution": self.resolution,
+            "uncertainty": self.uncertainty,
+            "binning_residual": self.binning_residual,
+            "bins": self.bin_count,
+        }
 
 
 def murphy_decomposition(
@@ -167,9 +183,16 @@ def murphy_decomposition(
         resolution += count * (observed_rate - overall_rate) ** 2
 
     total = float(predictions.size)
+    reliability /= total
+    resolution /= total
+    uncertainty = overall_rate * (1.0 - overall_rate)
+    score = float(np.mean((predictions - outcomes) ** 2))
+
     return MurphyDecomposition(
-        reliability=reliability / total,
-        resolution=resolution / total,
-        uncertainty=overall_rate * (1.0 - overall_rate),
+        brier_score=score,
+        reliability=reliability,
+        resolution=resolution,
+        uncertainty=uncertainty,
+        binning_residual=score - (reliability - resolution + uncertainty),
         bin_count=bin_count,
     )
