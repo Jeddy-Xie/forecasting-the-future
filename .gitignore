@@ -1,0 +1,31 @@
+# Fetched and derived data. Everything here is reproducible from the registries
+# in src/economic_regime_forecasting/configuration/ by running `forecast fetch-data`.
+# Nothing under .cache/ is ever committed.
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling state
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Notebook outputs are stripped before commit; see docs/RUNNING.md.
+# Generated run artifacts (the manifest that describes them IS committed).
+artifacts/**
+!artifacts/.gitkeep
+
+# Local machine
+.DS_Store
+.env
+.env.*

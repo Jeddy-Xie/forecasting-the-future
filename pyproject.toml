@@ -1,0 +1,94 @@
+[project]
+name = "economic-regime-forecasting"
+version = "1.0.0"
+description = "Forecasts binary macroeconomic indicators by inferring latent economic regimes with a hidden Markov model, and reports honestly when the method has no information left to offer."
+authors = [{ name = "Jeddy Xie", email = "xiejeddy@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+dependencies = [
+    "numpy (>=2.0,<3.0)",
+    "pandas (>=2.2,<3.0)",
+    "scipy (>=1.13,<2.0)",
+    "pyyaml (>=6.0,<7.0)",
+    "matplotlib (>=3.9,<4.0)",
+    "pyarrow (>=17.0,<23.0)",
+]
+
+[project.scripts]
+forecast = "economic_regime_forecasting.command_line_interface:main"
+
+[project.urls]
+Repository = "https://github.com/Jeddy-Xie/forecasting-the-future"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "economic_regime_forecasting", from = "src" }]
+
+# Development groups. `poetry install` installs the main dependencies plus every
+# non-optional group, so a fresh clone gets the full working environment in one
+# command. See docs/RUNNING.md.
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-cov = "^6.0"
+ruff = "^0.9"
+mypy = "^1.14"
+pandas-stubs = "^2.2"
+types-pyyaml = "^6.0"
+
+[tool.poetry.group.notebooks.dependencies]
+jupyter = "^1.1"
+nbclient = "^0.10"
+nbformat = "^5.10"
+ipykernel = "^6.29"
+
+# ---------------------------------------------------------------------------
+# Tooling configuration. One file carries build metadata and every tool's
+# settings; there are no scattered dotfiles (Foundry Python standard).
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --strict-markers"
+markers = [
+    "network: test reaches the Federal Reserve data service (deselect with -m 'not network')",
+    "slow: test takes more than about ten seconds",
+]
+filterwarnings = ["error::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE", "S", "C4", "SIM", "PTH", "RUF"]
+ignore = [
+    "S101",  # assert is the idiom pytest is built on
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S311"]  # tests seed a deterministic pseudo-random generator on purpose
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+strict = true
+warn_unreachable = true
+disallow_any_explicit = false
+plugins = []
+
+[[tool.mypy.overrides]]
+module = ["matplotlib.*", "scipy.*", "pyarrow.*"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["src/economic_regime_forecasting"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:", "raise NotImplementedError"]
