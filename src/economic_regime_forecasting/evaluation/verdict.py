@@ -40,7 +40,10 @@ import pandas as pd
 from economic_regime_forecasting.configuration.run_settings import PROJECT_ROOT
 from economic_regime_forecasting.evaluation import bootstrap as bootstrap_module
 from economic_regime_forecasting.evaluation import scoring
-from economic_regime_forecasting.evaluation.calibration import assess_calibration
+from economic_regime_forecasting.evaluation.calibration import (
+    assess_calibration,
+    cross_sectional_design_effect,
+)
 
 PRE_REGISTRATION_FILE: Path = (
     PROJECT_ROOT
@@ -236,32 +239,96 @@ def _skill_matrix(
     return predicted, realised, climatology
 
 
+def _skill_is_defined(realised: np.ndarray, climatology: np.ndarray) -> bool:
+    """Can a Brier skill score be computed on this window, and mean anything?
+
+    Two conditions, and the second is the one that matters.
+
+    The outcome must vary. A window in which an event never happened, or always
+    happened, has nothing to discriminate: the climatological Brier score there
+    measures only how close a running base rate happened to sit to a constant, and
+    the ratio is dominated by that accident rather than by any property of the
+    model. On this project's own data, the same model over two windows where the
+    event never once occurred scores +0.867 on one indicator and -8.981 on
+    another. Neither number is a measurement of anything.
+
+    And the benchmark must have some error to remove, or the ratio is a division
+    by nearly zero.
+    """
+    usable = np.isfinite(realised) & np.isfinite(climatology)
+    if usable.sum() < 2:
+        return False
+    outcomes = realised[usable]
+    if np.unique(outcomes).size < 2:
+        return False
+    return bool(np.mean((climatology[usable] - outcomes) ** 2) > 0.0)
+
+
 def _mean_skill_over(
     positions: np.ndarray,
     predicted: np.ndarray,
     realised: np.ndarray,
     climatology: np.ndarray,
-) -> float:
-    """Mean Brier skill score across indicators, on the selected dates."""
+    columns: Sequence[int],
+    require_every_indicator: bool,
+) -> tuple[float, int]:
+    """Mean Brier skill score over a fixed indicator set, on chosen dates.
+
+    Returns the mean and how many indicators contributed to it.
+
+    ``columns`` is decided once on the full sample and never varies. That is the
+    whole point of the argument, and it fixes a defect worth naming. An earlier
+    version scored whichever indicators happened to be scoreable on each resample.
+    Because an indicator loses its minority class in resamples that miss the few
+    dates carrying it, that indicator silently dropped out of about a fifth of
+    resamples while staying in the point estimate. The bootstrap distribution was
+    then a mixture of two different quantities, and its upper bound reflected the
+    indicator's absence rather than any variation in skill.
+
+    ``require_every_indicator`` distinguishes the two uses, and they genuinely
+    differ:
+
+    A **bootstrap resample** estimates the sampling distribution of the point
+    estimate, so it must compute the same quantity the point estimate did. A
+    resample where any member of the fixed set is undefined is refused; the
+    bootstrap skips it and reports how many contributed.
+
+    A **sub-period** is not a resample of one estimand. It is a separate
+    description of a separate window, and the honest description of a window where
+    two indicators never fired is the mean over the eight that did, reported with
+    that count beside it.
+    """
     scores: list[float] = []
-    for column in range(predicted.shape[1]):
-        selected_realised = realised[positions, column]
-        usable = np.isfinite(selected_realised)
-        if usable.sum() < 2 or len(np.unique(selected_realised[usable])) < 2:
-            continue
-        try:
-            scores.append(
-                scoring.brier_skill_score(
-                    predicted[positions, column][usable],
-                    selected_realised[usable],
-                    climatology[positions, column][usable],
+    for column in columns:
+        if not _skill_is_defined(realised[positions, column], climatology[positions, column]):
+            if require_every_indicator:
+                raise ValueError(
+                    f"indicator column {column} has no defined skill score on this window, so "
+                    "the fixed indicator set cannot be scored"
                 )
-            )
-        except scoring.ScoringError:
             continue
+        usable = np.isfinite(realised[positions, column])
+        scores.append(
+            scoring.brier_skill_score(
+                predicted[positions, column][usable],
+                realised[positions, column][usable],
+                climatology[positions, column][usable],
+            )
+        )
     if not scores:
-        raise ValueError("no indicator could be scored on this resample")
-    return float(np.mean(scores))
+        raise ValueError("no indicator has a defined skill score on this window")
+    return float(np.mean(scores)), len(scores)
+
+
+def _scoreable_columns(
+    predicted: np.ndarray, realised: np.ndarray, climatology: np.ndarray
+) -> list[int]:
+    """The indicators whose skill is defined on the full sample. Fixed thereafter."""
+    return [
+        column
+        for column in range(predicted.shape[1])
+        if _skill_is_defined(realised[:, column], climatology[:, column])
+    ]
 
 
 def evaluate_horizon(
@@ -280,8 +347,22 @@ def evaluate_horizon(
     climatology = climatology_frame.to_numpy(dtype="float64")
     date_count = predicted.shape[0]
 
+    scoreable = _scoreable_columns(predicted, realised, climatology)
+    if not scoreable:
+        raise VerdictError(
+            f"no indicator at the {horizon_in_months} month horizon can be scored against its "
+            "climatology; the benchmark has no error to improve on"
+        )
+
     def statistic(positions: np.ndarray) -> float:
-        return _mean_skill_over(positions, predicted, realised, climatology)
+        return _mean_skill_over(
+            positions,
+            predicted,
+            realised,
+            climatology,
+            scoreable,
+            require_every_indicator=True,
+        )[0]
 
     all_positions = np.arange(date_count)
     mean_skill = statistic(all_positions)
@@ -310,13 +391,19 @@ def evaluate_horizon(
 
     # Calibration, pooled across indicators at this horizon.
     flat_usable = np.isfinite(realised)
-    # Blocks as long as the horizon, matching the bootstrap. Monthly forecasts at
-    # this horizon overlap by all but one month, so treating a bin's raw count as
-    # independent evidence would make every wobble look significant.
+    # Two axes of dependence, both corrected. Blocks as long as the horizon handle
+    # the overlap between consecutive months, matching the bootstrap. The design
+    # effect handles the other axis: ten indicators forecast on the same date are
+    # not ten independent observations, and at long horizons several of them ask
+    # close to the same question. It is measured from the forecast errors rather
+    # than assumed, because assuming them perfectly correlated widens the band
+    # until a completely reversed forecaster would pass.
+    design_effect = cross_sectional_design_effect(realised - predicted)
     calibration = assess_calibration(
         predicted[flat_usable],
         realised[flat_usable],
         dependence_block_length=horizon_in_months,
+        cross_sectional_design_effect=design_effect,
     )
     calibration_specification = gates_specification["calibration"]
     maximum_error = float(calibration_specification["maximum_expected_calibration_error"])
@@ -329,13 +416,23 @@ def evaluate_horizon(
     sub_period_count = int(robustness_specification["sub_periods"])
     minimum_positive = int(robustness_specification["minimum_positive_sub_periods"])
     sub_period_scores: list[float] = []
+    sub_period_widths: list[int] = []
     for chunk in np.array_split(all_positions, sub_period_count):
         if chunk.size == 0:
             continue
         try:
-            sub_period_scores.append(statistic(chunk))
+            score, contributing = _mean_skill_over(
+                chunk,
+                predicted,
+                realised,
+                climatology,
+                scoreable,
+                require_every_indicator=False,
+            )
         except ValueError:
-            sub_period_scores.append(float("nan"))
+            score, contributing = float("nan"), 0
+        sub_period_scores.append(score)
+        sub_period_widths.append(contributing)
     positive_periods = int(sum(1 for value in sub_period_scores if value > 0.0))
     robustness_passed = positive_periods >= minimum_positive
 
@@ -374,7 +471,10 @@ def evaluate_horizon(
             passed=robustness_passed,
             evidence=(
                 f"{positive_periods} of {sub_period_count} sub-periods positive; scores "
-                + ", ".join(f"{value:+.3f}" for value in sub_period_scores)
+                + ", ".join(
+                    f"{value:+.3f} over {width} indicator(s)"
+                    for value, width in zip(sub_period_scores, sub_period_widths, strict=True)
+                )
             ),
         ),
         GateOutcome(

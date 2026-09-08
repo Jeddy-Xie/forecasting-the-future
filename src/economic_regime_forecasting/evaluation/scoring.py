@@ -21,6 +21,18 @@ class ScoringError(ValueError):
     """Forecasts and outcomes could not be scored as given."""
 
 
+def usable_mask(predicted: np.ndarray, realised: np.ndarray) -> np.ndarray:
+    """Which pairs have both a forecast and a resolved outcome.
+
+    Exposed so a caller can filter a parallel array -- the date each forecast was
+    made on, say -- the same way the scoring functions filter these two.
+    """
+    mask: np.ndarray = np.isfinite(np.asarray(predicted, dtype="float64")) & np.isfinite(
+        np.asarray(realised, dtype="float64")
+    )
+    return mask
+
+
 def _aligned(predicted: np.ndarray, realised: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Drop pairs where either side is missing, and check what is left is usable."""
     predictions = np.asarray(predicted, dtype="float64")

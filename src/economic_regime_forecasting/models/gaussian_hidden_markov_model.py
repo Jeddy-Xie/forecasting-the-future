@@ -574,7 +574,26 @@ def _run_expectation_maximisation(
             pooled_covariance,
         )
 
+    # On the iteration-cap path the loop runs one more maximisation step after the
+    # last likelihood evaluation, so the model returned is one step ahead of the
+    # number. Re-evaluating costs one forward pass and keeps the report honest --
+    # this is the number the manifest publishes and the one restarts are ranked on.
+    if not converged:
+        log_likelihood = model.log_likelihood(observations)
     return model, log_likelihood, iteration, converged
+
+
+def _monotonicity_allowance(previous_log_likelihood: float) -> float:
+    """How far the likelihood may fall before the fall is a real problem.
+
+    The covariance ridge perturbs each covariance by a fraction ``COVARIANCE_RIDGE``
+    of the pooled variance, so the log likelihood can move by roughly that fraction
+    per observation. The allowance is scaled to the likelihood's own magnitude with
+    generous headroom, because the cost of being slightly too tolerant is a
+    marginally worse fit and the cost of being too strict is throwing away a good
+    restart.
+    """
+    return max(1.0, abs(previous_log_likelihood)) * COVARIANCE_RIDGE * 1000.0
 
 
 def _maximisation_step(
@@ -604,10 +623,25 @@ def _maximisation_step(
     state_totals = np.maximum(responsibilities.sum(axis=0), MINIMUM_STATE_RESPONSIBILITY)
 
     initial_distribution = responsibilities[0] / responsibilities[0].sum()
-    row_totals = np.maximum(
-        transition_counts.sum(axis=1, keepdims=True), MINIMUM_STATE_RESPONSIBILITY
+
+    # A state the data have abandoned leaves a row of zeros, which is not a
+    # probability distribution and would fail the constructor's check, ending the
+    # whole fit. The documented behaviour is that a collapsed state survives with a
+    # near-zero population so that model selection can see it and prefer fewer
+    # states, so an abandoned row falls back to uniform.
+    row_totals = transition_counts.sum(axis=1)
+    abandoned = row_totals <= MINIMUM_STATE_RESPONSIBILITY
+    transition_matrix = np.where(
+        abandoned[:, None],
+        1.0 / states,
+        transition_counts / np.maximum(row_totals, MINIMUM_STATE_RESPONSIBILITY)[:, None],
     )
-    transition_matrix = transition_counts / row_totals
+    transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+    if bool(abandoned.any()):
+        logger.warning(
+            "state_abandoned states=%s; their transition rows fall back to uniform",
+            np.flatnonzero(abandoned).tolist(),
+        )
 
     means = (responsibilities.T @ observations) / state_totals[:, None]
 
