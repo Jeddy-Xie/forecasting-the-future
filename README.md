@@ -26,7 +26,7 @@ committed before the first backtest ran:
 |---|---|---:|---|
 | 1 year | **ship the model** | +0.232 | [+0.158, +0.301] |
 | 5 years | ship the base rate | +0.102 | [−0.013, +0.197] |
-| 10 years | ship the base rate | −0.221 | [−2.644, +0.043] |
+| 10 years | ship the base rate | −0.221 | [−2.744, −0.014] |
 
 Five persistent regimes, including a recognisable stagflation state and a
 zero-rate state, neither put there by hand. The transition matrix's second

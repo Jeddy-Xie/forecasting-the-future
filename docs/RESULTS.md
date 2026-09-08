@@ -14,7 +14,7 @@ It asks five questions per horizon and ships the model only if all five hold.
 |---|---|---:|---|---:|---|
 | 1 year | **ship model** | +0.232 | [+0.158, +0.301] | 53.8 | none |
 | 5 years | ship base rate | +0.102 | [−0.013, +0.197] | 9.9 | skill, calibration |
-| 10 years | ship base rate | −0.221 | [−2.644, +0.043] | 4.5 | skill, robustness |
+| 10 years | ship base rate | −0.221 | [−2.744, −0.014] | 4.5 | skill, robustness |
 
 Skill is the Brier skill score against an expanding climatology that never knows
 anything the model could not have known. Intervals are moving-block bootstraps
@@ -119,11 +119,35 @@ looks like a forecast.
 candidates so the choice is auditable. One-year rows come from the regime model;
 five and ten-year rows are the climatological base rate.
 
-## One correction, disclosed
+## Stability across sub-periods
 
-The calibration gate's standard error initially treated overlapping monthly
-forecasts as independent, which made it about three and a half times too small at
-one year. Correcting it, using the same block length the pre-registration already
-mandates for the skill interval, changed the one-year verdict from ship-base-rate
-to ship-model. No threshold was moved. ADR 0006 records the whole thing, including
-the argument against it.
+The robustness gate asks whether skill survives being cut into four disjoint
+chronological blocks. Where an indicator's outcome never varies inside a block its
+skill score does not exist there, so the block is scored over the indicators that
+do vary, with the count reported.
+
+| block | 1 year | 5 years | 10 years |
+|---|---:|---:|---:|
+| first quarter | +0.221 (8) | +0.106 (7) | −0.352 (6) |
+| second | +0.152 (8) | +0.017 (9) | −0.533 (10) |
+| third | +0.098 (10) | −0.262 (10) | +0.109 (7) |
+| fourth | +0.312 (10) | +0.122 (9) | −0.177 (8) |
+| positive | 4 of 4 | 3 of 4 | 1 of 4 |
+
+## Two corrections, both disclosed
+
+**The calibration standard error** initially treated overlapping monthly forecasts
+as independent, which made it about three and a half times too small at one year.
+Correcting it, using the block length the pre-registration already mandates for
+the skill interval, changed the one-year verdict from ship-base-rate to
+ship-model. No threshold moved. ADR 0006 records it, including the argument
+against it. It was later extended to a second axis of dependence, the correlation
+between the ten indicators, measured at 1.25, 1.69 and 1.16 across the horizons.
+
+**Five defects in the statistical core** were found by an adversarial review after
+the first complete run, and are recorded in ADR 0007. The one that moved a number
+is worth repeating here: the bootstrap statistic scored whichever indicators
+happened to be scoreable on each resample, so a near-certain indicator dropped out
+of about a fifth of them while remaining in the point estimate. Fixing it made the
+ten-year result **more** adverse to the model, moving its skill interval from
+[−2.644, +0.043], which spanned zero, to [−2.744, −0.014], which does not.
