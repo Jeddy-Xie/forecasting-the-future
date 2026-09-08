@@ -505,8 +505,12 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument(
         "--workers",
         type=int,
-        default=8,
-        help="parallel downloads for archival vintages (default: 8)",
+        default=2,
+        help=(
+            "parallel downloads for archival vintages (default: 2). The client also spaces "
+            "its own requests out, so raising this will not make the fetch faster and may "
+            "earn a temporary block from the service."
+        ),
     )
     for name, help_text in (
         ("audit-data", "gate 1: measure the data against the registry"),

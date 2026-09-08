@@ -50,6 +50,17 @@ Inside the package:
 | `evaluation/` | how forecasts are scored and how the ship decision is made |
 | `reporting/` | figures and tables for the notebooks. Presentation only |
 
+## Where to read what
+
+| document | its one job |
+|---|---|
+| this file | the front door: what this is, and how to start |
+| `docs/RUNNING.md` | how to operate everything, with the output each step should print |
+| `docs/adr/` | why each non-obvious decision was made, one numbered record each |
+| `proving/experiments/0001-.../experiment.json` | the decision rule, committed before the first backtest ran |
+| `notebooks/04_report.ipynb` | the write-up, including what this method cannot do |
+| `CLAUDE.md` | the rules that bind anyone, human or agent, working in this repository |
+
 ## Getting started
 
 ```bash
