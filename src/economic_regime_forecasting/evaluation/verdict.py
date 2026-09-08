@@ -310,7 +310,14 @@ def evaluate_horizon(
 
     # Calibration, pooled across indicators at this horizon.
     flat_usable = np.isfinite(realised)
-    calibration = assess_calibration(predicted[flat_usable], realised[flat_usable])
+    # Blocks as long as the horizon, matching the bootstrap. Monthly forecasts at
+    # this horizon overlap by all but one month, so treating a bin's raw count as
+    # independent evidence would make every wobble look significant.
+    calibration = assess_calibration(
+        predicted[flat_usable],
+        realised[flat_usable],
+        dependence_block_length=horizon_in_months,
+    )
     calibration_specification = gates_specification["calibration"]
     maximum_error = float(calibration_specification["maximum_expected_calibration_error"])
     calibration_passed = (

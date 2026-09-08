@@ -253,3 +253,65 @@ def test_a_statistic_that_never_evaluates_is_reported_rather_than_returning_zero
 
     with pytest.raises(BootstrapError, match="too few for an interval"):
         moving_block_bootstrap(always_fails, np.arange(100), 12, 200, seed=6)
+
+
+# ------------------------------------- calibration on overlapping forecasts
+
+
+def test_the_monotonicity_check_widens_its_noise_band_for_overlapping_forecasts() -> None:
+    """A bin holding four hundred monthly one-year forecasts does not hold four
+    hundred independent observations. Consecutive forecasts share eleven of their
+    twelve months, so the binomial standard error on the raw count is about three
+    and a half times too small and every wobble looks significant."""
+    generator = np.random.default_rng(31)
+    truth = np.repeat(np.linspace(0.05, 0.95, 40), 60)
+    predicted = np.clip(truth + generator.normal(0, 0.02, size=truth.size), 0.01, 0.99)
+    realised = (generator.uniform(size=truth.size) < truth).astype("float64")
+
+    independent = assess_calibration(predicted, realised, dependence_block_length=1)
+    overlapping = assess_calibration(predicted, realised, dependence_block_length=12)
+
+    assert overlapping.monotonicity_violations <= independent.monotonicity_violations
+    for wide, narrow in zip(overlapping.populated_bins, independent.populated_bins, strict=True):
+        assert wide.standard_error >= narrow.standard_error
+
+
+def test_a_block_length_of_one_reproduces_the_independent_computation() -> None:
+    generator = np.random.default_rng(32)
+    predicted = generator.uniform(size=3000)
+    realised = (generator.uniform(size=3000) < predicted).astype("float64")
+    report = assess_calibration(predicted, realised, dependence_block_length=1)
+    assert report.monotonicity_violations == report.naive_monotonicity_violations
+    for item in report.populated_bins:
+        assert item.standard_error == pytest.approx(item.naive_standard_error)
+
+
+def test_the_report_says_when_the_correction_changed_the_answer() -> None:
+    """The correction must be visible in the output, not buried in a constant."""
+    generator = np.random.default_rng(33)
+    truth = np.repeat(np.linspace(0.1, 0.9, 20), 50)
+    predicted = np.clip(truth, 0.01, 0.99)
+    realised = (generator.uniform(size=truth.size) < truth).astype("float64")
+    report = assess_calibration(predicted, realised, dependence_block_length=60)
+    assert "independent observations" in report.describe()
+
+
+def test_a_bin_smaller_than_the_block_is_still_worth_one_observation() -> None:
+    """Not a fraction of one: a bin with ten forecasts inside a sixty month block
+    still contains a piece of evidence."""
+    generator = np.random.default_rng(34)
+    predicted = np.concatenate([np.full(10, 0.95), generator.uniform(0.0, 0.5, size=500)])
+    realised = (generator.uniform(size=510) < predicted).astype("float64")
+    report = assess_calibration(predicted, realised, dependence_block_length=120)
+    smallest = min(report.populated_bins, key=lambda item: item.count)
+    assert smallest.effective_count == 1.0
+
+
+def test_a_genuinely_reversed_forecaster_is_still_caught_despite_the_wider_band() -> None:
+    """The correction must not disarm the check. A forecaster whose ordering is
+    backwards fails it at any block length."""
+    generator = np.random.default_rng(35)
+    truth = generator.uniform(0.05, 0.95, size=20000)
+    realised = (generator.uniform(size=20000) < truth).astype("float64")
+    report = assess_calibration(1.0 - truth, realised, dependence_block_length=12)
+    assert not report.is_monotone

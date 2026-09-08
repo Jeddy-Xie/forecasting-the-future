@@ -17,6 +17,26 @@ The acceptance thresholds that decide it were written down and committed **befor
 the first backtest ran** (`proving/experiments/0001-regime-conditional-forecast-skill/`).
 A negative result, correctly measured, is the deliverable when the thesis fails.
 
+## What it found
+
+A walk-forward run of 19,740 forecasts from 1971 to 2026, scored against a rule
+committed before the first backtest ran:
+
+| horizon | verdict | skill against climatology | 90% interval |
+|---|---|---:|---|
+| 1 year | **ship the model** | +0.232 | [+0.158, +0.301] |
+| 5 years | ship the base rate | +0.102 | [−0.013, +0.197] |
+| 10 years | ship the base rate | −0.221 | [−2.644, +0.043] |
+
+Five persistent regimes, including a recognisable stagflation state and a
+zero-rate state, neither put there by hand. The transition matrix's second
+eigenvalue modulus is 0.983, a 41 month half life, which puts the information
+horizon at five years. Almost all the one-year skill is in questions of the form
+"does this happen at any point between now and then"; questions about where a
+slow-moving level sits in one particular month are close to a coin flip.
+
+Full numbers and the reasoning in `docs/RESULTS.md`.
+
 ## The honest finding this repository is built to produce
 
 A regime transition matrix mixes. The distance between a projected regime
@@ -58,6 +78,7 @@ Inside the package:
 | `docs/RUNNING.md` | how to operate everything, with the output each step should print |
 | `docs/adr/` | why each non-obvious decision was made, one numbered record each |
 | `proving/experiments/0001-.../experiment.json` | the decision rule, committed before the first backtest ran |
+| `docs/RESULTS.md` | every headline number, regenerated rather than typed |
 | `notebooks/04_report.ipynb` | the write-up, including what this method cannot do |
 | `CLAUDE.md` | the rules that bind anyone, human or agent, working in this repository |
 
