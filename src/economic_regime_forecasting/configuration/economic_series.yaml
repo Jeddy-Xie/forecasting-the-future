@@ -1,0 +1,177 @@
+# Every economic series this project fetches, and the facts about it that the
+# code needs. All series come from the Federal Reserve Economic Data service and
+# its archival companion, both of which serve comma-separated values without an
+# API key. Start dates below were verified against the service on 2026-09-08;
+# `forecast audit-data` re-verifies them and fails if the service disagrees.
+#
+# publication_lag_days is the number of days from an observation's period-start
+# label to the date the value was first published. FRED labels a monthly value
+# with the first day of the month it describes, and publishes it partway through
+# the following month, so a monthly series' lag is about thirty days plus its
+# release offset. Getting this wrong by one month is the classic silent
+# look-ahead, so the field is defined from the label, not from the period end.
+
+schema_version: 1
+
+observation_series:
+
+  - name: industrial_production
+    series_id: INDPRO
+    description: >-
+      Industrial Production Index. Real output of the manufacturing, mining and
+      electric and gas utility sectors. The longest monthly real-activity series
+      the Federal Reserve publishes.
+    role: growth
+    model_dimension: growth
+    frequency: monthly
+    units: index 2017 = 100
+    transform: year_over_year_log_change
+    publication_lag_days: 47
+    observation_start: 1919-01-01
+    is_revised: true
+
+  - name: nonfarm_payroll_employment
+    series_id: PAYEMS
+    description: >-
+      All Employees, Total Nonfarm. Headcount on non-farm payrolls, in thousands.
+      Carried as a second view of real activity for the data audit; it does not
+      enter the model's observation vector.
+    role: growth
+    model_dimension: null
+    frequency: monthly
+    units: thousands of persons
+    transform: year_over_year_log_change
+    publication_lag_days: 36
+    observation_start: 1939-01-01
+    is_revised: true
+
+  - name: consumer_price_index
+    series_id: CPIAUCSL
+    description: >-
+      Consumer Price Index for All Urban Consumers, all items, seasonally
+      adjusted. The headline United States price level.
+    role: inflation
+    model_dimension: inflation
+    frequency: monthly
+    units: index 1982-1984 = 100
+    transform: year_over_year_log_change
+    publication_lag_days: 44
+    observation_start: 1947-01-01
+    is_revised: true
+
+  - name: core_consumer_price_index
+    series_id: CPILFESL
+    description: >-
+      Consumer Price Index for All Urban Consumers excluding food and energy.
+      Carried for the data audit as a check that the headline measure's regime
+      signal is not driven entirely by commodity swings.
+    role: inflation
+    model_dimension: null
+    frequency: monthly
+    units: index 1982-1984 = 100
+    transform: year_over_year_log_change
+    publication_lag_days: 44
+    observation_start: 1957-01-01
+    is_revised: true
+
+  - name: three_month_treasury_bill_rate
+    series_id: TB3MS
+    description: >-
+      Three-Month Treasury Bill Secondary Market Rate, monthly average. Chosen as
+      the model's interest-rate dimension over the federal funds rate because it
+      is one continuous series back to 1934, where the funds rate begins only in
+      July 1954 and would need a splice.
+    role: rates
+    model_dimension: rates
+    frequency: monthly
+    units: percent per year
+    transform: level
+    publication_lag_days: 32
+    observation_start: 1934-01-01
+    is_revised: false
+
+  - name: federal_funds_rate
+    series_id: FEDFUNDS
+    description: >-
+      Effective Federal Funds Rate, monthly average. The policy rate itself.
+      Used to resolve two of the binary indicators; not a model input.
+    role: rates
+    model_dimension: null
+    frequency: monthly
+    units: percent per year
+    transform: level
+    publication_lag_days: 32
+    observation_start: 1954-07-01
+    is_revised: false
+
+  - name: ten_year_treasury_yield
+    series_id: GS10
+    description: >-
+      Ten-Year Treasury Constant Maturity Rate, monthly average. The long end of
+      the curve. Used for the term spread and one binary indicator.
+    role: rates
+    model_dimension: null
+    frequency: monthly
+    units: percent per year
+    transform: level
+    publication_lag_days: 32
+    observation_start: 1953-04-01
+    is_revised: false
+
+  - name: unemployment_rate
+    series_id: UNRATE
+    description: >-
+      Unemployment Rate, seasonally adjusted. Used to resolve two of the binary
+      indicators; not a model input.
+    role: labour
+    model_dimension: null
+    frequency: monthly
+    units: percent of labour force
+    transform: level
+    publication_lag_days: 36
+    observation_start: 1948-01-01
+    is_revised: true
+
+  - name: recession_indicator
+    series_id: USREC
+    description: >-
+      National Bureau of Economic Research based recession indicator, one during
+      a dated contraction and zero otherwise. Used only to resolve outcomes after
+      the fact. It is never a model input, because recession dates are announced
+      six to eighteen months late and using them as a feature would be
+      look-ahead of the worst kind.
+    role: outcome_only
+    model_dimension: null
+    frequency: monthly
+    units: binary flag
+    transform: level
+    publication_lag_days: 0
+    observation_start: 1854-12-01
+    is_revised: true
+
+# Series computed from the ones above rather than fetched. Declared here so an
+# indicator can name one without any code change.
+derived_series:
+
+  - name: ten_year_minus_three_month_term_spread
+    description: >-
+      Ten-year Treasury yield minus the three-month bill rate. Negative values
+      are an inverted yield curve. This pairing is used rather than ten-year
+      minus two-year because the three-month leg extends the history back to
+      April 1953, where the two-year series begins only in June 1976.
+    operation: difference
+    minuend: ten_year_treasury_yield
+    subtrahend: three_month_treasury_bill_rate
+    units: percentage points
+
+# Deliberately excluded, with reasons, so the choice is not silently revisited:
+#   real_gross_domestic_product (GDPC1) - quarterly. Mixing it into a monthly
+#     observation vector needs an interpolation choice that would itself be a
+#     modelling assumption, for a growth signal industrial production already
+#     carries at monthly frequency.
+#   personal_consumption_expenditures_price_index (PCEPI) - moves almost
+#     identically to the headline consumer price index over this sample and
+#     begins twelve years later. It would add a dimension without adding
+#     information.
+#   two_year_treasury_yield (GS2) - begins June 1976, twenty-three years after
+#     the ten-year minus three-month spread this project uses instead.

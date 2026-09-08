@@ -1,0 +1,134 @@
+# The ten binary indicators this project forecasts, at one, five and ten years.
+#
+# Every indicator must be resolvable from history, because a conditional base
+# rate P(indicator = 1 | regime) cannot be estimated without knowing what
+# actually happened. Each one therefore names a series, an optional transform,
+# and a rule that turns the series into a zero or a one for a given forecast
+# date and horizon. Adding an eleventh indicator is an edit to this file; it
+# needs no code change as long as it uses one of the six resolution rules.
+#
+# composition says how the forecast is put together, and it is not cosmetic:
+#
+#   point_in_time            the indicator depends only on the regime at the
+#                            horizon date, so the forecast is the projected
+#                            regime distribution dotted with the conditional
+#                            rates.
+#   any_time_within_horizon  the indicator asks whether something happens at any
+#                            month between the forecast date and the horizon, so
+#                            the forecast integrates over the whole regime path
+#                            rather than looking only at its end. Treating one of
+#                            these as point-in-time understates the probability,
+#                            badly and systematically.
+#
+# The set is deliberately balanced five and five so both composition paths carry
+# real weight in the evaluation.
+
+schema_version: 1
+
+indicators:
+
+  - name: economy_in_recession_within_horizon
+    question: >-
+      Is the United States economy in a recession dated by the National Bureau of
+      Economic Research at any point between now and the horizon?
+    resolution:
+      series: recession_indicator
+      rule: flag_positive_within_horizon
+    composition: any_time_within_horizon
+    horizons_in_years: [1, 5, 10]
+
+  - name: economy_in_recession_at_horizon_date
+    question: >-
+      Is the United States economy in a recession dated by the National Bureau of
+      Economic Research in the single month of the horizon date?
+    resolution:
+      series: recession_indicator
+      rule: level_above_threshold_at_horizon
+      threshold: 0.5
+    composition: point_in_time
+    horizons_in_years: [1, 5, 10]
+
+  - name: unemployment_rate_above_five_percent_at_horizon
+    question: Is the unemployment rate above five percent in the horizon month?
+    resolution:
+      series: unemployment_rate
+      rule: level_above_threshold_at_horizon
+      threshold: 5.0
+    composition: point_in_time
+    horizons_in_years: [1, 5, 10]
+
+  - name: unemployment_rate_rises_two_points_within_horizon
+    question: >-
+      Does the unemployment rate rise at least two percentage points above its
+      level today, at any point between now and the horizon?
+    resolution:
+      series: unemployment_rate
+      rule: rise_from_forecast_date_within_horizon
+      threshold: 2.0
+    composition: any_time_within_horizon
+    horizons_in_years: [1, 5, 10]
+
+  - name: consumer_price_inflation_above_three_percent_at_horizon
+    question: >-
+      Is year-over-year consumer price inflation above three percent in the
+      horizon month?
+    resolution:
+      series: consumer_price_index
+      transform: year_over_year_percent_change
+      rule: level_above_threshold_at_horizon
+      threshold: 3.0
+    composition: point_in_time
+    horizons_in_years: [1, 5, 10]
+
+  - name: consumer_price_inflation_above_five_percent_within_horizon
+    question: >-
+      Does year-over-year consumer price inflation exceed five percent at any
+      point between now and the horizon?
+    resolution:
+      series: consumer_price_index
+      transform: year_over_year_percent_change
+      rule: level_above_threshold_within_horizon
+      threshold: 5.0
+    composition: any_time_within_horizon
+    horizons_in_years: [1, 5, 10]
+
+  - name: federal_funds_rate_above_four_percent_at_horizon
+    question: Is the effective federal funds rate above four percent in the horizon month?
+    resolution:
+      series: federal_funds_rate
+      rule: level_above_threshold_at_horizon
+      threshold: 4.0
+    composition: point_in_time
+    horizons_in_years: [1, 5, 10]
+
+  - name: federal_funds_rate_below_one_percent_within_horizon
+    question: >-
+      Does the effective federal funds rate fall below one percent at any point
+      between now and the horizon?
+    resolution:
+      series: federal_funds_rate
+      rule: level_below_threshold_within_horizon
+      threshold: 1.0
+    composition: any_time_within_horizon
+    horizons_in_years: [1, 5, 10]
+
+  - name: treasury_yield_curve_inverted_within_horizon
+    question: >-
+      Does the ten-year Treasury yield fall below the three-month bill rate, an
+      inverted yield curve, at any point between now and the horizon?
+    resolution:
+      series: ten_year_minus_three_month_term_spread
+      rule: level_below_threshold_within_horizon
+      threshold: 0.0
+    composition: any_time_within_horizon
+    horizons_in_years: [1, 5, 10]
+
+  - name: industrial_production_higher_at_horizon_than_today
+    question: >-
+      Is the industrial production index higher in the horizon month than it is
+      today?
+    resolution:
+      series: industrial_production
+      rule: higher_than_forecast_date_at_horizon
+    composition: point_in_time
+    horizons_in_years: [1, 5, 10]
