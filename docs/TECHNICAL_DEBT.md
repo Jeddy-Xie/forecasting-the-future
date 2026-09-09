@@ -19,6 +19,32 @@ extends what the method can answer · **ergonomic** affects use, not results.
 
 ---
 
+## Look-ahead audit
+
+Asked and answered on 2026-09-09, after D2 was found. Every path by which
+information from the whole sample could reach a walk-forward decision, and its
+status. Re-run this audit whenever the pipeline gains a step.
+
+| path | status |
+|---|---|
+| Training panel assembly | **clean** — assembled `as_of` a date, three named vintage policies, boundary assertion |
+| Standardisation window | **clean** — expanding, never full-sample |
+| State probabilities used in forecasts | **clean** — filtered, never smoothed; separate method names and a test |
+| Model parameters at each refit | **clean** — refitted from scratch on the point-in-time panel; verified that only the state count is read from the full-sample fit |
+| **Number of regimes** | **LEAKS** — chosen on the panel as of today, then used for every refit back to 1971. See D2 |
+| Conditional rates | **clean** — only conditions whose publication lag had passed |
+| Benchmark (climatology) | **clean** — expanding; averages only outcomes resolved by that date |
+| Outcome resolution | **clean by design** — final data is correct for scoring; the forecaster never sees it |
+| Condition values feeding rate estimation | **approximation** — final values with timing enforced. Exact for market rates and recession dating. See D5 |
+| Every run setting (seed, restarts, burn-in, refit cadence, shrinkage, thresholds, bootstrap) | **clean** — all a priori constants, none derived from the data |
+| Acceptance thresholds | **clean** — pre-registered and committed before the first backtest |
+| Canonicalisation rule | **clean** — a fixed sort, not fitted |
+| **Indicator thresholds** | **weak** — canonical round numbers, but chosen by someone who knew the sample. See D12 |
+
+Two entries are not clean. D2 is the material one.
+
+---
+
 ## D1 · No prior on the transition matrix
 **material** · raised 2026-09-09 by Jeddy
 
@@ -80,6 +106,11 @@ regimes was chosen using data through 2026 and applied to a forecast made in 197
 
 This is the one look-ahead the pipeline does not currently prevent, and the
 project's own standing rule says every panel is assembled as of a date.
+
+**Scope, verified rather than assumed.** `run_backtest` reads the full-sample
+artifact for exactly one thing, `model.state_count`, and `fit_regime_model` calls
+the fitting routine fresh at every refit. No emission mean, covariance or
+transition probability crosses over. One integer leaks, and nothing else.
 
 **What it would change.** Unknown, and that is the point. If an earlier sample
 prefers three or four states, the early backtest was run with a state count it
@@ -229,3 +260,43 @@ and reads as the smooth decay it is.
 
 **Shape of the fix.** Compute the dense curve in the notebook too, or cut the axis
 at fifteen years.
+
+
+---
+
+## D12 · The indicator thresholds were chosen by someone who knew the sample
+**evidential** · found 2026-09-09 during the look-ahead audit
+
+The ten indicators ask about levels crossing fixed thresholds: unemployment above
+five and seven percent, inflation above three and five, the policy rate above four
+and below one, the yield curve below zero, output growth above two. Those numbers
+were chosen before any backtest, but by someone who already knew what United
+States history looks like, and no pre-registration exists for the indicator set
+itself the way it does for the decision rule.
+
+The defence, and it is a real one, is that they are canonical round numbers a
+newspaper would use rather than tuned quantiles. If they had been tuned for
+balance they would cluster near the median of each series. They do not:
+
+| indicator | threshold | percentile of its series | monthly rate |
+|---|---:|---:|---:|
+| yield curve inverted | 0.0 | 11 | 11% |
+| policy rate below one percent | 1.0 | 16 | 16% |
+| unemployment above five percent | 5.0 | 37 | 60% |
+| output growth above two percent | 2.0 | 41 | 59% |
+| policy rate above four percent | 4.0 | 47 | 53% |
+| inflation above three percent | 3.0 | 53 | 47% |
+| in recession | 0.5 | 72 | 28% |
+| unemployment above seven percent | 7.0 | 78 | 20% |
+| inflation above five percent | 5.0 | 79 | 21% |
+
+They spread from the 11th to the 79th percentile, which is not what tuning for a
+balanced base rate produces.
+
+**What it would change.** Probably nothing in the point estimates. What it costs
+is the ability to say the indicator set was fixed independently of the data, which
+is a claim the decision rule can make and this cannot.
+
+**Shape of the fix.** Nothing to fix retrospectively; the choice is made. For any
+future indicator set, register it the way the decision rule is registered, before
+looking at how often each condition holds.
