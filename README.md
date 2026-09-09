@@ -79,8 +79,10 @@ Inside the package:
 | `docs/adr/` | why each non-obvious decision was made, one numbered record each |
 | `proving/experiments/0001-.../experiment.json` | the decision rule, committed before the first backtest ran |
 | `docs/RESULTS.md` | every headline number, regenerated rather than typed |
+| `docs/TECHNICAL_DEBT.md` | proposed fixes that were **not** made, and what each would change |
 | `notebooks/04_report.ipynb` | the write-up, including what this method cannot do |
 | `CLAUDE.md` | the rules that bind anyone, human or agent, working in this repository |
+| `docs/TOOLING.md` | what is in `.claude/`, what each check refuses, and how to drive it |
 
 ## Getting started
 
