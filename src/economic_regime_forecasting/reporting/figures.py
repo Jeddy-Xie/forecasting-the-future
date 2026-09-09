@@ -80,79 +80,222 @@ def plot_series_panel(series_by_name: dict[str, pd.Series], columns: int = 3) ->
     return figure
 
 
-def plot_regime_probabilities(
+def plot_regime_timeline(
     dates: pd.DatetimeIndex,
     state_probabilities: np.ndarray,
     regime_labels: Sequence[str],
     recession_flag: pd.Series | None = None,
 ) -> Figure:
-    """Filtered regime probabilities through time, with recessions shaded.
+    """One lane per regime, filled where that regime was active.
 
-    Stacked because the probabilities sum to one and the question is which regime
-    holds the mass. Recessions are a neutral shade rather than a series colour, so
-    the reference band never competes with the data for identity.
+    This replaces a stacked area, which was the obvious choice and the wrong one.
+    The model is confident almost everywhere, so the stack sat pinned at one and
+    spent the entire vertical axis saying so, leaving a solid block of switching
+    colour that could only be read by looking away to a five-item legend for every
+    band. Giving each regime its own lane costs vertical space and buys three
+    things: each regime's episodes are directly visible, the name sits beside the
+    data instead of in a legend, and recessions can be shaded behind rather than
+    hidden underneath.
     """
-    figure, axes = _new_figure(11.0, 4.2)
+    regime_count = state_probabilities.shape[1]
+    figure = plt.figure(figsize=(11.5, 0.78 * regime_count + 0.9), facecolor=SURFACE)
+    axes_list: list[Axes] = list(figure.subplots(regime_count, 1, sharex=True, squeeze=False)[:, 0])
+    figure.subplots_adjust(hspace=0.32)
 
-    if recession_flag is not None:
-        flag = recession_flag.reindex(dates).fillna(0.0).to_numpy()
+    recession = (
+        recession_flag.reindex(dates).fillna(0.0).to_numpy() if recession_flag is not None else None
+    )
+
+    for state, axes in enumerate(axes_list):
+        axes.set_facecolor(SURFACE)
+        if recession is not None:
+            axes.fill_between(
+                dates,
+                0,
+                1,
+                where=recession > 0.5,
+                color=RECESSION_SHADE,
+                linewidth=0,
+                zorder=0,
+            )
         axes.fill_between(
-            dates, 0, 1, where=flag > 0.5, color=RECESSION_SHADE, linewidth=0, zorder=0
+            dates,
+            0,
+            state_probabilities[:, state],
+            color=REGIME_COLOURS[state % len(REGIME_COLOURS)],
+            linewidth=0,
+            zorder=2,
+        )
+        axes.set_ylim(0, 1)
+        axes.set_yticks([])
+        axes.margins(x=0)
+        for side in ("top", "right", "left"):
+            axes.spines[side].set_visible(False)
+        axes.spines["bottom"].set_color(GRID_INK)
+        axes.tick_params(colors=NEUTRAL_INK, labelsize=9)
+        axes.text(
+            -0.012,
+            0.5,
+            f"{state}  {regime_labels[state]}",
+            transform=axes.transAxes,
+            ha="right",
+            va="center",
+            fontsize=9,
+            color="#0b0b0b",
         )
 
-    axes.stackplot(
-        dates,
-        state_probabilities.T,
-        colors=REGIME_COLOURS[: state_probabilities.shape[1]],
-        labels=list(regime_labels),
-        edgecolor=SURFACE,
-        linewidth=0.4,
-        zorder=2,
+    axes_list[0].set_title(
+        "When each regime was active", fontsize=11, color="#0b0b0b", loc="left", pad=10
     )
-    axes.set_ylim(0, 1)
-    axes.margins(x=0)
-    _style(axes, "Filtered regime probabilities", ylabel="probability")
-    axes.grid(False)
+    if recession is not None:
+        axes_list[-1].set_xlabel(
+            "shaded bands are recessions dated by the National Bureau of Economic Research",
+            fontsize=8.5,
+            color=NEUTRAL_INK,
+            labelpad=8,
+        )
+    figure.tight_layout()
+    return figure
 
-    handles = [
-        Patch(facecolor=REGIME_COLOURS[index], label=label)
-        for index, label in enumerate(regime_labels)
-    ]
-    if recession_flag is not None:
-        handles.append(Patch(facecolor=RECESSION_SHADE, label="recession"))
-    axes.legend(
-        handles=handles,
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.12),
-        ncol=2,
-        frameon=False,
-        fontsize=9,
-        labelcolor=NEUTRAL_INK,
+
+def plot_regime_map(display_table: pd.DataFrame) -> Figure:
+    """Where each regime sits in inflation and growth, sized by how common it is.
+
+    This replaces three separate bar panels, one per dimension, which forced a
+    reader to look across all three to assemble a single regime's identity and
+    printed growth in log units beside an interest rate in percent. Position on two
+    axes carries the same information at a glance, and the interest rate rides
+    along as a label because it is the third dimension of a point already placed by
+    the other two.
+    """
+    figure, axes = _new_figure(8.4, 5.6)
+    inflation = display_table.iloc[:, 3].to_numpy(dtype="float64")
+    growth = display_table.iloc[:, 2].to_numpy(dtype="float64")
+    rates = display_table.iloc[:, 4].to_numpy(dtype="float64")
+    shares = np.array(
+        [float(str(value).rstrip("%")) / 100.0 for value in display_table["share of months"]]
+    )
+
+    axes.axhline(0.0, color=NEUTRAL_INK, linewidth=1.0, zorder=1)
+    axes.text(
+        axes.get_xlim()[0],
+        0,
+        " output contracting below this line ",
+        fontsize=8,
+        color=NEUTRAL_INK,
+        va="bottom",
+        ha="left",
+        zorder=1,
+    )
+
+    # Two regimes sit close together in this space, so labels are placed by trying
+    # four positions around each point and taking the first that does not overlap a
+    # label already placed. Five points make this cheap, and a collision here is
+    # the difference between a chart that reads and one that has to be decoded.
+    x_span = max(inflation.max() - inflation.min(), 1e-6)
+    y_span = max(growth.max() - growth.min(), 1e-6)
+    label_width, label_height = 0.46 * x_span, 0.17 * y_span
+    placed: list[tuple[float, float]] = []
+
+    def _free(centre: tuple[float, float]) -> bool:
+        return all(
+            abs(centre[0] - other[0]) > label_width * 0.85
+            or abs(centre[1] - other[1]) > label_height * 0.95
+            for other in placed
+        )
+
+    for index in range(len(display_table)):
+        colour = REGIME_COLOURS[index % len(REGIME_COLOURS)]
+        share = shares[index]
+        axes.scatter(
+            inflation[index],
+            growth[index],
+            s=260 + 5200 * share,
+            color=colour,
+            alpha=0.42,
+            linewidth=0,
+            zorder=2,
+        )
+        axes.scatter(
+            inflation[index],
+            growth[index],
+            s=52,
+            color=colour,
+            edgecolor=SURFACE,
+            linewidth=1.4,
+            zorder=3,
+        )
+
+        radius = 0.055 * y_span + 0.10 * share * y_span
+        candidates = [
+            (inflation[index], growth[index] - radius - label_height * 0.75),
+            (inflation[index], growth[index] + radius + label_height * 0.75),
+            (inflation[index] + label_width * 0.62, growth[index]),
+            (inflation[index] - label_width * 0.62, growth[index]),
+        ]
+        centre = next((spot for spot in candidates if _free(spot)), candidates[0])
+        placed.append(centre)
+        axes.annotate(
+            f"{display_table['state'].iloc[index]}  "
+            f"{display_table['regime'].iloc[index]}\n"
+            f"short rate {rates[index]:.1f}%  ·  "
+            f"{display_table['share of months'].iloc[index]} of months",
+            centre,
+            ha="center",
+            va="center",
+            fontsize=8.5,
+            color="#0b0b0b",
+            zorder=4,
+        )
+
+    axes.margins(0.34)
+    _style(
+        axes,
+        "The five regimes, placed by what they felt like",
+        ylabel="output growth, percent a year",
+        xlabel="inflation, percent a year",
     )
     figure.tight_layout()
     return figure
 
 
-def plot_regime_means(regime_table: pd.DataFrame) -> Figure:
-    """Where each regime sits on growth, inflation and rates, in natural units."""
-    dimensions = ("growth", "inflation", "rates")
-    figure, grid = plt.subplots(1, 3, figsize=(12.0, 3.4), facecolor=SURFACE)
-    positions = np.arange(len(regime_table))
-    for axes, dimension in zip(grid, dimensions, strict=True):
-        axes.set_facecolor(SURFACE)
-        values = regime_table[f"{dimension}_natural"].to_numpy()
-        axes.barh(
-            positions,
-            values,
-            height=0.62,
-            color=[REGIME_COLOURS[index] for index in range(len(values))],
-        )
-        axes.set_yticks(positions)
-        axes.set_yticklabels([f"regime {index}" for index in positions], fontsize=9)
-        axes.invert_yaxis()
-        _style(axes, dimension, xlabel="natural units")
-        for position, value in zip(positions, values, strict=True):
-            axes.text(value, position, f"  {value:.3g}", va="center", fontsize=8, color=NEUTRAL_INK)
+def plot_transition_heatmap(transition_matrix: np.ndarray, regime_labels: Sequence[str]) -> Figure:
+    """The month-to-month switching probabilities as a grid rather than a table.
+
+    Twenty-five numbers are hard to compare by reading. Shading them makes the
+    strong diagonal, which is the whole reason these are regimes, visible before
+    any number is read. Every cell is still printed, because the exact value is
+    what a reader checks once the shape has told them where to look.
+    """
+    count = transition_matrix.shape[0]
+    figure, axes = _new_figure(7.6, 5.4)
+    axes.imshow(transition_matrix, cmap="Blues", vmin=0.0, vmax=1.0, aspect="auto")
+
+    for row in range(count):
+        for column in range(count):
+            value = transition_matrix[row, column]
+            axes.text(
+                column,
+                row,
+                f"{value:.3f}",
+                ha="center",
+                va="center",
+                fontsize=9,
+                color=SURFACE if value > 0.5 else "#0b0b0b",
+            )
+    axes.set_xticks(range(count), [str(index) for index in range(count)], fontsize=9)
+    axes.set_yticks(
+        range(count),
+        [f"{index}  {regime_labels[index]}" for index in range(count)],
+        fontsize=9,
+    )
+    axes.set_xlabel("regime next month", fontsize=9, color=NEUTRAL_INK)
+    axes.set_title(
+        "Where the economy goes next month", fontsize=11, color="#0b0b0b", loc="left", pad=10
+    )
+    axes.tick_params(colors=NEUTRAL_INK, length=0)
+    for side in ("top", "right", "bottom", "left"):
+        axes.spines[side].set_visible(False)
     figure.tight_layout()
     return figure
 
@@ -191,13 +334,18 @@ def plot_mixing(mixing_table: pd.DataFrame, threshold: float) -> Figure:
         linestyle="--",
         label=f"information threshold ({threshold:g})",
     )
-    for horizon, value in zip(horizons, mixing_table["mean_distance_to_stationary"], strict=True):
+    last = len(horizons) - 1
+    for position, (horizon, value) in enumerate(
+        zip(horizons, mixing_table["mean_distance_to_stationary"], strict=True)
+    ):
+        # The final label would hang off the right edge if it stayed centred.
+        offset, align = (-6, "right") if position == last else (0, "center")
         axes.annotate(
             f"{value:.3f}",
             (horizon, value),
             textcoords="offset points",
-            xytext=(0, 9),
-            ha="center",
+            xytext=(offset, 9),
+            ha=align,
             fontsize=8,
             color=NEUTRAL_INK,
         )

@@ -37,6 +37,18 @@ running mean is the point at which a regime is describably different from the
 typical conditions of its own era rather than of ours."""
 
 
+SHORT_WORDS: dict[str, tuple[str, str, str]] = {
+    "growth": ("contracting", "steady", "strong"),
+    "inflation": ("low inflation", "moderate inflation", "high inflation"),
+    "rates": ("low rates", "neutral rates", "high rates"),
+}
+"""Three words per dimension, below the cut, between the cuts, and above it.
+
+The long form reads well in a sentence and badly on a chart, where a five-item
+legend of thirty-character strings forces the reader to look away from the data
+for every band. The compact form is what charts label directly."""
+
+
 @dataclass(frozen=True)
 class RegimeDescription:
     """One state, named and quantified, for the report and the diagnostics."""
@@ -48,8 +60,27 @@ class RegimeDescription:
     population_share: float
     expected_duration_in_months: float
 
+    @property
+    def compact_label(self) -> str:
+        """A short name a chart can print beside the data instead of in a legend."""
+        parts = []
+        for name, mean in zip(COLUMN_NAMES, self.standardised_means, strict=True):
+            low, middle, high = SHORT_WORDS[name]
+            parts.append(
+                low
+                if mean < -STANDARD_DEVIATION_CUT
+                else high
+                if mean > STANDARD_DEVIATION_CUT
+                else middle
+            )
+        return ", ".join(parts)
+
     def as_row(self) -> dict[str, object]:
-        row: dict[str, object] = {"state": self.state, "regime": self.label}
+        row: dict[str, object] = {
+            "state": self.state,
+            "regime": self.label,
+            "short_regime": self.compact_label,
+        }
         for name, standardised, natural in zip(
             COLUMN_NAMES, self.standardised_means, self.natural_means, strict=True
         ):

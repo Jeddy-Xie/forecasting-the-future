@@ -26,16 +26,17 @@ def close_figures():  # type: ignore[no-untyped-def]
     plt.close("all")
 
 
-def _regime_table(regimes: int = 5) -> pd.DataFrame:
+def _display_table(regimes: int = 5) -> pd.DataFrame:
+    """The shape reporting.tables.regime_display_table produces."""
     return pd.DataFrame(
         {
             "state": range(regimes),
             "regime": [f"regime {index}" for index in range(regimes)],
-            "growth_natural": np.linspace(-0.02, 0.05, regimes),
-            "inflation_natural": np.linspace(0.01, 0.09, regimes),
-            "rates_natural": np.linspace(0.5, 9.0, regimes),
-            "population_share": np.full(regimes, 1.0 / regimes),
-            "expected_duration_months": np.linspace(19, 42, regimes),
+            "growth %/yr": np.linspace(-1.5, 6.1, regimes),
+            "inflation %/yr": np.linspace(2.1, 9.6, regimes),
+            "rates %": np.linspace(0.6, 9.4, regimes),
+            "share of months": [f"{100 // regimes}%"] * regimes,
+            "typical visit": [f"{months} months" for months in range(19, 19 + regimes)],
         }
     )
 
@@ -53,27 +54,58 @@ def test_the_series_panel_builds_for_an_odd_number_of_series() -> None:
     assert len(visible) == 9
 
 
-def test_regime_probabilities_render_with_recessions_shaded() -> None:
+def test_the_timeline_gives_every_regime_its_own_lane() -> None:
+    """A stacked area sits pinned at one wherever the model is confident, which is
+    almost everywhere, so it spends the whole vertical axis saying so. Lanes make
+    each regime's episodes directly readable."""
     dates = pd.date_range("1960-01-01", periods=240, freq="MS")
     generator = np.random.default_rng(1)
     probabilities = generator.dirichlet(np.ones(5), size=240)
     recession = pd.Series((generator.uniform(size=240) < 0.15).astype("float64"), index=dates)
-    figure = figures.plot_regime_probabilities(
+    figure = figures.plot_regime_timeline(
         dates, probabilities, [f"regime {index}" for index in range(5)], recession
     )
-    assert figure.axes[0].get_ylim() == (0.0, 1.0)
-    assert figure.axes[0].get_legend() is not None
+    assert len(figure.axes) == 5
 
 
-def test_regime_probabilities_render_without_a_recession_series() -> None:
+def test_the_timeline_names_each_regime_beside_its_lane_not_in_a_legend() -> None:
     dates = pd.date_range("1960-01-01", periods=60, freq="MS")
     probabilities = np.random.default_rng(2).dirichlet(np.ones(3), size=60)
-    figures.plot_regime_probabilities(dates, probabilities, ["a", "b", "c"], None)
+    figure = figures.plot_regime_timeline(dates, probabilities, ["alpha", "beta", "gamma"], None)
+    printed = " ".join(text.get_text() for axes in figure.axes for text in axes.texts)
+    for name in ("alpha", "beta", "gamma"):
+        assert name in printed
+    assert all(axes.get_legend() is None for axes in figure.axes)
 
 
-def test_regime_means_render_one_panel_per_dimension() -> None:
-    figure = figures.plot_regime_means(_regime_table())
-    assert len(figure.axes) == 3
+def test_the_regime_map_places_every_regime_and_labels_it() -> None:
+    """One chart carrying all three dimensions beats three panels in three unit
+    systems, which forced a reader to look across all of them to assemble a single
+    regime's identity."""
+    figure = figures.plot_regime_map(_display_table())
+    labels = " ".join(text.get_text() for text in figure.axes[0].texts)
+    for index in range(5):
+        assert f"regime {index}" in labels
+
+
+def test_regime_map_labels_do_not_land_on_top_of_each_other() -> None:
+    """Two of the real regimes sit close together, so placement is checked rather
+    than assumed."""
+    crowded = _display_table()
+    crowded.loc[2, "growth %/yr"] = crowded.loc[3, "growth %/yr"] + 0.05
+    crowded.loc[2, "inflation %/yr"] = crowded.loc[3, "inflation %/yr"] + 0.05
+    figure = figures.plot_regime_map(crowded)
+    positions = [text.get_position() for text in figure.axes[0].texts]
+    for first in range(len(positions)):
+        for second in range(first + 1, len(positions)):
+            assert positions[first] != positions[second]
+
+
+def test_the_transition_heatmap_prints_every_cell() -> None:
+    matrix = np.array([[0.9, 0.1], [0.2, 0.8]])
+    figure = figures.plot_transition_heatmap(matrix, ["calm", "turbulent"])
+    printed = {text.get_text() for text in figure.axes[0].texts}
+    assert {"0.900", "0.100", "0.200", "0.800"} <= printed
 
 
 def test_the_mixing_chart_marks_the_threshold() -> None:
@@ -184,3 +216,82 @@ def test_the_default_worker_count_is_deliberately_small() -> None:
 def test_a_command_is_required() -> None:
     with pytest.raises(SystemExit):
         build_parser().parse_args([])
+
+
+# ------------------------------------------------------- reader-facing tables
+
+
+def test_a_log_change_is_converted_to_a_rate_a_reader_recognises() -> None:
+    """A year-over-year log change of 0.092 is 9.6 percent a year, not 9.2. The
+    exponential matters once the rate is large, which for the stagflation regime
+    it is."""
+    from economic_regime_forecasting.configuration.registry import Transform
+    from economic_regime_forecasting.reporting.tables import to_percent_per_year
+
+    assert to_percent_per_year(0.092, Transform.YEAR_OVER_YEAR_LOG_CHANGE) == pytest.approx(
+        9.636, abs=0.01
+    )
+    assert to_percent_per_year(4.57, Transform.LEVEL) == pytest.approx(4.57)
+
+
+def test_the_regime_table_puts_every_column_in_a_named_unit() -> None:
+    """The defect this fixes: growth printed as 0.034 beside an interest rate
+    printed as 4.57, inviting a comparison between two different scales."""
+    from economic_regime_forecasting.configuration.registry import load_registries
+    from economic_regime_forecasting.models.state_labelling import RegimeDescription
+    from economic_regime_forecasting.reporting.tables import regime_display_table
+
+    registry, _ = load_registries()
+    described = [
+        RegimeDescription(
+            state=index,
+            label="a regime",
+            standardised_means=(0.1, 0.2, 0.3),
+            natural_means=(0.034, 0.092, 4.57),
+            population_share=0.2,
+            expected_duration_in_months=30.0,
+        )
+        for index in range(2)
+    ]
+    table = regime_display_table(described, registry)
+    assert "growth %/yr" in table.columns
+    assert "rates %" in table.columns
+    assert table["growth %/yr"].iloc[0] == pytest.approx(3.46, abs=0.01)
+    assert table["rates %"].iloc[0] == pytest.approx(4.57)
+    assert table["share of months"].iloc[0] == "20%"
+
+
+def test_a_one_state_model_shows_no_visit_length_rather_than_a_huge_one() -> None:
+    """A single state never leaves, so its expected visit is the sample length.
+    Printing 1e12 months is noise; printing nothing says it does not apply."""
+    from economic_regime_forecasting.reporting.tables import sweep_display_table
+
+    sweep = pd.DataFrame(
+        {
+            "states": [1, 2],
+            "free_parameters": [9, 21],
+            "bayesian_information_criterion": [5635.0, 4510.0],
+            "held_out_log_likelihood_per_month": [-4.3, -3.7],
+            "smallest_population_share": [1.0, 0.44],
+            "shortest_expected_duration_months": [1e12, 39.9],
+            "admissible": [True, True],
+        }
+    )
+    view = sweep_display_table(sweep)
+    assert view["shortest visit"].iloc[0] == ""
+    assert view["shortest visit"].iloc[1] == "40 months"
+
+
+def test_the_forecast_grid_reads_as_percentages_by_horizon() -> None:
+    from economic_regime_forecasting.reporting.tables import forecast_display_table
+
+    forecasts = pd.DataFrame(
+        {
+            "indicator": ["a", "a", "b", "b"],
+            "horizon_months": [12, 120, 12, 120],
+            "probability": [0.083, 0.694, 0.5, 0.25],
+        }
+    )
+    grid = forecast_display_table(forecasts)
+    assert list(grid.columns) == ["1 year", "10 year"]
+    assert grid.loc["a", "1 year"] == pytest.approx(8.3)
