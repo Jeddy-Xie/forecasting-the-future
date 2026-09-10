@@ -24,7 +24,11 @@ echo "==> gates"
 poetry run forecast check-gates
 
 echo "==> submission"
-poetry run forecast submit
+# The submission is a frozen record produced by configuration 9f95b12dba40d138.
+# The pipeline default is now the honest configuration, so this step only reports
+# the divergence and writes nothing; shipping is a deliberate act, documented in
+# docs/adr/0008-eliminating-two-look-ahead-paths.md.
+poetry run forecast submit --verify-only
 
 echo "==> notebooks"
 poetry run python scripts/execute_notebooks.py

@@ -35,7 +35,11 @@ poetry run forecast fetch-data
 
 This downloads nine series at their current vintage, then roughly thirteen
 hundred archival vintages, one per forecast date for each of the two series that
-get revised. Expect ten to fifteen minutes on a cold cache and a few seconds
+get revised. It populates the **widest** schedule — every date any configuration
+could visit, 1971-12 onward — rather than the narrower one the honest default
+runs, so one fetch serves the shipped run and all four cells of
+`compare-variants`, and the scan that computes the honest start still has the
+pre-1994 vintages it has to look at. Expect ten to fifteen minutes on a cold cache and a few seconds
 afterwards. Success ends with:
 
 ```
@@ -74,10 +78,48 @@ Each stage can also be run alone, in this order:
 | `forecast forecast-now` | 3 | the current ten by three grid and the mixing table |
 | `forecast backtest` | 4 | one row per indicator, date and horizon |
 | `forecast evaluate` | 5 | every metric, and the verdict per horizon |
-| `forecast submit` | — | `submission/forecasts.csv` and its manifest |
+| `forecast submit --verify-only` | — | **nothing.** Prints the approved, live and producing configuration hashes |
+| `forecast compare-variants` | — | the 2x2 of look-ahead fixes and the comparison table |
 
 Add `--verbose` to any of them to see what each step is doing. Add
-`--as-of YYYY-MM-DD` to run the whole thing as though it were an earlier date.
+`--as-of YYYY-MM-DD` to run the whole thing as though it were an earlier date;
+it is a *top-level* flag, so it goes before the subcommand
+(`forecast --as-of 2026-09-01 backtest`).
+
+### Shipping the submission is a separate, deliberate act
+
+`submission/forecasts.csv` is the only artifact that leaves this repository, and
+since ADR 0008 the pipeline default is the **honest** configuration, which is not
+the one that produced it. So `scripts/run_full_pipeline.sh` runs
+`forecast submit --verify-only`, which writes nothing under any configuration and
+reports the divergence every time.
+
+Plain `forecast submit` refuses with exit 2 unless the run is the approved
+configuration, or a single-use token authorises it. Re-shipping is three steps,
+in one commit:
+
+```bash
+python3 .claude/hooks/freeze_guard.py --thaw "<why this run should ship>" \
+    --subject submission/forecasts.csv --by <you>
+poetry run forecast submit
+# then set CONFIGURATION_HASH_APPROVED_FOR_SHIPPING in
+# src/economic_regime_forecasting/configuration/shipping_approval.py to match,
+# and put the reason in docs/adr/
+```
+
+The token is single-use and has two readers — the submit guard and the freeze
+hook that denies hand edits to `submission/` — so mint it immediately before the
+submit, or an editor will consume it first and the refusal will come back. The
+write records `shipped_under_authorisation` (reason, who, when) in the manifest.
+
+### One-off analyses
+
+`forecast compare-variants` runs all four cells of the look-ahead 2x2 — shipped,
+each fix alone, and both — against the *same* unchanged pre-registered decision
+rule, and writes `variant_comparison.parquet` with its manifest. It takes around
+forty minutes, needs no network (every vintage it wants is already cached), and
+is **deliberately not part of `run_full_pipeline.sh`**: it is an analysis, not a
+stage gate.
 
 ## Read the results
 

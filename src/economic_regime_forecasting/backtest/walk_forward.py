@@ -42,9 +42,10 @@ from economic_regime_forecasting.configuration.registry import (
     EconomicSeriesRegistry,
 )
 from economic_regime_forecasting.configuration.run_settings import RunSettings
-from economic_regime_forecasting.data import indicator_outcomes
+from economic_regime_forecasting.data import federal_reserve_client, indicator_outcomes
 from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
 from economic_regime_forecasting.data.panel import assemble_point_in_time_panel, load_final_series
+from economic_regime_forecasting.data.vintage import LookAheadError, VintagePolicy
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import gaussian_hidden_markov_model as hidden_markov
 from economic_regime_forecasting.models import indicator_forecast
@@ -259,6 +260,15 @@ def run_walk_forward(
     progress_every: int = 60,
 ) -> pd.DataFrame:
     """Run the whole method through history and return one tidy results frame."""
+    # One pre-flight, before anything is fitted, so a schedule that breaks the
+    # promise fails in seconds rather than fifteen minutes. This covers every path
+    # that produces a results frame, because this is the only function that builds
+    # one. A caller that reaches past it into `fit_regime_model` or
+    # `assemble_point_in_time_panel` directly is outside the check; that is stated
+    # rather than hidden.
+    if settings.start_walk_forward_when_every_input_is_point_in_time:
+        assert_every_forecast_date_is_fully_point_in_time(registry, cache, forecast_dates)
+
     histories = prepare_indicator_history(
         indicators, registry, cache, settings.forecast_horizons_in_months
     )
@@ -362,6 +372,131 @@ def validate_results(results: pd.DataFrame) -> None:
     unexpected = [value for value in realised if value not in (0.0, 1.0)]
     if unexpected:
         raise BacktestError(f"realised outcomes must be zero or one; found {unexpected[:5]}")
+
+
+def _assert_every_vintage_is_cached(
+    registry: EconomicSeriesRegistry,
+    cache: SeriesCache,
+    candidate_dates: pd.DatetimeIndex,
+) -> None:
+    """Refuse to scan when a vintage the scan needs would have to be downloaded.
+
+    ``vintage.observe`` calls ``get_or_fetch``, so a scan over six hundred dates
+    against a half-populated cache would quietly turn a check into a forty-minute
+    download. This asks the cache first and says what to run instead.
+    """
+    absent: list[str] = []
+    for entry in registry.model_inputs:
+        if not cache.contains(federal_reserve_client.build_request(entry.series_id)):
+            absent.append(f"{entry.series_id} (current vintage)")
+        if not entry.is_revised:
+            continue
+        for stamp in candidate_dates:
+            request = federal_reserve_client.build_request(entry.series_id, stamp.date())
+            if not cache.contains(request):
+                absent.append(f"{entry.series_id} as of {stamp.date().isoformat()}")
+    if absent:
+        raise BacktestError(
+            f"{len(absent)} of the vintages this scan needs are not cached, first few "
+            f"{absent[:3]}. Run `forecast fetch-data` first; it skips anything already "
+            "there. This scan deliberately does not reach the network, because a check "
+            "that silently downloads is not a check."
+        )
+
+
+def forecast_dates_using_the_publication_lag_fallback(
+    registry: EconomicSeriesRegistry,
+    cache: SeriesCache,
+    candidate_dates: pd.DatetimeIndex,
+) -> list[date]:
+    """Every candidate date whose point-in-time panel falls back to revised values.
+
+    Reads only from cache: a date whose vintage is not cached raises rather than
+    reaching the network, because a scan that silently downloaded would turn a
+    check into a forty-minute surprise.
+
+    One definition of "which policy" serves both the honest-start finder and the
+    pre-flight assertion, so the two cannot drift apart.
+    """
+    _assert_every_vintage_is_cached(registry, cache, candidate_dates)
+    fallback_key = VintagePolicy.PUBLICATION_LAG_FALLBACK.value
+    offending: list[date] = []
+    for stamp in candidate_dates:
+        as_of = stamp.date()
+        panel = assemble_point_in_time_panel(registry, as_of, cache)
+        if panel.policy_counts()[fallback_key]:
+            offending.append(as_of)
+    return offending
+
+
+def find_first_fully_point_in_time_date(
+    registry: EconomicSeriesRegistry,
+    cache: SeriesCache,
+    settings: RunSettings,
+    earliest_candidate: date,
+    last_forecast_date: date,
+) -> date:
+    """The earliest month from which *every later month too* is fully point in time.
+
+    Not simply the first clean month: the fallback pattern is not monotone.
+    Industrial production falls back for twelve months in 1971-72 and is clean on
+    either side, while the consumer price index falls back continuously until
+    1994-02. The answer is therefore the month after the *last* fallback month in
+    the range, which on the live cache is 1994-03-01.
+
+    The scan steps a month at a time, unlike ``find_first_forecast_date``, which
+    steps a year: panel length is monotone in the date and fallback usage is not.
+    """
+    candidates = pd.date_range(
+        start=pd.Timestamp(earliest_candidate), end=pd.Timestamp(last_forecast_date), freq="MS"
+    )
+    if len(candidates) == 0:
+        raise BacktestError(
+            f"no months between {earliest_candidate} and {last_forecast_date}, so there is "
+            "no range in which to look for an honest start date."
+        )
+    offending = forecast_dates_using_the_publication_lag_fallback(registry, cache, candidates)
+    if not offending:
+        return earliest_candidate
+    last_offending = offending[-1]
+    if last_offending == candidates[-1].date():
+        raise BacktestError(
+            f"every month from {earliest_candidate} to {last_forecast_date} would have to "
+            f"start on or before {last_offending}, which itself falls back to revised "
+            f"values; {len(offending)} of {len(candidates)} candidates fall back. There is "
+            "no fully point-in-time start inside this range. Either widen the range, fetch "
+            "the missing archival vintages with `forecast fetch-data`, or set "
+            "start_walk_forward_when_every_input_is_point_in_time to False and accept the "
+            "documented fallback (docs/adr/0008)."
+        )
+    return (pd.Timestamp(last_offending) + pd.DateOffset(months=1)).date()
+
+
+def assert_every_forecast_date_is_fully_point_in_time(
+    registry: EconomicSeriesRegistry,
+    cache: SeriesCache,
+    forecast_dates: pd.DatetimeIndex,
+) -> None:
+    """Raise ``LookAheadError`` if any forecast date uses the publication-lag fallback.
+
+    ``LookAheadError`` rather than a new exception: fitting on a publication-lag
+    fallback means fitting on values revised later than the forecast date, which is
+    information published in the future. That is exactly what the existing name
+    means. One invariant, two places it can be violated.
+    """
+    offending = forecast_dates_using_the_publication_lag_fallback(registry, cache, forecast_dates)
+    if not offending:
+        return
+    shown = ", ".join(item.strftime("%Y-%m") for item in offending[:5])
+    raise LookAheadError(
+        f"{len(offending)} of {len(forecast_dates)} forecast dates in this schedule fall back "
+        f"to revised values: {shown} (first five of {len(offending)}). "
+        "start_walk_forward_when_every_input_is_point_in_time promises that every model "
+        "input is on a genuine point-in-time vintage. Either set it to False and accept the "
+        "documented fallback (docs/adr/0008), or fetch the missing archival vintages with "
+        "`forecast fetch-data`. ALFRED holds no usable consumer price index vintage before "
+        "1994-03; see docs/adr/0008 for the probe evidence."
+    )
 
 
 def find_first_forecast_date(

@@ -29,3 +29,14 @@ artifacts/**
 .DS_Store
 .env
 .env.*
+
+# Crucible working memory: unit state and the graphify index. Rebuilt on demand;
+# knowledge that should outlive a session is promoted to docs/adr/.
+.plan/
+
+# Machine-local Claude settings, and the single-use thaw token. Personal, not
+# policy — the rest of .claude/ IS tracked, because a hook that only exists on
+# one laptop is not a gate. See docs/TOOLING.md.
+.claude/settings.local.json
+.claude/*.local.json
+.claude/thaw-token.json

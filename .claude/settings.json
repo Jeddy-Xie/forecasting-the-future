@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/freeze_guard.py\"",
+            "timeout": 10,
+            "statusMessage": "checking the pre-registration is frozen"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "crucible@foundry": true,
+    "anvil@foundry": true,
+    "bellows@foundry": true
+  },
+  "extraKnownMarketplaces": {
+    "foundry": {
+      "source": {
+        "source": "github",
+        "repo": "Jeddy-Xie/Foundry"
+      }
+    }
+  }
+}

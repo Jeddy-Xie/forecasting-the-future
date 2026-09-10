@@ -52,9 +52,17 @@ usability is whether there is enough history to fit a model on.
 Twenty years is that bar, and it is the same twenty years the model's burn-in
 requires, deliberately: a vintage too short to fit on is no use however faithful
 it is. It also catches the case this check exists for, where the archive answers
-a pre-1997 consumer price index request with twenty rows of recent history. That
-response parses cleanly and would produce a model fitted on twenty months with no
-exception raised anywhere.
+a pre-1994-03 consumer price index request with about twenty rows of recent
+history. That response parses cleanly and would produce a model fitted on twenty
+months with no exception raised anywhere.
+
+1994-03-01 is the measured boundary, not an estimate: it is the first vintage
+date on which the archive returns a usable consumer price index (565 observations
+covering 1947-01 .. 1994-01), and every earlier date returns a rolling window of
+roughly nineteen. It is never hardcoded — `backtest.walk_forward
+.find_first_fully_point_in_time_date` computes it, and a test pins the computed
+answer against the live cache, so a backfill would move the code and fail the
+test loudly. See ADR 0008 for the probe evidence.
 """
 
 

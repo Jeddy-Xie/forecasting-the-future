@@ -8,6 +8,9 @@
     forecast evaluate        gate 5: apply the pre-registered decision rule
     forecast submit          write the submission and its manifest
     forecast check-gates     all five gates in order, stopping at the first failure
+    forecast compare-variants  the 2x2 of the two look-ahead fixes (one-off, ~40 min)
+    forecast register        record the shipped forecasts as dated, resolvable claims
+    forecast resolve         score every registered forecast whose date has passed
 
 Each stage reads what the previous one wrote and writes what the next one needs,
 under ``.cache/``. Nothing here contains analysis; every command is a few lines of
@@ -17,9 +20,11 @@ orchestration over the package.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
@@ -28,9 +33,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from economic_regime_forecasting import __version__, pipeline_gates
+from economic_regime_forecasting import __version__, forecast_register, pipeline_gates
 from economic_regime_forecasting.backtest import schedule as schedule_module
-from economic_regime_forecasting.backtest import walk_forward
+from economic_regime_forecasting.backtest import state_count_on_burn_in, walk_forward
+from economic_regime_forecasting.configuration import shipping_approval
 from economic_regime_forecasting.configuration.registry import (
     BinaryIndicator,
     EconomicSeriesRegistry,
@@ -43,9 +49,12 @@ from economic_regime_forecasting.configuration.run_settings import (
     RunSettings,
 )
 from economic_regime_forecasting.data import audit as audit_module
-from economic_regime_forecasting.data import federal_reserve_client
+from economic_regime_forecasting.data import federal_reserve_client, indicator_outcomes
 from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
-from economic_regime_forecasting.data.panel import assemble_point_in_time_panel
+from economic_regime_forecasting.data.panel import (
+    assemble_point_in_time_panel,
+    load_final_series,
+)
 from economic_regime_forecasting.evaluation import verdict as verdict_module
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
@@ -53,7 +62,10 @@ from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
 )
 from economic_regime_forecasting.models.state_labelling import describe_regimes, regime_table
-from economic_regime_forecasting.models.state_selection import sweep_state_counts
+from economic_regime_forecasting.models.state_selection import (
+    regimes_exist_from_sweep_table,
+    sweep_state_counts,
+)
 
 logger = logging.getLogger("economic_regime_forecasting")
 
@@ -100,21 +112,59 @@ class Workspace:
             assemble_point_in_time_panel(self.registry, as_of, self.cache), self.registry
         )
 
-    def backtest_schedule(self, today: date) -> schedule_module.ForecastSchedule:
-        """The forecast dates this run will visit, computed the same way everywhere."""
+    def _panel_length_first_forecast_date(self, today: date) -> date:
+        """Unchanged: the first month whose point-in-time panel is long enough."""
         latest = self.observation_matrix_as_of(today)
         earliest_candidate = (
             latest.dates[self.settings.minimum_observations_before_first_fit - 1]
             + pd.DateOffset(months=1)
         ).date()
-        first = walk_forward.find_first_forecast_date(
+        return walk_forward.find_first_forecast_date(
             self.registry,
             self.cache,
             self.settings,
             earliest_candidate,
             (pd.Timestamp(today) - pd.DateOffset(years=15)).date(),
         )
-        return schedule_module.build_schedule(first, today, self.settings.refit_every_n_months)
+
+    def _first_forecast_date(self, today: date) -> date:
+        """The panel-length answer, then the start policy on top of it.
+
+        The point-in-time search takes the panel-length answer as its earliest
+        candidate and scans forward, so the honest start is the later of the two
+        by construction. There is no ``max()`` to get the wrong way round, and no
+        way to produce a date the panel-length rule would have rejected.
+        """
+        start = self._panel_length_first_forecast_date(today)
+        if not self.settings.start_walk_forward_when_every_input_is_point_in_time:
+            return start
+        return walk_forward.find_first_fully_point_in_time_date(
+            self.registry,
+            self.cache,
+            self.settings,
+            earliest_candidate=start,
+            last_forecast_date=today,
+        )
+
+    def backtest_schedule(self, today: date) -> schedule_module.ForecastSchedule:
+        """The forecast dates this run will visit, computed the same way everywhere."""
+        return schedule_module.build_schedule(
+            self._first_forecast_date(today), today, self.settings.refit_every_n_months
+        )
+
+    def widest_backtest_schedule(self, today: date) -> schedule_module.ForecastSchedule:
+        """Every date any variant could visit: the start policy is ignored on purpose.
+
+        `fetch-data` populates this one, so a single fetch serves the shipped run
+        and all four cells of the comparison. Narrowing the fetch to the honest
+        start would starve the very scan that computes it, which has to look back
+        to 1971 to find the last month that falls back.
+        """
+        return schedule_module.build_schedule(
+            self._panel_length_first_forecast_date(today),
+            today,
+            self.settings.refit_every_n_months,
+        )
 
 
 # --------------------------------------------------------------------- stages
@@ -129,7 +179,10 @@ def fetch_data(workspace: Workspace, today: date, workers: int) -> int:
         )
     print(f"fetched {len(workspace.registry.series)} series at their current vintage")
 
-    schedule = workspace.backtest_schedule(today)
+    # The widest schedule, not the run's own: one fetch then serves the shipped
+    # configuration and every cell of the look-ahead comparison, and the scan that
+    # computes the honest start still has the pre-1994 vintages it must look at.
+    schedule = workspace.widest_backtest_schedule(today)
     revised_inputs = [item for item in workspace.registry.model_inputs if item.is_revised]
     wanted = [
         (entry, stamp.date())
@@ -317,14 +370,42 @@ def _missing_vintages(
     ]
 
 
+def _state_count_for_the_backtest(
+    workspace: Workspace, schedule: schedule_module.ForecastSchedule
+) -> int:
+    """One integer, from whichever of the two sources this configuration declares.
+
+    With ``select_state_count_on_a_burn_in_window`` off this reads the winner of
+    the full-sample sweep off `selected_model.json`, exactly as the shipped run
+    did — a forecast issued in 1972 then uses a shape chosen with data through
+    today. With it on the count is swept once on the panel as it stood at the
+    first forecast date, and the choice is written out so the evaluation can read
+    the same evidence rather than the full-sample sweep.
+    """
+    if not workspace.settings.select_state_count_on_a_burn_in_window:
+        model = GaussianHiddenMarkovModel.from_dictionary(
+            workspace.artifacts.read_json(ARTIFACTS.selected_model)
+        )
+        return int(model.state_count)
+
+    choice = state_count_on_burn_in.choose_state_count_on_burn_in_window(
+        workspace.registry,
+        workspace.cache,
+        workspace.settings,
+        first_forecast_date=schedule.forecast_dates[0].date(),
+        artifacts=workspace.artifacts,
+    )
+    workspace.artifacts.write_json(ARTIFACTS.burn_in_state_count_choice, choice.as_manifest())
+    print(choice.describe())
+    return choice.state_count
+
+
 def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:
     """Gate 4. Walk the whole method through history."""
     settings = workspace.settings
-    model = GaussianHiddenMarkovModel.from_dictionary(
-        workspace.artifacts.read_json(ARTIFACTS.selected_model)
-    )
     schedule = workspace.backtest_schedule(today)
-    print(f"{schedule.describe()}, {model.state_count} regimes")
+    state_count = _state_count_for_the_backtest(workspace, schedule)
+    print(f"{schedule.describe()}, {state_count} regimes")
 
     # Check up front rather than discovering a gap forty minutes into a run. A
     # missing vintage is not fatal to the method -- the publication-lag fallback
@@ -342,7 +423,7 @@ def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
         workspace.indicators,
         workspace.cache,
         settings,
-        model.state_count,
+        state_count,
         schedule.forecast_dates,
         schedule.refit_dates,
         workspace.artifacts,
@@ -353,28 +434,36 @@ def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     return (0 if report.passed else 1), report
 
 
+def _sweep_the_verdict_should_read(workspace: Workspace) -> pd.DataFrame:
+    """The sweep that answers "do regimes exist" for *this* configuration.
+
+    Feeding a full-sample sweep into the verdict of an honest run would put the
+    leak back into the one gate meant to certify its absence, so the burn-in run
+    reads the burn-in sweep and the shipped run reads the full-sample one. Same
+    requirement, same arithmetic, honest evidence.
+    """
+    if not workspace.settings.select_state_count_on_a_burn_in_window:
+        return workspace.artifacts.read_table(ARTIFACTS.state_count_sweep)
+    if not workspace.artifacts.has(ARTIFACTS.burn_in_state_count_choice):
+        raise SystemExit(
+            f"{ARTIFACTS.burn_in_state_count_choice} is not in the cache, so there is no "
+            "burn-in sweep for the regimes-exist gate to read. Run `forecast backtest` "
+            "first; it writes the choice it made. Reading the full-sample sweep instead "
+            "would answer this gate with the very look-ahead the run removed."
+        )
+    choice = state_count_on_burn_in.BurnInStateCountChoice.from_manifest(
+        workspace.artifacts.read_json(ARTIFACTS.burn_in_state_count_choice)
+    )
+    return choice.sweep_table()
+
+
 def evaluate(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:
     """Gate 5. Apply the pre-registered decision rule, per horizon."""
     settings = workspace.settings
     results = workspace.artifacts.read_table(ARTIFACTS.backtest_results)
-    sweep_table = workspace.artifacts.read_table(ARTIFACTS.state_count_sweep)
+    sweep_table = _sweep_the_verdict_should_read(workspace)
 
-    single = sweep_table[sweep_table["states"] == 1]
-    multiple = sweep_table[sweep_table["states"] > 1]
-    regimes_exist = bool(
-        not single.empty
-        and multiple["held_out_log_likelihood_per_month"].max()
-        > single["held_out_log_likelihood_per_month"].iloc[0]
-        and multiple["bayesian_information_criterion"].min()
-        < single["bayesian_information_criterion"].iloc[0]
-    )
-    evidence = (
-        "best multi-regime held-out log likelihood per month "
-        f"{multiple['held_out_log_likelihood_per_month'].max():+.4f} against "
-        f"{single['held_out_log_likelihood_per_month'].iloc[0]:+.4f} for a single regime; "
-        f"information criterion {multiple['bayesian_information_criterion'].min():,.0f} "
-        f"against {single['bayesian_information_criterion'].iloc[0]:,.0f}"
-    )
+    regimes_exist, evidence = regimes_exist_from_sweep_table(sweep_table)
 
     metrics = verdict_module.compute_metrics(results)
     metrics_table = verdict_module.metrics_table(metrics)
@@ -403,14 +492,106 @@ def evaluate(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.Gat
     return (0 if report.passed else 1), report
 
 
+def _hash_that_produced_the_artifacts(results: pd.DataFrame) -> str:
+    """The one configuration behind `backtest_results.parquet`, or a refusal.
+
+    A submission assembled from two runs has no single provenance to check, so
+    there is nothing honest to compare the approved hash against.
+    """
+    found = sorted({str(value) for value in results["configuration_hash"]})
+    if len(found) != 1:
+        raise shipping_approval.SubmissionNotApprovedError(
+            f"backtest_results.parquet carries {len(found)} configuration hashes {found}, "
+            "so the submission would have no single provenance to check against the "
+            "approved one. Re-run `forecast backtest` under one configuration."
+        )
+    return found[0]
+
+
+def _read_backtest_results_or_say_what_to_run(workspace: Workspace) -> pd.DataFrame:
+    """`backtest_results.parquet`, or the sentence that says how to make it."""
+    if not workspace.artifacts.has(ARTIFACTS.backtest_results):
+        raise SystemExit(
+            f"{ARTIFACTS.backtest_results} is not in the cache, so there is nothing to "
+            "submit or to verify. Run `forecast backtest` first."
+        )
+    return workspace.artifacts.read_table(ARTIFACTS.backtest_results)
+
+
+def verify_submission(workspace: Workspace, today: date) -> int:
+    """Print the three hashes and write nothing, under any configuration.
+
+    This is what the documented one-command pipeline runs. It reports the
+    divergence between the honest default and the shipped record every time,
+    which is the single most confusing fact this change creates, exactly where a
+    reader would look for it.
+    """
+    results = _read_backtest_results_or_say_what_to_run(workspace)
+    live = workspace.settings.configuration_hash()
+    producing = _hash_that_produced_the_artifacts(results)
+    approved = shipping_approval.CONFIGURATION_HASH_APPROVED_FOR_SHIPPING
+
+    forecasts_file = SUBMISSION_DIRECTORY / "forecasts.csv"
+    manifest_file = SUBMISSION_DIRECTORY / "manifest.json"
+    committed: str | None = None
+    if forecasts_file.exists() and manifest_file.exists():
+        try:
+            recorded = json.loads(manifest_file.read_text(encoding="utf-8"))
+            committed = str(recorded["configuration_hash"])
+        except (OSError, ValueError, KeyError):
+            committed = None
+
+    print("submit --verify-only: nothing is written by this command.")
+    print(f"  approved for shipping   : {approved}")
+    print(f"  this run's settings     : {live}")
+    print(f"  produced the artifacts  : {producing}   ({ARTIFACTS.backtest_results})")
+    print(f"  committed submission    : {committed if committed else 'absent or unreadable'}")
+
+    if committed is None:
+        print(
+            "\nThe committed submission is missing or its manifest cannot be read. That is "
+            "a defect in the shipped record, not a routine divergence: restore it from git "
+            "before anything else."
+        )
+        return 1
+    if committed != approved:
+        print(
+            f"\nThe committed submission records {committed}, but the code says {approved} is "
+            "what was approved. The shipped record and the constant that guards it have "
+            "drifted apart. Fix one to match the other, in a commit that says which and why."
+        )
+        return 1
+    if live != approved or producing != approved:
+        print(
+            "\nThis run differs from the shipped record, which is expected: the pipeline "
+            "default is the honest configuration and the submission was produced by "
+            f"{approved}. `forecast submit` will refuse to overwrite it without a named, "
+            "single-use authorisation. See docs/adr/0008."
+        )
+    else:
+        print("\nThis run is the approved configuration; `forecast submit` would ship it.")
+    return 0
+
+
 def submit(workspace: Workspace, today: date) -> int:
     """Write the final grid, shipping the base rate where a gate failed."""
     settings = workspace.settings
     forecasts = workspace.artifacts.read_table(ARTIFACTS.current_forecasts)
     verdicts = workspace.artifacts.read_table(ARTIFACTS.verdicts)
-    results = workspace.artifacts.read_table(ARTIFACTS.backtest_results)
+    results = _read_backtest_results_or_say_what_to_run(workspace)
     model = GaussianHiddenMarkovModel.from_dictionary(
         workspace.artifacts.read_json(ARTIFACTS.selected_model)
+    )
+
+    # Before anything is written. `authorise_shipping` returns None when there is
+    # nothing to authorise -- a destination that is not the repository's own
+    # submission, or a run that already is the approved configuration -- and the
+    # consumed authorisation when a token let an unapproved run through.
+    authorisation = shipping_approval.authorise_shipping(
+        destination=SUBMISSION_DIRECTORY,
+        repo_root=PROJECT_ROOT,
+        live_configuration_hash=settings.configuration_hash(),
+        producing_configuration_hash=_hash_that_produced_the_artifacts(results),
     )
 
     ships_model = dict(zip(verdicts["horizon_months"], verdicts["verdict"], strict=True))
@@ -464,6 +645,10 @@ def submit(workspace: Workspace, today: date) -> int:
         "indicator_count": len(workspace.indicators),
         "pre_registration": str(verdict_module.PRE_REGISTRATION_FILE.relative_to(PROJECT_ROOT)),
     }
+    if authorisation is not None:
+        # Present only when a token let an unapproved run through, so a manifest
+        # produced by the approved configuration keeps exactly today's schema.
+        manifest["shipped_under_authorisation"] = authorisation.as_manifest_entry()
     (SUBMISSION_DIRECTORY / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -471,8 +656,197 @@ def submit(workspace: Workspace, today: date) -> int:
     print(
         submission[["indicator", "horizon_years", "probability", "source"]].to_string(index=False)
     )
+    if authorisation is not None:
+        print(
+            f"\nshipped under authorisation by {authorisation.by} "
+            f"({authorisation.minted_at}): {authorisation.reason}"
+        )
     print(f"\nwritten to {_display_path(SUBMISSION_DIRECTORY)}/")
     return 0
+
+
+VARIANTS: tuple[tuple[str, bool, bool], ...] = (
+    ("shipped", False, False),
+    ("honest_state_count", True, False),
+    ("honest_start", False, True),
+    ("both", True, True),
+)
+"""The 2x2: (label, select the state count on a burn-in window, start point in time).
+
+`shipped` is the configuration that produced `submission/forecasts.csv`; `both` is
+the pipeline default from 2026-09-09. The middle two isolate one fix each, which
+is the only way to say what each one cost.
+"""
+
+
+def compare_variants(workspace: Workspace, today: date) -> int:
+    """Run all four cells of the look-ahead 2x2 against one unchanged decision rule.
+
+    Every cell is judged by the same `evaluate_all_horizons` reading the same
+    `load_decision_rule()`. The only input that differs per cell is the
+    regimes-exist evidence, and it differs *towards* honesty: a cell that chose
+    its state count on a burn-in window has that sweep read back to answer the
+    gate, rather than the full-sample one it did not use.
+
+    Around forty minutes, no network, deliberately not part of
+    `run_full_pipeline.sh`: it is a one-off analysis, not a stage gate.
+    """
+    if not workspace.artifacts.has(ARTIFACTS.selected_model):
+        raise SystemExit(
+            f"{ARTIFACTS.selected_model} is not in the cache, and the two cells that keep "
+            "the shipped state-count policy read it. Run `forecast fit-regimes` first."
+        )
+    full_sample_sweep = workspace.artifacts.read_table(ARTIFACTS.state_count_sweep)
+    decision_rule = verdict_module.load_decision_rule()
+
+    comparison_rows: list[dict[str, object]] = []
+    manifest_entries: list[dict[str, object]] = []
+
+    for label, on_burn_in, point_in_time in VARIANTS:
+        started = time.perf_counter()
+        settings = dataclasses.replace(
+            DEFAULT_RUN_SETTINGS,
+            select_state_count_on_a_burn_in_window=on_burn_in,
+            start_walk_forward_when_every_input_is_point_in_time=point_in_time,
+        )
+        cell = dataclasses.replace(workspace, settings=settings)
+        schedule = cell.backtest_schedule(today)
+
+        if on_burn_in:
+            choice = state_count_on_burn_in.choose_state_count_on_burn_in_window(
+                cell.registry,
+                cell.cache,
+                settings,
+                first_forecast_date=schedule.forecast_dates[0].date(),
+                artifacts=cell.artifacts,
+            )
+            state_count = choice.state_count
+            chosen_as_of = choice.chosen_as_of
+            sweep_table = choice.sweep_table()
+        else:
+            selected = GaussianHiddenMarkovModel.from_dictionary(
+                cell.artifacts.read_json(ARTIFACTS.selected_model)
+            )
+            state_count = int(selected.state_count)
+            # The full-sample sweep is a statement about today's panel, so the
+            # date it was chosen as of is today. That is the leak, named.
+            chosen_as_of = today
+            sweep_table = full_sample_sweep
+
+        regimes_exist, evidence = regimes_exist_from_sweep_table(sweep_table)
+        fallback_dates = walk_forward.forecast_dates_using_the_publication_lag_fallback(
+            cell.registry, cell.cache, schedule.forecast_dates
+        )
+
+        print(
+            f"\n{'=' * 78}\n{label}: {schedule.describe()}, {state_count} regimes chosen as of "
+            f"{chosen_as_of.isoformat()}, hash {settings.configuration_hash()}, "
+            f"{len(fallback_dates)} forecast dates on the publication-lag fallback\n{'=' * 78}"
+        )
+
+        results = walk_forward.run_walk_forward(
+            cell.registry,
+            cell.indicators,
+            cell.cache,
+            settings,
+            state_count,
+            schedule.forecast_dates,
+            schedule.refit_dates,
+            cell.artifacts,
+        )
+        cell.artifacts.write_table(ARTIFACTS.backtest_results_for_variant(label), results)
+
+        verdicts = verdict_module.evaluate_all_horizons(
+            results,
+            settings.forecast_horizons_in_months,
+            regimes_exist,
+            evidence,
+            seed=settings.random_seed,
+            decision_rule=decision_rule,
+        )
+        table = verdict_module.verdict_table(verdicts)
+        cell.artifacts.write_table(ARTIFACTS.verdicts_for_variant(label), table)
+
+        elapsed = time.perf_counter() - started
+        shared = {
+            "variant": label,
+            "select_state_count_on_burn_in": on_burn_in,
+            "start_fully_point_in_time": point_in_time,
+            "configuration_hash": settings.configuration_hash(),
+            "state_count": state_count,
+            "state_count_chosen_as_of": chosen_as_of.isoformat(),
+            "first_forecast_date": schedule.forecast_dates[0].date().isoformat(),
+            "last_forecast_date": schedule.forecast_dates[-1].date().isoformat(),
+            "forecast_date_count": len(schedule.forecast_dates),
+            "refit_count": len(schedule.refit_dates),
+            "forecast_dates_using_fallback": len(fallback_dates),
+        }
+        for record in table.to_dict("records"):
+            comparison_rows.append(
+                {
+                    **shared,
+                    "horizon_months": int(record["horizon_months"]),
+                    "verdict": record["verdict"],
+                    "mean_brier_skill_score": float(record["mean_brier_skill_score"]),
+                    "skill_lower_bound": float(record["skill_lower_bound"]),
+                    "skill_upper_bound": float(record["skill_upper_bound"]),
+                    "effective_independent_observations": float(
+                        record["effective_independent_observations"]
+                    ),
+                    "failing_gates": record["failing_gates"],
+                }
+            )
+        manifest_entries.append(
+            {
+                **shared,
+                "seed": settings.random_seed,
+                "regimes_exist": regimes_exist,
+                "regimes_exist_evidence": evidence,
+                "wall_clock_seconds": round(elapsed, 1),
+            }
+        )
+        for item in verdicts:
+            print(f"  {item.describe()}")
+
+    comparison = pd.DataFrame(comparison_rows)
+    workspace.artifacts.write_table(ARTIFACTS.variant_comparison, comparison)
+    workspace.artifacts.write_json(
+        ARTIFACTS.variant_comparison_manifest,
+        {
+            "generated_on": today.isoformat(),
+            "package_version": __version__,
+            "pre_registration": str(verdict_module.PRE_REGISTRATION_FILE.relative_to(PROJECT_ROOT)),
+            "variants": manifest_entries,
+        },
+    )
+
+    print(f"\n{_comparison_as_markdown(comparison)}")
+    print(
+        f"\nwritten to {_display_path(workspace.artifacts.path(ARTIFACTS.variant_comparison))} "
+        f"and {_display_path(workspace.artifacts.path(ARTIFACTS.variant_comparison_manifest))}"
+    )
+    return 0
+
+
+def _comparison_as_markdown(comparison: pd.DataFrame) -> str:
+    """The table as it is transcribed into docs/RESULTS.md, printed once here."""
+    header = (
+        "| variant | start | states | dates | fallback | horizon | verdict | "
+        "skill | 90% interval | independent |"
+    )
+    divider = "|---|---|---:|---:|---:|---:|---|---:|---|---:|"
+    lines = [header, divider]
+    for row in comparison.to_dict("records"):
+        lines.append(
+            f"| {row['variant']} | {row['first_forecast_date'][:7]} | {row['state_count']} | "
+            f"{row['forecast_date_count']} | {row['forecast_dates_using_fallback']} | "
+            f"{int(row['horizon_months']) // 12}y | {row['verdict']} | "
+            f"{float(row['mean_brier_skill_score']):+.4f} | "
+            f"[{float(row['skill_lower_bound']):+.4f}, "
+            f"{float(row['skill_upper_bound']):+.4f}] | "
+            f"{float(row['effective_independent_observations']):.1f} |"
+        )
+    return "\n".join(lines)
 
 
 def check_gates(workspace: Workspace, today: date) -> int:
@@ -526,17 +900,103 @@ def build_parser() -> argparse.ArgumentParser:
             "earn a temporary block from the service."
         ),
     )
+    # `submit` is pulled out of the loop below so it can carry a flag. The names
+    # the loop registers are otherwise unchanged, and the set of subcommands is
+    # the same, which is what `test_every_stage_has_a_subcommand` pins.
+    submit_parser = subparsers.add_parser("submit", help="write the submission and its manifest")
+    submit_parser.add_argument(
+        "--verify-only",
+        action="store_true",
+        help=(
+            "write nothing; print the approved, live and producing configuration hashes "
+            "and whether the committed submission still records the approved one"
+        ),
+    )
     for name, help_text in (
         ("audit-data", "gate 1: measure the data against the registry"),
         ("fit-regimes", "gate 2: sweep the number of regimes and fit"),
         ("forecast-now", "gate 3: the current probability grid"),
         ("backtest", "gate 4: walk the method through history"),
         ("evaluate", "gate 5: apply the pre-registered decision rule"),
-        ("submit", "write the submission and its manifest"),
         ("check-gates", "run all five gates in order"),
+        ("register", "record the shipped forecasts as dated, resolvable claims"),
+        ("resolve", "score every registered forecast whose date has passed"),
+        ("compare-variants", "the 2x2 of the two look-ahead fixes, against one decision rule"),
     ):
         subparsers.add_parser(name, help=help_text)
     return parser
+
+
+def register_forecasts(workspace: Workspace, today: date) -> int:
+    """Record what `forecast submit` shipped as dated claims about the future."""
+    try:
+        written, skipped = forecast_register.register(
+            SUBMISSION_DIRECTORY / "forecasts.csv",
+            SUBMISSION_DIRECTORY / "manifest.json",
+            today,
+        )
+    except forecast_register.RegisterError as error:
+        print(f"register: {error}", file=sys.stderr)
+        return 2
+
+    entries = forecast_register.read_register()
+    print(f"registered {written} forecast(s); {skipped} already on record")
+    if entries:
+        upcoming = sorted({entry.resolves_on for entry in entries})
+        print(f"{len(entries)} total in {_display_path(forecast_register.REGISTER_FILE)}")
+        print(f"next resolves {upcoming[0]}, last {upcoming[-1]}")
+    return 0
+
+
+def resolve_forecasts(workspace: Workspace, today: date) -> int:
+    """Score every registered forecast whose resolution date has passed."""
+    entries = forecast_register.read_register()
+    if not entries:
+        print("nothing registered yet — run `forecast register` after `forecast submit`")
+        return 0
+
+    source_names = indicator_outcomes.required_series_names(list(workspace.indicators))
+    series = load_final_series(workspace.registry, workspace.cache, source_names)
+
+    try:
+        outcome = forecast_register.resolve(series, today)
+    except forecast_register.RegisterError as error:
+        print(f"resolve: {error}", file=sys.stderr)
+        return 2
+
+    print(
+        f"{outcome['registered']} registered · {outcome['due']} due by {today} · "
+        f"{outcome['resolved_now']} newly resolved · {outcome['pending_data']} awaiting data"
+    )
+    if outcome["unknown_indicators"]:
+        print(
+            "indicators no longer in the registry: " + ", ".join(outcome["unknown_indicators"]),
+            file=sys.stderr,
+        )
+
+    card = forecast_register.scorecard()
+    if not card["n"]:
+        print("no forecast has resolved yet. The register is the point; the wait is the price.")
+        return 0
+
+    print()
+    print(
+        f"resolved {card['n']} · Brier {card['brier']:.4f} vs "
+        f"climatology {card['brier_climatology']:.4f} · skill {card['skill']:+.4f}"
+    )
+    for horizon, row in sorted(card["by_horizon"].items(), key=lambda kv: int(kv[0])):
+        print(
+            f"  {horizon:>2}y  n={row['n']:<4} brier {row['brier']:.4f}  "
+            f"climatology {row['brier_climatology']:.4f}  skill {row['skill']:+.4f}"
+        )
+    if card["inert"]:
+        print()
+        print(
+            f"INERT: {card['n']} resolved forecasts is below the ten this repository "
+            "requires before a live skill score means anything. The numbers are "
+            "printed; the inference is refused."
+        )
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -552,9 +1012,23 @@ def main(argv: list[str] | None = None) -> int:
     if arguments.command == "fetch-data":
         return fetch_data(workspace, today, arguments.workers)
     if arguments.command == "submit":
-        return submit(workspace, today)
+        if arguments.verify_only:
+            return verify_submission(workspace, today)
+        try:
+            return submit(workspace, today)
+        except shipping_approval.SubmissionNotApprovedError as error:
+            # A traceback is not a message. An exit code of 2 with that text is,
+            # matching how `register_forecasts` prints a `RegisterError`.
+            print(f"submit: {error}", file=sys.stderr)
+            return 2
     if arguments.command == "check-gates":
         return check_gates(workspace, today)
+    if arguments.command == "compare-variants":
+        return compare_variants(workspace, today)
+    if arguments.command == "register":
+        return register_forecasts(workspace, today)
+    if arguments.command == "resolve":
+        return resolve_forecasts(workspace, today)
 
     stages = {
         "audit-data": audit_data,

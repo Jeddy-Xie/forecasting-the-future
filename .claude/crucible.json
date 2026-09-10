@@ -1,0 +1,13 @@
+{
+  "default_rigor": "standard",
+  "protect_tests": true,
+  "autoformat": true,
+  "stop_gate": true,
+  "protected_branches": [],
+  "test_globs": [
+    "tests/**",
+    "**/test_*.py",
+    "**/*_test.py",
+    "**/conftest.py"
+  ]
+}

@@ -4,6 +4,15 @@ Everything here is produced by `forecast check-gates` and is regenerated, not
 typed. The numbers come from a walk-forward run of 19,740 forecasts issued
 monthly from December 1971 to September 2026, of which 17,712 have resolved.
 
+**Which run.** The headline tables below were produced by the **shipped**
+configuration, hash `9f95b12dba40d138`, which since 2026-09-09 **is not the
+pipeline default any more**. The default is now the honest configuration
+`ad7fcc1affd0746a`, which closes two look-ahead paths and reaches a materially
+different verdict. See *The cost of the two look-ahead paths* below and ADR 0008.
+The tables are labelled rather than replaced, because replacing them without
+regenerating `submission/forecasts.csv` would leave the submission and the report
+describing different runs.
+
 ## The verdict
 
 The decision rule was committed before the first backtest ran
@@ -134,7 +143,85 @@ do vary, with the count reported.
 | fourth | +0.312 (10) | +0.122 (9) | −0.177 (8) |
 | positive | 4 of 4 | 3 of 4 | 1 of 4 |
 
-## Two corrections, both disclosed
+## The cost of the two look-ahead paths
+
+Two paths by which whole-sample information reached a walk-forward decision were
+closed on 2026-09-09 (ADR 0008): the number of regimes was chosen on the panel as
+it stands *today*, and 267 of 658 forecast dates fitted the model on revised
+consumer price index values because the archive holds no usable vintage before
+1994-03. `forecast compare-variants` runs all four cells against the **same**
+unchanged pre-registered decision rule.
+
+| variant | start | states | dates | fallback | horizon | verdict | skill | 90% interval | independent |
+|---|---|---:|---:|---:|---:|---|---:|---|---:|
+| shipped | 1971-12 | 5 | 658 | 267 | 1y | **ship model** | +0.2320 | [+0.1578, +0.3011] | 53.8 |
+| shipped | 1971-12 | 5 | 658 | 267 | 5y | ship base rate | +0.1021 | [−0.0130, +0.1969] | 9.9 |
+| shipped | 1971-12 | 5 | 658 | 267 | 10y | ship base rate | −0.2205 | [−2.7437, −0.0137] | 4.5 |
+| state count fixed | 1971-12 | 2 | 658 | 267 | 1y | ship base rate | +0.2414 | [+0.1723, +0.3050] | 53.8 |
+| state count fixed | 1971-12 | 2 | 658 | 267 | 5y | ship base rate | +0.1147 | [+0.0248, +0.1865] | 9.9 |
+| state count fixed | 1971-12 | 2 | 658 | 267 | 10y | ship base rate | −0.0197 | [−1.1474, +0.0632] | 4.5 |
+| start fixed | 1994-03 | 5 | 391 | 0 | 1y | ship base rate | +0.2462 | [+0.1325, +0.3566] | 31.5 |
+| start fixed | 1994-03 | 5 | 391 | 0 | 5y | ship base rate | +0.0619 | [−0.2163, +0.2030] | 5.5 |
+| start fixed | 1994-03 | 5 | 391 | 0 | 10y | ship base rate | −0.4940 | [−0.5273, −0.1265] | 2.2 |
+| **both (the default)** | 1994-03 | 6 | 391 | 0 | 1y | ship base rate | +0.2128 | [+0.0973, +0.3250] | 31.5 |
+| **both (the default)** | 1994-03 | 6 | 391 | 0 | 5y | ship base rate | +0.0722 | [−0.1986, +0.2176] | 5.5 |
+| **both (the default)** | 1994-03 | 6 | 391 | 0 | 10y | ship base rate | −0.3524 | [−0.4208, −0.1212] | 2.2 |
+
+**The one-year ship-model verdict does not survive either fix.** Every honest cell
+ships the base rate at every horizon. No threshold was moved to get there; the
+decision rule is the one committed before the first backtest ran.
+
+The two fixes kill it for different reasons, and the difference matters more than
+the shared outcome.
+
+**Fixing the state count kills it because regimes do not exist on the 1971 burn-in
+window.** The gate asks whether more than one state beats one on both the held-out
+log likelihood and the information criterion. On the 251 months an observer
+actually had at 1971-12:
+
+| states | held-out log likelihood/month | information criterion |
+|---:|---:|---:|
+| 1 | **−5.7037** | 1,271 |
+| 2 | −5.8281 | 1,040 |
+| 5 | −6.2978 | **806** |
+| 6 | −6.4209 | 812 |
+
+A single Gaussian wins the holdout outright. The criterion prefers five states,
+the holdout prefers one, the gate requires both, so regimes-exist fails and every
+horizon ships the base rate — even though that cell has the *best* ten-year skill
+of any, at −0.0197. On the evidence available in 1971 there was no basis for a
+regime model at all. By 1994-03, on 518 months, two states beat one (−3.098
+against −3.586) and six wins outright, so the default cell passes this gate.
+
+**Fixing the start kills it because the sample is no longer large enough.** The
+independent observations behind the one-year verdict fall from 53.8 to 31.5, at
+five years from 9.9 to 5.5, and at ten years from **4.5 to 2.2**. The robustness
+gate cuts the sample into four chronological blocks and is being asked to find a
+stable sign in roughly half an independent observation per block. **Any ten-year
+verdict from an honest run is close to uninformative by construction.** That is a
+real cost of removing the leak, not a malfunction, and it is not grounds to move a
+threshold. "The honest sample cannot answer the ten-year question" is this
+project's own thesis about information horizons, applied to its own evidence base.
+
+The 1994-03 start also removes the entire stagflation episode from the
+walk-forward. The fitted panel still sees 1950–1994, so the model still learns
+that regime; but no forecast is ever issued during it, so none is ever scored on
+it.
+
+**Caveat.** The default cell chooses six states, the top of the swept range
+(1..6). The choice sits at the boundary, so the range may be binding and the true
+preference may be higher. Widening it is a third configuration change and would
+confound the comparison, so it was not done.
+
+**`submission/forecasts.csv` was not regenerated.** It still carries the shipped
+configuration's numbers, on hash `9f95b12dba40d138`, and nothing outward-facing
+moved. That is deliberate: the honest result changes what this project ships, and
+that is Jeddy's call to make on the evidence above, not a side effect of a code
+change. `forecast submit` now **refuses** to regenerate it unless the run is the
+approved configuration or a single-use, named authorisation is present, and the
+routine pipeline step is `forecast submit --verify-only`, which writes nothing.
+
+## Three corrections, all disclosed
 
 **The calibration standard error** initially treated overlapping monthly forecasts
 as independent, which made it about three and a half times too small at one year.
@@ -151,3 +238,15 @@ happened to be scoreable on each resample, so a near-certain indicator dropped o
 of about a fifth of them while remaining in the point estimate. Fixing it made the
 ten-year result **more** adverse to the model, moving its skill interval from
 [−2.644, +0.043], which spanned zero, to [−2.744, −0.014], which does not.
+
+**The first usable consumer price index vintage** was documented as 1997 in ADR
+0002 and in the `MINIMUM_USABLE_VINTAGE_MONTHS` docstring. That was an estimate.
+The measured boundary is **1994-03-01**, the first vintage date on which the
+archive returns a usable series (565 observations, 1947-01 .. 1994-01); every
+earlier date returns a rolling window of about nineteen. Both places are
+corrected, each keeping a note of what it previously said. The pre-registration
+carries the same 1997 estimate in its known-limitations prose and was
+**deliberately not edited** — it is frozen, the sentence is descriptive rather
+than a threshold, and correcting a frozen pre-registration after the fact is the
+wrong instinct even when the correction is true. The discrepancy is recorded in
+ADR 0008 instead.

@@ -27,11 +27,11 @@ status. Re-run this audit whenever the pipeline gains a step.
 
 | path | status |
 |---|---|
-| Training panel assembly | **clean** — assembled `as_of` a date, three named vintage policies, boundary assertion |
+| Training panel assembly | **clean under the default** — assembled `as_of` a date, three named vintage policies, a boundary assertion, and an assertion that no forecast date uses the publication-lag fallback. The shipped configuration ran from 1971-12, where 267 of 658 dates did use it. ADR 0008 |
 | Standardisation window | **clean** — expanding, never full-sample |
 | State probabilities used in forecasts | **clean** — filtered, never smoothed; separate method names and a test |
 | Model parameters at each refit | **clean** — refitted from scratch on the point-in-time panel; verified that only the state count is read from the full-sample fit |
-| **Number of regimes** | **LEAKS** — chosen on the panel as of today, then used for every refit back to 1971. See D2 |
+| **Number of regimes** | **clean** — chosen once on a burn-in window ending strictly before the first forecast date; the full-sample sweep no longer reaches the backtest. ADR 0008 |
 | Conditional rates | **clean** — only conditions whose publication lag had passed |
 | Benchmark (climatology) | **clean** — expanding; averages only outcomes resolved by that date |
 | Outcome resolution | **clean by design** — final data is correct for scoring; the forecaster never sees it |
@@ -41,7 +41,10 @@ status. Re-run this audit whenever the pipeline gains a step.
 | Canonicalisation rule | **clean** — a fixed sort, not fitted |
 | **Indicator thresholds** | **weak** — canonical round numbers, but chosen by someone who knew the sample. See D12 |
 
-Two entries are not clean. D2 is the material one.
+Two entries are still not clean, and they are the two weakest rows rather than the two
+worst: the condition values feeding rate estimation (D5, narrowed — see below) and the
+indicator thresholds (D12). **D2, the material one, is closed** — see ADR 0008 for what
+the fix cost in the numbers.
 
 ---
 
@@ -93,35 +96,8 @@ reported as a diagnostic rather than buried.
 ---
 
 ## D2 · The number of regimes is chosen with knowledge of the whole sample
-**material** · found 2026-09-09 while answering a question about the backtest
-
-`forecast fit-regimes` sweeps one to six states on the panel as of **today** and
-writes the winner. `forecast backtest` then reads `state_count` off that artifact
-and uses it for all 55 refits, including the one that issues forecasts for 1972.
-
-Every other quantity in the walk-forward is honest: the panel is point-in-time,
-the parameters are refitted on data available then, the conditional rates use only
-published conditions, the benchmark expands. The *hyperparameter* is not. Five
-regimes was chosen using data through 2026 and applied to a forecast made in 1971.
-
-This is the one look-ahead the pipeline does not currently prevent, and the
-project's own standing rule says every panel is assembled as of a date.
-
-**Scope, verified rather than assumed.** `run_backtest` reads the full-sample
-artifact for exactly one thing, `model.state_count`, and `fit_regime_model` calls
-the fitting routine fresh at every refit. No emission mean, covariance or
-transition probability crosses over. One integer leaks, and nothing else.
-
-**What it would change.** Unknown, and that is the point. If an earlier sample
-prefers three or four states, the early backtest was run with a state count it
-could not have known. The direction of the bias is not obvious, but its existence
-is not in doubt.
-
-**Shape of the fix.** Either select the state count inside the walk-forward at
-each refit, which is expensive and introduces its own instability as the choice
-flips between adjacent counts, or select once on a burn-in window that ends before
-the first forecast date, which is cheap and clearly honest. The second is
-preferable. Report both alongside the shipped result the first time.
+**closed** 2026-09-09 by ADR 0008. Kept as a stub because five other lines in
+this file and the commit history refer to it by number.
 
 ---
 
@@ -160,14 +136,22 @@ and reporting the difference would replace an argument with a measurement.
 ---
 
 ## D5 · Outcomes and conditions are read from final data
-**evidential**
+**evidential** · **narrowed** 2026-09-09 by ADR 0008
 
-Outcome resolution uses final revised data, which is correct: what happened is
-what happened. The conditions used to estimate per-regime rates also use final
-data, with publication timing enforced but not vintage. For market rates and
-recession dating that is exact, because they are not revised. For industrial
-production it is an approximation, and its size is measured in the data audit
-rather than assumed away.
+**The model-input half of this entry is closed.** Under the default the
+walk-forward starts at 1994-03, the first month on which every model input is on
+a genuine point-in-time policy, and `run_walk_forward` refuses to start otherwise.
+The panel the hidden Markov model is fitted on no longer contains a revised value
+anywhere. That half cost 267 forecast dates and, at the ten-year horizon, most of
+the evidence; ADR 0008 reports what it bought and what it cost.
+
+**The outcome-and-condition half stays open, and is what remains of D5.** Outcome
+resolution uses final revised data, which is correct: what happened is what
+happened. The conditions used to estimate per-regime rates also use final data,
+with publication timing enforced but not vintage. For market rates and recession
+dating that is exact, because they are not revised. For industrial production it
+is an approximation, and its size is measured in the data audit rather than
+assumed away.
 
 **Shape of the fix.** Fetch archival vintages for the outcome series too, as is
 already done for the two revisable model inputs. Roughly 3,300 further requests at

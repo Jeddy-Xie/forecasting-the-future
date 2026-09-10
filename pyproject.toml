@@ -73,6 +73,18 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S311"]  # tests seed a deterministic pseudo-random generator on purpose
+# graph_view carries the rendered page as one template string: its CSS and JS
+# lines are not Python and cannot be wrapped, and the layout jitter is a seeded
+# pseudo-random generator used for drawing, not for anything security-bearing.
+"scripts/graph_view.py" = ["E501", "S311", "BLE001", "S603"]
+# Operational tooling degrades instead of failing: a broken index or a missing
+# checker must not end the turn, so both catch broadly and report. Their
+# subprocess calls have fixed argv (this interpreter, git) and take no user input.
+"scripts/layer_check.py" = ["BLE001"]
+# The hook is a guard, and a guard that can crash the session is worse than no
+# guard: every path fails open on its own bugs, which is what the blind excepts
+# buy. TOKEN_PATH is a filename, not a credential; git runs with fixed argv.
+".claude/hooks/*.py" = ["BLE001", "S105", "S603", "S607"]
 
 [tool.mypy]
 python_version = "3.11"

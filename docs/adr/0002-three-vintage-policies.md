@@ -47,8 +47,13 @@ was not fully backfilled" from "a truncated archive entry".
 - Good: every panel can say which policy produced each of its series, so a reader
   can discount the parts that rest on the weaker path.
 - Bad / accepted cost: the consumer price index uses the fallback for every
-  forecast date before 1997, which is a large share of the backtest. The report
-  says so rather than burying it.
+  forecast date before **1994-03**, which is a large share of the backtest. The
+  report says so rather than burying it. *(Corrected 2026-09-09: this line
+  originally gave 1997 as that boundary, which was an estimate. The measured one is
+  1994-03-01 — the first vintage date on which ALFRED returns a usable CPIAUCSL
+  archive, 565 observations covering 1947-01 .. 1994-01. Under the shipped
+  1971-12 start that is 267 of 658 forecast dates, 41%. See ADR 0008 for the
+  probe evidence.)*
 - Bad / accepted cost: one extra request per series per forecast date to discover
   that a vintage is unusable. Cached, so it happens once.
 

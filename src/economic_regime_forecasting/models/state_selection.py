@@ -135,6 +135,52 @@ class StateCountSweep:
         return best.bayesian_information_criterion < single.bayesian_information_criterion
 
 
+def regimes_exist_from_sweep_table(sweep_table: pd.DataFrame) -> tuple[bool, str]:
+    """Whether more than one state beats one, and the evidence sentence for it.
+
+    The first acceptance gate asks exactly this question, and two callers now ask
+    it: the full-sample sweep written by ``forecast fit-regimes``, and the burn-in
+    sweep chosen at the first forecast date. They must ask it with one
+    implementation, or an honest run and a shipped run could differ in the
+    arithmetic rather than only in the evidence.
+
+    Both criteria must agree before regimes are said to exist: the held-out log
+    likelihood per month, which asks the out-of-sample question, and the Bayesian
+    information criterion, which penalises the extra parameters.
+
+    A table missing either side of that comparison — no single-regime row, or no
+    multi-regime row — cannot answer the question at all. Nothing enforces that
+    ``hidden_state_counts_to_search`` contains both, so that table is reachable,
+    and it returns ``False`` with an evidence sentence naming the setting to
+    change, the way this module's two siblings on ``StateCountSweep`` already do.
+    A gate that errors is not a gate that passed.
+    """
+    single = sweep_table[sweep_table["states"] == 1]
+    multiple = sweep_table[sweep_table["states"] > 1]
+    if single.empty or multiple.empty:
+        absent = "no single-regime row" if single.empty else "no multi-regime row"
+        return False, (
+            f"the sweep table has {absent}, so there is nothing to compare and this gate "
+            "cannot be answered: regimes are not said to exist. Set "
+            "`hidden_state_counts_to_search` on RunSettings to include 1 and at least one "
+            "larger count, then re-run the sweep that wrote this table."
+        )
+    regimes_exist = bool(
+        multiple["held_out_log_likelihood_per_month"].max()
+        > single["held_out_log_likelihood_per_month"].iloc[0]
+        and multiple["bayesian_information_criterion"].min()
+        < single["bayesian_information_criterion"].iloc[0]
+    )
+    evidence = (
+        "best multi-regime held-out log likelihood per month "
+        f"{multiple['held_out_log_likelihood_per_month'].max():+.4f} against "
+        f"{single['held_out_log_likelihood_per_month'].iloc[0]:+.4f} for a single regime; "
+        f"information criterion {multiple['bayesian_information_criterion'].min():,.0f} "
+        f"against {single['bayesian_information_criterion'].iloc[0]:,.0f}"
+    )
+    return regimes_exist, evidence
+
+
 def sweep_state_counts(
     observations: np.ndarray,
     state_counts: Sequence[int],
