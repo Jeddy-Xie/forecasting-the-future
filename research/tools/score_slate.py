@@ -20,6 +20,7 @@ that file, so a rule and its application cannot drift apart.
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -134,6 +135,27 @@ def review_verdict(reviews_dir: Path, arm: str) -> str:
     return max(verdicts, key=severity.__getitem__) if verdicts else "UNREADABLE"
 
 
+def code_changed_since_run(worktree: Path, commit: str) -> str | None:
+    """Why an arm's outputs cannot be attributed to the commit exit_codes.json names, or None if they can.
+    The runner records HEAD but not whether the tree was clean, and one arm's worktree was edited while its
+    run was in progress. Outputs count only if the worktree, outside research/arms/, still matches the
+    recorded commit exactly: nothing modified, staged or untracked."""
+    if not commit:
+        return "exit_codes.json names no commit"
+    outside_outputs = [".", ":(exclude)research/arms"]
+    changed = subprocess.run(["git", "-C", str(worktree), "diff", "--name-only", commit, "--", *outside_outputs],
+                             capture_output=True, text=True)
+    if changed.returncode != 0:
+        return f"git diff against the run's commit {commit[:7]} failed: {changed.stderr.strip()[:200]}"
+    untracked = subprocess.run(["git", "-C", str(worktree), "ls-files", "--others", "--exclude-standard", "--", *outside_outputs],
+                               capture_output=True, text=True)
+    files = changed.stdout.split() + untracked.stdout.split()
+    if files:
+        return (f"the code differs from the run's commit {commit[:7]} ({len(files)} file(s): {', '.join(files[:4])}); "
+                "re-run on a clean, committed tree")
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--arms-root", default=str(Path.cwd().parent / "forecasting-the-future-arms"))
@@ -152,6 +174,15 @@ def main() -> int:
             exits = json.loads((base / "exit_codes.json").read_text())
         except FileNotFoundError:
             record["status"] = "NOT RUN (exit_codes.json absent)"
+            rows_out.append(record)
+            continue
+        stale = code_changed_since_run(Path(args.arms_root) / arm, str(exits.get("commit", "")))
+        if stale:
+            record["status"] = "UNSCORED: " + stale
+            rows_out.append(record)
+            continue
+        if exits.get("tree_clean_at_start_and_end") is False:
+            record["status"] = "UNSCORED: the runner recorded that the worktree changed during the run"
             rows_out.append(record)
             continue
         loaded = {}

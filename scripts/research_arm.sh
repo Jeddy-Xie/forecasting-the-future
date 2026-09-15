@@ -69,6 +69,16 @@ case "$COMMAND" in
     run)
         [ -d "$WORKTREE" ] || { echo "no worktree for '$ARM'; run '$0 setup $ARM' first" >&2; exit 2; }
         assert_isolated
+        # A run counts only for the code of the commit it names, so the tree must be clean before the run
+        # and still clean, at the same commit, after it. Measured on 2026-09-15: an arm's code was edited
+        # while its run was in progress, and exit_codes.json named a commit whose code never ran whole.
+        tree_changes() { git -C "$WORKTREE" status --porcelain --untracked-files=all -- . ':(exclude)research/arms'; }
+        if [ -n "$(tree_changes)" ]; then
+            echo "REFUSING: the worktree has uncommitted changes outside research/arms/. Commit them first:" >&2
+            tree_changes >&2
+            exit 4
+        fi
+        COMMIT_AT_START="$(git -C "$WORKTREE" rev-parse HEAD)"
         OUT="$WORKTREE/research/arms/$ARM"; mkdir -p "$OUT"
         cd "$WORKTREE"
         export PYTHONPATH="$WORKTREE/src"
@@ -87,8 +97,11 @@ case "$COMMAND" in
         # this is void under the pre-registration, whatever its skill score says.
         "${CLI[@]}" audit-look-ahead > "$OUT/look_ahead_audit.txt" 2>&1;               AUDIT=$?
         set -e
-        printf '{"arm": "%s", "branch": "%s", "commit": "%s", "check_gates_exit": %d, "compare_exit": %d, "paired_exit": %d, "look_ahead_audit_exit": %d}\n' \
-            "$ARM" "$BRANCH" "$(git rev-parse HEAD)" "$GATES" "$COMPARE" "$PAIRED" "$AUDIT" > "$OUT/exit_codes.json"
+        CLEAN_THROUGHOUT=false
+        if [ "$(git rev-parse HEAD)" = "$COMMIT_AT_START" ] && [ -z "$(tree_changes)" ]; then CLEAN_THROUGHOUT=true; fi
+        printf '{"arm": "%s", "branch": "%s", "commit": "%s", "tree_clean_at_start_and_end": %s, "check_gates_exit": %d, "compare_exit": %d, "paired_exit": %d, "look_ahead_audit_exit": %d}\n' \
+            "$ARM" "$BRANCH" "$COMMIT_AT_START" "$CLEAN_THROUGHOUT" "$GATES" "$COMPARE" "$PAIRED" "$AUDIT" > "$OUT/exit_codes.json"
+        [ "$CLEAN_THROUGHOUT" = true ] || echo "WARNING: the worktree changed during the run (HEAD moved or files were edited), so these outputs do not count" >&2
         echo "arm $ARM: check-gates exit $GATES, compare exit $COMPARE, paired exit $PAIRED, look-ahead audit exit $AUDIT; outputs in $OUT"
         ;;
     *) usage;;

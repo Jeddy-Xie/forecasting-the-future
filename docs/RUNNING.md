@@ -216,3 +216,10 @@ install whose `.pth` points at main's `src/`, so a plain `python -m economic_reg
 run inside a worktree imports **main's** code, and an arm would silently report main's results as its
 own. Set `PYTHONPATH=<worktree>/src`. The script does this, and refuses to run unless the imported
 module really lives in the worktree.
+
+A run counts only for the code of the commit it names. `run` refuses a worktree with uncommitted
+changes outside `research/arms/` (exit 4), and records `tree_clean_at_start_and_end` in
+`exit_codes.json`: false if HEAD moved or files changed while it ran. `research/tools/score_slate.py`
+scores nothing whose worktree, outside `research/arms/`, differs from the recorded commit, which
+also covers runs made before that field existed. Both checks exist because an arm's code was
+edited while its run was in progress, and the run named a commit whose code never ran whole.
