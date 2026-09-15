@@ -53,3 +53,14 @@ independent computation of the same quantity.
   depends on private API for the load-bearing part, and still writes the pass.
 - Use `statsmodels` Markov switching — rejected: its regression framing fits a
   different model, and it has the same smoothed-output problem.
+  - **Correction, 2026-09-15.** The second half of that sentence is wrong.
+    statsmodels' Markov-switching results compute `filtered_marginal_probabilities`
+    in the Hamilton filter, separately from the smoothed ones
+    (`statsmodels/tsa/regime_switching/markov_switching.py`, main branch, read
+    2026-09-15), so there is no smoothed-output problem to avoid. The rejection
+    stands, for a reason this record did not give: the same file raises "Must have
+    univariate endogenous data." (line 567), and this model's observation vector has
+    three dimensions. `research/briefings/02-state-space-and-regimes.md` raised the
+    error; the check above confirmed it. The briefing's further claim, that the
+    results also expose one-step predicted probabilities, was not confirmed by that
+    check and is not repeated here.
