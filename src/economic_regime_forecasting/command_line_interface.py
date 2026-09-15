@@ -415,6 +415,29 @@ def _missing_vintages(
     ]
 
 
+def _write_burn_in_choice(
+    workspace: Workspace,
+    choice: state_count_on_burn_in.BurnInStateCountChoice,
+    state_count_used_for_forecasting: int,
+) -> None:
+    """Record the burn-in sweep's own finding AND what was actually used to fit.
+
+    The two are the same integer for every configuration except research arm
+    A2-quadrant-structure-levels, where the sweep's recommendation is reported
+    but overridden. Writing both, under their own names, in the one artifact
+    means a reader -- and `regression_baseline._state_count_chosen_as_of`, which
+    checks the latter against `backtest_results.parquet` -- sees both facts
+    rather than one silently standing in for the other.
+    """
+    workspace.artifacts.write_json(
+        ARTIFACTS.burn_in_state_count_choice,
+        {
+            **choice.as_manifest(),
+            "state_count_used_for_forecasting": state_count_used_for_forecasting,
+        },
+    )
+
+
 def _state_count_for_the_backtest(
     workspace: Workspace, schedule: schedule_module.ForecastSchedule
 ) -> int:
@@ -442,7 +465,7 @@ def _state_count_for_the_backtest(
             first_forecast_date=schedule.forecast_dates[0].date(),
             artifacts=workspace.artifacts,
         )
-        workspace.artifacts.write_json(ARTIFACTS.burn_in_state_count_choice, choice.as_manifest())
+        _write_burn_in_choice(workspace, choice, QUADRANT_STRUCTURE_STATE_COUNT)
         print(choice.describe())
         print(
             f"quadrant-structure prior (research arm A2) fixes the forecasting state count at "
@@ -464,7 +487,7 @@ def _state_count_for_the_backtest(
         first_forecast_date=schedule.forecast_dates[0].date(),
         artifacts=workspace.artifacts,
     )
-    workspace.artifacts.write_json(ARTIFACTS.burn_in_state_count_choice, choice.as_manifest())
+    _write_burn_in_choice(workspace, choice, choice.state_count)
     print(choice.describe())
     return choice.state_count
 

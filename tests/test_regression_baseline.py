@@ -275,6 +275,29 @@ class TestWhatABaselineHolds:
         with pytest.raises(regression_baseline.BaselineError, match="different runs"):
             _current(artifacts)
 
+    def test_a_burn_in_recommendation_may_differ_from_what_was_used_to_forecast(
+        self, artifacts: ArtifactStore
+    ) -> None:
+        """Research arm A2-quadrant-structure-levels: the burn-in sweep still runs
+        and still recommends its own count (2, here), as evidence for the
+        regimes-exist gate, while the number actually used to fit is a
+        pre-registered constant (6, matching ``_backtest_results``'s
+        ``state_count`` column). ``state_count_used_for_forecasting`` is the
+        field the consistency check reads; when it agrees with the backtest,
+        the sweep's own, different ``state_count`` is no longer treated as a
+        contradiction -- it is reported evidence, not the number used."""
+        artifacts.write_json(
+            ARTIFACTS.burn_in_state_count_choice,
+            {
+                "state_count": 2,
+                "state_count_used_for_forecasting": 6,
+                "chosen_as_of": "1971-12-01",
+            },
+        )
+        run = regression_baseline.assemble_run_summary(artifacts)["run"]
+        assert run["state_count"] == 6
+        assert run["state_count_chosen_as_of"] == "1971-12-01"
+
     def test_the_fallback_count_is_null_when_no_artifact_records_it(self, tmp_path: Path) -> None:
         """Only ``forecast compare-variants`` writes it, and that is a forty-minute
         one-off. A cache that has never run it says so rather than guessing zero."""

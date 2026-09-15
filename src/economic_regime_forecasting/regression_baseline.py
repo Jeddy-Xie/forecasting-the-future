@@ -361,20 +361,40 @@ def _forecast_dates_using_fallback(
 def _state_count_chosen_as_of(artifacts: ArtifactStore, state_count: int) -> str | None:
     """The date the number of regimes was chosen on, or ``None``.
 
-    ``burn_in_state_count_choice.json`` exists only when the run chose its state
-    count on a burn-in window ending before the first forecast date. A run that
-    read the count off the full-sample sweep chose it as of today and records no
-    artifact saying so, so the field is ``null`` for that configuration.
+    ``burn_in_state_count_choice.json`` exists only when a burn-in sweep ran
+    before the first forecast date. A run that read the count off the
+    full-sample sweep chose it as of today and records no artifact saying so,
+    so the field is ``null`` for that configuration.
+
+    The consistency check below compares ``state_count`` (what
+    ``backtest_results.parquet`` was actually fitted with) against
+    ``state_count_used_for_forecasting`` -- not against the sweep's own
+    ``state_count`` field, which is its unconstrained recommendation and may
+    legitimately differ from what was used.
+
+    Research arm A2-quadrant-structure-levels
+    (proving/experiments/0002-research-slate-2026-09/experiment.json) is why
+    that distinction exists: there, the burn-in sweep still runs and still
+    recommends its own count (say 6), as evidence for the regimes-exist gate,
+    while the number actually used to fit is a pre-registered constant (4).
+    ``_state_count_for_the_backtest`` in the command-line interface writes
+    both into the one artifact, so a reader still sees the sweep's finding
+    (``state_count``) and what was used (``state_count_used_for_forecasting``)
+    side by side, and this check verifies the latter rather than silencing
+    itself. An artifact written before this field existed has no
+    ``state_count_used_for_forecasting``; ``state_count`` was always what was
+    used in that case, so it is the fallback.
     """
     if not artifacts.has(ARTIFACTS.burn_in_state_count_choice):
         return None
     choice = artifacts.read_json(ARTIFACTS.burn_in_state_count_choice)
-    chosen_count = int(str(choice["state_count"]))
-    if chosen_count != state_count:
+    used_count = int(str(choice.get("state_count_used_for_forecasting", choice["state_count"])))
+    if used_count != state_count:
         raise BaselineError(
-            f"{ARTIFACTS.burn_in_state_count_choice} says {chosen_count} regimes were chosen "
-            f"but {ARTIFACTS.backtest_results} was run with {state_count}. The two artifacts "
-            "come from different runs; re-run `forecast backtest` so the cache describes one."
+            f"{ARTIFACTS.burn_in_state_count_choice} says {used_count} regimes were used for "
+            f"forecasting but {ARTIFACTS.backtest_results} was run with {state_count}. The two "
+            "artifacts come from different runs; re-run `forecast backtest` so the cache "
+            "describes one."
         )
     return str(choice["chosen_as_of"])
 

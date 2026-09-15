@@ -19,13 +19,15 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Callable
 from datetime import date
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
+from economic_regime_forecasting import command_line_interface
 from economic_regime_forecasting.backtest import schedule as schedule_module
-from economic_regime_forecasting.backtest import walk_forward
+from economic_regime_forecasting.backtest import state_count_on_burn_in, walk_forward
 from economic_regime_forecasting.command_line_interface import (
     QUADRANT_STRUCTURE_STATE_COUNT,
     Workspace,
@@ -104,6 +106,71 @@ def test_the_field_at_false_hashes_identically_to_a_configuration_missing_it_ent
     encoded = json.dumps(payload_missing_the_field, sort_keys=True, separators=(",", ":"))
     expected = hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:16]
     assert held_at_false.configuration_hash() == expected
+
+
+# ------------------------------- burn_in_state_count_choice.json records both
+
+
+@pytest.fixture
+def sample_choice() -> state_count_on_burn_in.BurnInStateCountChoice:
+    return state_count_on_burn_in.BurnInStateCountChoice(
+        state_count=6,
+        runner_up_state_count=2,
+        chosen_as_of=date(1994, 3, 1),
+        panel_start=date(1950, 12, 1),
+        panel_end=date(1994, 1, 1),
+        months_in_burn_in_panel=518,
+        reason="6 states wins",
+        sweep_rows=({"states": 1}, {"states": 6}),
+    )
+
+
+def _write_and_read_back(
+    tmp_path: Path,
+    choice: state_count_on_burn_in.BurnInStateCountChoice,
+    state_count_used_for_forecasting: int,
+) -> dict[str, object]:
+    workspace = Workspace(
+        registry=None,  # type: ignore[arg-type]
+        indicators=(),
+        cache=None,  # type: ignore[arg-type]
+        artifacts=ArtifactStore(tmp_path),
+        settings=None,  # type: ignore[arg-type]
+    )
+    command_line_interface._write_burn_in_choice(
+        workspace, choice, state_count_used_for_forecasting
+    )
+    result: dict[str, object] = workspace.artifacts.read_json(ARTIFACTS.burn_in_state_count_choice)
+    return result
+
+
+def test_the_written_choice_carries_the_sweeps_own_recommendation_unchanged(
+    sample_choice: state_count_on_burn_in.BurnInStateCountChoice, tmp_path: Path
+) -> None:
+    """Whatever gets used for forecasting, the sweep's own finding
+    (``state_count``, the field `BurnInStateCountChoice.from_manifest` reads)
+    must survive untouched in the artifact, since the regimes-exist gate reads
+    exactly that field."""
+    written = _write_and_read_back(tmp_path, sample_choice, state_count_used_for_forecasting=4)
+    assert written["state_count"] == 6
+
+
+def test_the_written_choice_also_carries_what_was_actually_used(
+    sample_choice: state_count_on_burn_in.BurnInStateCountChoice, tmp_path: Path
+) -> None:
+    """The field `_state_count_chosen_as_of` checks against the backtest."""
+    written = _write_and_read_back(tmp_path, sample_choice, state_count_used_for_forecasting=4)
+    assert written["state_count_used_for_forecasting"] == 4
+
+
+def test_from_manifest_still_rebuilds_the_choice_with_the_extra_field_present(
+    sample_choice: state_count_on_burn_in.BurnInStateCountChoice, tmp_path: Path
+) -> None:
+    """The extra key must not break the reader every other caller
+    (`_sweep_the_verdict_should_read`, among others) already uses."""
+    written = _write_and_read_back(tmp_path, sample_choice, state_count_used_for_forecasting=4)
+    rebuilt = state_count_on_burn_in.BurnInStateCountChoice.from_manifest(written)
+    assert rebuilt.state_count == 6
 
 
 # ------------------------------------------------ walk_forward.fit_regime_model wiring
