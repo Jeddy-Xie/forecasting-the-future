@@ -1,0 +1,445 @@
+{
+  "baseline_name": "main",
+  "baseline_run": {
+    "configuration_hash": "ad7fcc1affd0746a",
+    "first_forecast_date": "1994-03-01",
+    "forecast_date_count": 391,
+    "forecast_dates_using_fallback": 0,
+    "last_forecast_date": "2026-09-01",
+    "random_seed": 20260908,
+    "refit_count": 33,
+    "state_count": 6,
+    "state_count_chosen_as_of": "1994-03-01"
+  },
+  "bootstrap": {
+    "block_length": "the horizon in months",
+    "confidence_levels": [
+      0.9,
+      0.9833
+    ],
+    "levels_share_resamples": true,
+    "method": "moving block",
+    "paired": "one draw of forecast dates per resample, applied to both runs",
+    "random_seed": 20260908,
+    "resampled_unit": "forecast date, with every indicator on it kept together",
+    "resamples": 10000
+  },
+  "current_run": {
+    "configuration_hash": "fec79a040f9ca6f9",
+    "first_forecast_date": "1994-03-01",
+    "forecast_date_count": 391,
+    "forecast_dates_using_fallback": 0,
+    "last_forecast_date": "2026-09-01",
+    "random_seed": 20260908,
+    "refit_count": 33,
+    "state_count": 16,
+    "state_count_chosen_as_of": "1994-03-01"
+  },
+  "exit_code": 0,
+  "format_version": 1,
+  "horizons": [
+    {
+      "baseline_indicators_scored": [
+        "consumer_price_inflation_above_five_percent_within_horizon",
+        "consumer_price_inflation_above_three_percent_at_horizon",
+        "economy_in_recession_at_horizon_date",
+        "economy_in_recession_within_horizon",
+        "federal_funds_rate_above_four_percent_at_horizon",
+        "federal_funds_rate_below_one_percent_within_horizon",
+        "industrial_production_growth_above_two_percent_at_horizon",
+        "treasury_yield_curve_inverted_within_horizon",
+        "unemployment_rate_above_five_percent_at_horizon",
+        "unemployment_rate_above_seven_percent_within_horizon"
+      ],
+      "baseline_mean_brier_skill_score": 0.21537738742364834,
+      "block_length": 12,
+      "current_mean_brier_skill_score": 0.27439106176268024,
+      "difference": 0.0590136743390319,
+      "effective_independent_observations": 31.5,
+      "forecast_dates_in_both": 378,
+      "horizon_months": 12,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": 0.027472602063961918,
+          "upper_bound": 0.08768502815065951
+        },
+        {
+          "confidence_level": 0.9833,
+          "lower_bound": 0.01473722563546723,
+          "upper_bound": 0.10192460575098956
+        }
+      ],
+      "note": "",
+      "outcome_disagreements": 0,
+      "resamples_used": 9953,
+      "rows_in_both": 3754,
+      "rows_only_in_baseline": 0,
+      "rows_only_in_this_run": 0,
+      "this_run_indicators_scored": [
+        "consumer_price_inflation_above_five_percent_within_horizon",
+        "consumer_price_inflation_above_three_percent_at_horizon",
+        "economy_in_recession_at_horizon_date",
+        "economy_in_recession_within_horizon",
+        "federal_funds_rate_above_four_percent_at_horizon",
+        "federal_funds_rate_below_one_percent_within_horizon",
+        "industrial_production_growth_above_two_percent_at_horizon",
+        "treasury_yield_curve_inverted_within_horizon",
+        "unemployment_rate_above_five_percent_at_horizon",
+        "unemployment_rate_above_seven_percent_within_horizon"
+      ]
+    },
+    {
+      "baseline_indicators_scored": [
+        "consumer_price_inflation_above_five_percent_within_horizon",
+        "consumer_price_inflation_above_three_percent_at_horizon",
+        "economy_in_recession_at_horizon_date",
+        "economy_in_recession_within_horizon",
+        "federal_funds_rate_above_four_percent_at_horizon",
+        "federal_funds_rate_below_one_percent_within_horizon",
+        "industrial_production_growth_above_two_percent_at_horizon",
+        "treasury_yield_curve_inverted_within_horizon",
+        "unemployment_rate_above_five_percent_at_horizon",
+        "unemployment_rate_above_seven_percent_within_horizon"
+      ],
+      "baseline_mean_brier_skill_score": 0.07276206990291953,
+      "block_length": 60,
+      "current_mean_brier_skill_score": 0.11924088270920433,
+      "difference": 0.0464788128062848,
+      "effective_independent_observations": 5.5,
+      "forecast_dates_in_both": 330,
+      "horizon_months": 60,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": 0.024860841322195206,
+          "upper_bound": 0.09534767810954553
+        },
+        {
+          "confidence_level": 0.9833,
+          "lower_bound": 0.01322435798368101,
+          "upper_bound": 0.12947671567766111
+        }
+      ],
+      "note": "",
+      "outcome_disagreements": 0,
+      "resamples_used": 7495,
+      "rows_in_both": 3274,
+      "rows_only_in_baseline": 0,
+      "rows_only_in_this_run": 0,
+      "this_run_indicators_scored": [
+        "consumer_price_inflation_above_five_percent_within_horizon",
+        "consumer_price_inflation_above_three_percent_at_horizon",
+        "economy_in_recession_at_horizon_date",
+        "economy_in_recession_within_horizon",
+        "federal_funds_rate_above_four_percent_at_horizon",
+        "federal_funds_rate_below_one_percent_within_horizon",
+        "industrial_production_growth_above_two_percent_at_horizon",
+        "treasury_yield_curve_inverted_within_horizon",
+        "unemployment_rate_above_five_percent_at_horizon",
+        "unemployment_rate_above_seven_percent_within_horizon"
+      ]
+    },
+    {
+      "baseline_indicators_scored": [
+        "consumer_price_inflation_above_five_percent_within_horizon",
+        "consumer_price_inflation_above_three_percent_at_horizon",
+        "economy_in_recession_at_horizon_date",
+        "economy_in_recession_within_horizon",
+        "federal_funds_rate_above_four_percent_at_horizon",
+        "industrial_production_growth_above_two_percent_at_horizon",
+        "treasury_yield_curve_inverted_within_horizon",
+        "unemployment_rate_above_five_percent_at_horizon",
+        "unemployment_rate_above_seven_percent_within_horizon"
+      ],
+      "baseline_mean_brier_skill_score": -0.352769097290159,
+      "block_length": 120,
+      "current_mean_brier_skill_score": -0.1672926275179025,
+      "difference": 0.18547646977225649,
+      "effective_independent_observations": 2.25,
+      "forecast_dates_in_both": 270,
+      "horizon_months": 120,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": 0.08431930836321087,
+          "upper_bound": 0.2227720885827243
+        },
+        {
+          "confidence_level": 0.9833,
+          "lower_bound": 0.06998085993590795,
+          "upper_bound": 0.38339505424286385
+        }
+      ],
+      "note": "",
+      "outcome_disagreements": 0,
+      "resamples_used": 5443,
+      "rows_in_both": 2674,
+      "rows_only_in_baseline": 0,
+      "rows_only_in_this_run": 0,
+      "this_run_indicators_scored": [
+        "consumer_price_inflation_above_five_percent_within_horizon",
+        "consumer_price_inflation_above_three_percent_at_horizon",
+        "economy_in_recession_at_horizon_date",
+        "economy_in_recession_within_horizon",
+        "federal_funds_rate_above_four_percent_at_horizon",
+        "industrial_production_growth_above_two_percent_at_horizon",
+        "treasury_yield_curve_inverted_within_horizon",
+        "unemployment_rate_above_five_percent_at_horizon",
+        "unemployment_rate_above_seven_percent_within_horizon"
+      ]
+    }
+  ],
+  "indicators": [
+    {
+      "baseline_brier_skill_score": 0.4553464039814945,
+      "current_brier_skill_score": 0.5193102554477913,
+      "difference": 0.0639638514662968,
+      "horizon_months": 12,
+      "indicator": "consumer_price_inflation_above_five_percent_within_horizon",
+      "rows_in_both": 367
+    },
+    {
+      "baseline_brier_skill_score": 0.08610881269971804,
+      "current_brier_skill_score": 0.14143970657416882,
+      "difference": 0.05533089387445078,
+      "horizon_months": 12,
+      "indicator": "consumer_price_inflation_above_three_percent_at_horizon",
+      "rows_in_both": 376
+    },
+    {
+      "baseline_brier_skill_score": 0.30734825546051103,
+      "current_brier_skill_score": 0.37530338758465387,
+      "difference": 0.06795513212414284,
+      "horizon_months": 12,
+      "indicator": "economy_in_recession_at_horizon_date",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": 0.24783288856575714,
+      "current_brier_skill_score": 0.2706245451762195,
+      "difference": 0.02279165661046234,
+      "horizon_months": 12,
+      "indicator": "economy_in_recession_within_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": 0.1408977834923255,
+      "current_brier_skill_score": 0.3237450374201081,
+      "difference": 0.18284725392778256,
+      "horizon_months": 12,
+      "indicator": "federal_funds_rate_above_four_percent_at_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": 0.6277165417745335,
+      "current_brier_skill_score": 0.675166005220184,
+      "difference": 0.047449463445650486,
+      "horizon_months": 12,
+      "indicator": "federal_funds_rate_below_one_percent_within_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": -0.14574640894708635,
+      "current_brier_skill_score": -0.04781788448306323,
+      "difference": 0.09792852446402311,
+      "horizon_months": 12,
+      "indicator": "industrial_production_growth_above_two_percent_at_horizon",
+      "rows_in_both": 377
+    },
+    {
+      "baseline_brier_skill_score": 0.12215214699066934,
+      "current_brier_skill_score": 0.1785580094977831,
+      "difference": 0.05640586250711377,
+      "horizon_months": 12,
+      "indicator": "treasury_yield_curve_inverted_within_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": -0.16628406227015158,
+      "current_brier_skill_score": -0.12855969239135678,
+      "difference": 0.037724369878794795,
+      "horizon_months": 12,
+      "indicator": "unemployment_rate_above_five_percent_at_horizon",
+      "rows_in_both": 377
+    },
+    {
+      "baseline_brier_skill_score": 0.4784015124887123,
+      "current_brier_skill_score": 0.4361412475803138,
+      "difference": -0.042260264908398515,
+      "horizon_months": 12,
+      "indicator": "unemployment_rate_above_seven_percent_within_horizon",
+      "rows_in_both": 367
+    },
+    {
+      "baseline_brier_skill_score": 0.018183150123725733,
+      "current_brier_skill_score": 0.1802170711322406,
+      "difference": 0.16203392100851488,
+      "horizon_months": 60,
+      "indicator": "consumer_price_inflation_above_five_percent_within_horizon",
+      "rows_in_both": 319
+    },
+    {
+      "baseline_brier_skill_score": 0.06676813621402278,
+      "current_brier_skill_score": 0.07267540688051521,
+      "difference": 0.005907270666492437,
+      "horizon_months": 60,
+      "indicator": "consumer_price_inflation_above_three_percent_at_horizon",
+      "rows_in_both": 328
+    },
+    {
+      "baseline_brier_skill_score": 0.3265954044753846,
+      "current_brier_skill_score": 0.37799569239034103,
+      "difference": 0.05140028791495643,
+      "horizon_months": 60,
+      "indicator": "economy_in_recession_at_horizon_date",
+      "rows_in_both": 330
+    },
+    {
+      "baseline_brier_skill_score": -0.12658507482987202,
+      "current_brier_skill_score": -0.004814421235543653,
+      "difference": 0.12177065359432837,
+      "horizon_months": 60,
+      "indicator": "economy_in_recession_within_horizon",
+      "rows_in_both": 330
+    },
+    {
+      "baseline_brier_skill_score": 0.3230158769775697,
+      "current_brier_skill_score": 0.3003882809933289,
+      "difference": -0.0226275959842408,
+      "horizon_months": 60,
+      "indicator": "federal_funds_rate_above_four_percent_at_horizon",
+      "rows_in_both": 330
+    },
+    {
+      "baseline_brier_skill_score": 0.48122493137384936,
+      "current_brier_skill_score": 0.5943138292881807,
+      "difference": 0.1130888979143313,
+      "horizon_months": 60,
+      "indicator": "federal_funds_rate_below_one_percent_within_horizon",
+      "rows_in_both": 330
+    },
+    {
+      "baseline_brier_skill_score": -0.03179250040713688,
+      "current_brier_skill_score": -0.004787288691419311,
+      "difference": 0.02700521171571757,
+      "horizon_months": 60,
+      "indicator": "industrial_production_growth_above_two_percent_at_horizon",
+      "rows_in_both": 329
+    },
+    {
+      "baseline_brier_skill_score": -0.35755856673142294,
+      "current_brier_skill_score": -0.32500243675119433,
+      "difference": 0.03255612998022861,
+      "horizon_months": 60,
+      "indicator": "treasury_yield_curve_inverted_within_horizon",
+      "rows_in_both": 330
+    },
+    {
+      "baseline_brier_skill_score": -0.045924403613297304,
+      "current_brier_skill_score": -0.008763646686309468,
+      "difference": 0.03716075692698784,
+      "horizon_months": 60,
+      "indicator": "unemployment_rate_above_five_percent_at_horizon",
+      "rows_in_both": 329
+    },
+    {
+      "baseline_brier_skill_score": 0.0736937454463723,
+      "current_brier_skill_score": 0.01018633977190353,
+      "difference": -0.06350740567446878,
+      "horizon_months": 60,
+      "indicator": "unemployment_rate_above_seven_percent_within_horizon",
+      "rows_in_both": 319
+    },
+    {
+      "baseline_brier_skill_score": -0.3448237993928409,
+      "current_brier_skill_score": -0.19481201493543954,
+      "difference": 0.15001178445740138,
+      "horizon_months": 120,
+      "indicator": "consumer_price_inflation_above_five_percent_within_horizon",
+      "rows_in_both": 259
+    },
+    {
+      "baseline_brier_skill_score": 0.04470016248094344,
+      "current_brier_skill_score": 0.14746408707462444,
+      "difference": 0.102763924593681,
+      "horizon_months": 120,
+      "indicator": "consumer_price_inflation_above_three_percent_at_horizon",
+      "rows_in_both": 268
+    },
+    {
+      "baseline_brier_skill_score": 0.3648884509652929,
+      "current_brier_skill_score": 0.4342895899405037,
+      "difference": 0.06940113897521083,
+      "horizon_months": 120,
+      "indicator": "economy_in_recession_at_horizon_date",
+      "rows_in_both": 270
+    },
+    {
+      "baseline_brier_skill_score": -2.648516961690255,
+      "current_brier_skill_score": -1.9185518659109184,
+      "difference": 0.7299650957793364,
+      "horizon_months": 120,
+      "indicator": "economy_in_recession_within_horizon",
+      "rows_in_both": 270
+    },
+    {
+      "baseline_brier_skill_score": 0.3991804309036997,
+      "current_brier_skill_score": 0.3807830182983436,
+      "difference": -0.0183974126053561,
+      "horizon_months": 120,
+      "indicator": "federal_funds_rate_above_four_percent_at_horizon",
+      "rows_in_both": 270
+    },
+    {
+      "baseline_brier_skill_score": 0.6535714237016748,
+      "current_brier_skill_score": 0.7118096708794995,
+      "difference": 0.058238247177824776,
+      "horizon_months": 120,
+      "indicator": "federal_funds_rate_below_one_percent_within_horizon",
+      "rows_in_both": 270
+    },
+    {
+      "baseline_brier_skill_score": -0.044828131895997325,
+      "current_brier_skill_score": -6.164641288819439e-05,
+      "difference": 0.04476648548310913,
+      "horizon_months": 120,
+      "indicator": "industrial_production_growth_above_two_percent_at_horizon",
+      "rows_in_both": 269
+    },
+    {
+      "baseline_brier_skill_score": -0.974100540445354,
+      "current_brier_skill_score": -0.46853473560383985,
+      "difference": 0.5055658048415141,
+      "horizon_months": 120,
+      "indicator": "treasury_yield_curve_inverted_within_horizon",
+      "rows_in_both": 270
+    },
+    {
+      "baseline_brier_skill_score": 0.0244090215195919,
+      "current_brier_skill_score": 0.08767565615290307,
+      "difference": 0.06326663463331117,
+      "horizon_months": 120,
+      "indicator": "unemployment_rate_above_five_percent_at_horizon",
+      "rows_in_both": 269
+    },
+    {
+      "baseline_brier_skill_score": 0.004169491943488701,
+      "current_brier_skill_score": 0.026114263735588672,
+      "difference": 0.02194477179209997,
+      "horizon_months": 120,
+      "indicator": "unemployment_rate_above_seven_percent_within_horizon",
+      "rows_in_both": 259
+    }
+  ],
+  "keys": {
+    "compared_on": "the intersection of resolved (indicator, forecast_date, horizon_months)",
+    "only_in_baseline_forecast_dates": null,
+    "only_in_this_run_forecast_dates": null,
+    "rows_in_both": 9702,
+    "rows_only_in_baseline": 0,
+    "rows_only_in_this_run": 0,
+    "same_forecasts": true
+  },
+  "statistic": "the pre-registered verdict's mean Brier skill score over its fixed set of scoreable indicators, this run minus the baseline, on the resolved forecasts both runs made"
+}
