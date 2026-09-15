@@ -32,15 +32,15 @@ status. Re-run this audit whenever the pipeline gains a step.
 | State probabilities used in forecasts | **clean** — filtered, never smoothed; separate method names and a test |
 | Model parameters at each refit | **clean** — refitted from scratch on the point-in-time panel; verified that only the state count is read from the full-sample fit |
 | **Number of regimes** | **clean** — chosen once on a burn-in window ending strictly before the first forecast date; the full-sample sweep no longer reaches the backtest. ADR 0008 |
-| Conditional rates | **clean** — only conditions whose publication lag had passed |
-| Benchmark (climatology) | **clean since 2026-09-15** — expanding, and an outcome enters the average at t only once the value it rests on (label s + h, plus the indicator's publication lag) was published by t, the same rule the conditions obey. Before that the average at t counted the outcome of the forecast made at t − h, which rests on the value labelled t: unpublished at t, by five weeks for most series and 400 days for recession dating. Found by the invariance audit (last row), not by reading. ADR 0009 |
+| Conditional rates | **clean except D14** — only conditions whose publication lag had passed; the recession series' registered lag is itself too short after a trough |
+| Benchmark (climatology) | **clean since 2026-09-15, except D14** — expanding, and an outcome enters the average at t only once the value it rests on (label s + h, plus the indicator's publication lag) was published by t, the same rule the conditions obey. Before that the average at t counted the outcome of the forecast made at t − h, which rests on the value labelled t: unpublished at t, by five weeks for most series and 400 days for recession dating. Found by the invariance audit (last row), not by reading. ADR 0009 |
 | Outcome resolution | **clean by design** — final data is correct for scoring; the forecaster never sees it |
 | Condition values feeding rate estimation | **approximation** — final values with timing enforced. Exact for market rates and recession dating. See D5 |
 | Every run setting (seed, restarts, burn-in, refit cadence, shrinkage, thresholds, bootstrap) | **clean** — all a priori constants, none derived from the data |
 | Acceptance thresholds | **clean** — pre-registered and committed before the first backtest |
 | Canonicalisation rule | **clean** — a fixed sort, not fitted |
 | **Indicator thresholds** | **weak** — canonical round numbers, but chosen by someone who knew the sample. See D12 |
-| **Future-perturbation invariance** (`forecast audit-look-ahead`, run on demand) | **passes on main** since the benchmark fix (ADR 0009): exit 0 at the default cutoff 2000-03-01, all 2190 rows identical. It **failed** at the commit that added it (fb926ff): 12 of 2190 rows moved, every one `climatology_probability` on the cutoff date. The earliest is `consumer_price_inflation_above_five_percent_within_horizon` at 12 months, 0.375 → 0.37662337662337664. *Covers* every path by which an observation unpublished at a cutoff (label on or after it, or label plus its series' registered publication lag past it), or a vintage published after it, reaches a forecast issued on or before it, the benchmark included. Publication-aware since 2026-09-15 rather than label-only, and still exit 0 on main. *Does not cover* revised values of observations already published at the cutoff, in the current-vintage files (D5, by design); a registry publication lag that is itself wrong; or information published between a forecast date and the cutoff. See `docs/REGRESSION_TESTING.md` |
+| **Future-perturbation invariance** (`forecast audit-look-ahead`, run on demand) | **passes on main** since the benchmark fix (ADR 0009): exit 0 at the default cutoff 2000-03-01, all 2190 rows identical. It **failed** at the commit that added it (fb926ff): 12 of 2190 rows moved, every one `climatology_probability` on the cutoff date. The earliest is `consumer_price_inflation_above_five_percent_within_horizon` at 12 months, 0.375 → 0.37662337662337664. *Covers* every path by which an observation unpublished at a cutoff (label on or after it, or label plus its series' registered publication lag past it), or a vintage published after it, reaches a forecast issued on or before it, the benchmark included. Publication-aware since 2026-09-15 rather than label-only, and still exit 0 on main. *Does not cover* revised values of observations already published at the cutoff, in the current-vintage files (D5, by design); a registry publication lag that is itself wrong (D14 is one); or information published between a forecast date and the cutoff. See `docs/REGRESSION_TESTING.md` |
 
 Two entries are still not clean, and they are the two weakest rows rather than the two
 worst: the condition values feeding rate estimation (D5, narrowed — see below) and the
@@ -53,6 +53,11 @@ said "clean". The invariance audit perturbed everything unpublished at a cutoff 
 watched twelve climatology values move. It was closed the same day (ADR 0009). That
 is why the audit is now a row of its own, and why the slate's decision rule
 requires it to pass on main before any arm runs.
+
+**A fourth was found the same day, by reading, in the one place execution cannot
+look.** The audit trusts each series' registered publication lag. An independent
+reviewer checked the recession series' lag against NBER's announcement dates and
+found it too short after every trough since 1990. See D14.
 
 ---
 
@@ -298,3 +303,60 @@ looking at how often each condition holds.
 ## D13 · There is no canonical output to diff a change against
 **closed** 2026-09-15 by `forecast baseline`; see `docs/REGRESSION_TESTING.md`.
 Kept as a stub because `regression_baseline.py` refers to it by number.
+
+---
+
+## D14 · The recession series' publication lag is too short after a trough
+**evidential** · found 2026-09-15 by the independent look-ahead review of arm A5;
+every announcement date below was checked at nber.org the same day
+
+The registry gives recession dating a single publication lag,
+`publication_lag_days: 400` (`configuration/economic_series.yaml`), so a month's
+recession code counts as known 400 days after the month begins. NBER does not
+publish months, though. It announces turning points, and a month is known to be
+recession or expansion only once the turning point that ends its phase has been
+announced:
+
+| turning point | announced | days after the month began |
+|---|---|---:|
+| peak 1990-07 | 1991-04-25 | 298 |
+| trough 1991-03 | 1992-12-22 | 662 |
+| peak 2001-03 | 2001-11-26 | 270 |
+| trough 2001-11 | 2003-07-17 | 623 |
+| peak 2007-12 | 2008-12-01 | 366 |
+| trough 2009-06 | 2010-09-20 | 476 |
+| peak 2020-02 | 2020-06-08 | 128 |
+| trough 2020-04 | 2021-07-19 | 474 |
+
+Every peak came inside 400 days and every trough after them. So the months just
+after each trough, coded 0, entered the benchmark and the conditional rates before
+anyone knew the recession had ended. Derived with forecast dates on the first of
+each month:
+
+| trough | labels read early | forecast dates that read them | of them scored |
+|---|---|---|---:|
+| 1991-03 | 1991-04 to 1991-11 | 1992-06 to 1992-12 | 0 |
+| 2001-11 | 2001-12 to 2002-06 | 2003-02 to 2003-07 | 6 |
+| 2009-06 | 2009-07 to 2009-08 | 2010-09 | 1 |
+| 2020-04 | 2020-05 to 2020-06 | 2021-07 | 1 |
+
+That is 8 of the 391 scored forecast dates, and only the two recession indicators.
+The invariance audit cannot see it, because it perturbs by the registered lag, and
+its record says so.
+
+**What it would change.** Unmeasured on main. In arm A5, its reviewer measured
+that withholding the affected 2001-trough outcomes moves those forecasts by at most
+0.0025. Main and every research arm read the same registry, so the leak cannot
+favour one side of a paired comparison, but it can move both.
+
+**Shape of the fix.** Either option is Jeddy's call:
+- **A longer fixed lag, at least 662 days.** Simple, but it also withholds every
+  month near a peak for 262 days after it was really known.
+- **Availability by turning point.** A month's code counts as known once the
+  turning point ending its phase has been announced, read from a dated table of
+  NBER announcements, the way archival vintages are dated. Exact, at the cost of a
+  small registry of eight rows since 1990.
+
+Whichever it is, it should be its own change, measured against main with
+`forecast baseline compare`. It should come after experiment 0002 closes, because
+changing main now would move the reference run under every arm mid-slate.
