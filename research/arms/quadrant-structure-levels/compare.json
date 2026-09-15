@@ -1,0 +1,3909 @@
+{
+  "baseline_name": "main",
+  "baseline_run": {
+    "configuration_hash": "ad7fcc1affd0746a",
+    "first_forecast_date": "1994-03-01",
+    "forecast_date_count": 391,
+    "forecast_dates_using_fallback": 0,
+    "last_forecast_date": "2026-09-01",
+    "random_seed": 20260908,
+    "refit_count": 33,
+    "state_count": 6,
+    "state_count_chosen_as_of": "1994-03-01"
+  },
+  "categorical_moved": 2,
+  "counts": {
+    "ADDED": 0,
+    "IDENTICAL": 109,
+    "MOVED": 278,
+    "NUMERICAL": 0,
+    "REMOVED": 0
+  },
+  "current_run": {
+    "configuration_hash": "9632ee1193541d34",
+    "first_forecast_date": "1994-03-01",
+    "forecast_date_count": 391,
+    "forecast_dates_using_fallback": 0,
+    "last_forecast_date": "2026-09-01",
+    "random_seed": 20260908,
+    "refit_count": 33,
+    "state_count": 4,
+    "state_count_chosen_as_of": "1994-03-01"
+  },
+  "exit_code": 1,
+  "fields": [
+    {
+      "band": "MOVED",
+      "baseline": "ad7fcc1affd0746a",
+      "categorical": true,
+      "current": "9632ee1193541d34",
+      "difference": null,
+      "field": "configuration_hash",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 6,
+      "categorical": true,
+      "current": 4,
+      "difference": null,
+      "field": "state_count",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "1994-03-01",
+      "categorical": true,
+      "current": "1994-03-01",
+      "difference": null,
+      "field": "first_forecast_date",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 391,
+      "categorical": true,
+      "current": 391,
+      "difference": null,
+      "field": "forecast_date_count",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0,
+      "categorical": true,
+      "current": 0,
+      "difference": null,
+      "field": "forecast_dates_using_fallback",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "2026-09-01",
+      "categorical": true,
+      "current": "2026-09-01",
+      "difference": null,
+      "field": "last_forecast_date",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 20260908,
+      "categorical": true,
+      "current": 20260908,
+      "difference": null,
+      "field": "random_seed",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 33,
+      "categorical": true,
+      "current": 33,
+      "difference": null,
+      "field": "refit_count",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "1994-03-01",
+      "categorical": true,
+      "current": "1994-03-01",
+      "difference": null,
+      "field": "state_count_chosen_as_of",
+      "row": "",
+      "section": "run"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "calibration",
+      "categorical": true,
+      "current": "calibration",
+      "difference": null,
+      "field": "failing_gates",
+      "row": "12",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "SHIP BASE RATE",
+      "categorical": true,
+      "current": "SHIP BASE RATE",
+      "difference": null,
+      "field": "verdict",
+      "row": "12",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "skill, calibration, robustness, honesty",
+      "categorical": true,
+      "current": "skill, calibration, robustness, honesty",
+      "difference": null,
+      "field": "failing_gates",
+      "row": "120",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "SHIP BASE RATE",
+      "categorical": true,
+      "current": "SHIP BASE RATE",
+      "difference": null,
+      "field": "verdict",
+      "row": "120",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "skill, calibration, robustness",
+      "categorical": true,
+      "current": "skill, calibration, robustness",
+      "difference": null,
+      "field": "failing_gates",
+      "row": "60",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": "SHIP BASE RATE",
+      "categorical": true,
+      "current": "SHIP BASE RATE",
+      "difference": null,
+      "field": "verdict",
+      "row": "60",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": null,
+      "categorical": false,
+      "current": null,
+      "difference": null,
+      "field": "area_under_the_curve",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 118.36305100878882,
+      "categorical": false,
+      "current": 213.56617246218678,
+      "difference": 95.20312145339797,
+      "field": "mean_effective_sample_size",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 118.36305100878882,
+      "categorical": false,
+      "current": 213.56617246218678,
+      "difference": 95.20312145339797,
+      "field": "mean_effective_sample_size",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 112.51350699959379,
+      "categorical": false,
+      "current": 205.99297600763686,
+      "difference": 93.47946900804307,
+      "field": "mean_effective_sample_size",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 118.79742799082317,
+      "categorical": false,
+      "current": 210.552200788169,
+      "difference": 91.75477279734582,
+      "field": "mean_effective_sample_size",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 116.12033528269767,
+      "categorical": false,
+      "current": 206.1783613969839,
+      "difference": 90.05802611428622,
+      "field": "mean_effective_sample_size",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 113.9944458067953,
+      "categorical": false,
+      "current": 203.7079069540081,
+      "difference": 89.71346114721281,
+      "field": "mean_effective_sample_size",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 113.9944458067953,
+      "categorical": false,
+      "current": 203.7079069540081,
+      "difference": 89.71346114721281,
+      "field": "mean_effective_sample_size",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 121.50527698152172,
+      "categorical": false,
+      "current": 211.07571146073857,
+      "difference": 89.57043447921686,
+      "field": "mean_effective_sample_size",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 121.65799489155617,
+      "categorical": false,
+      "current": 211.13633179360178,
+      "difference": 89.47833690204561,
+      "field": "mean_effective_sample_size",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 121.63051473210962,
+      "categorical": false,
+      "current": 211.10477591656831,
+      "difference": 89.4742611844587,
+      "field": "mean_effective_sample_size",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 115.06138431461692,
+      "categorical": false,
+      "current": 204.15526019559445,
+      "difference": 89.09387588097754,
+      "field": "mean_effective_sample_size",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 108.72896058352728,
+      "categorical": false,
+      "current": 197.14495658572554,
+      "difference": 88.41599600219826,
+      "field": "mean_effective_sample_size",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 102.84548955952404,
+      "categorical": false,
+      "current": 191.23146627083665,
+      "difference": 88.38597671131261,
+      "field": "mean_effective_sample_size",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 102.84548955952404,
+      "categorical": false,
+      "current": 191.23146627083665,
+      "difference": 88.38597671131261,
+      "field": "mean_effective_sample_size",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 98.07781672150415,
+      "categorical": false,
+      "current": 185.8462039652199,
+      "difference": 87.76838724371575,
+      "field": "mean_effective_sample_size",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 113.07016503396217,
+      "categorical": false,
+      "current": 200.31724677724424,
+      "difference": 87.24708174328207,
+      "field": "mean_effective_sample_size",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 102.08387059976549,
+      "categorical": false,
+      "current": 188.36760816276353,
+      "difference": 86.28373756299804,
+      "field": "mean_effective_sample_size",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 117.1119953103908,
+      "categorical": false,
+      "current": 203.25452027757945,
+      "difference": 86.14252496718865,
+      "field": "mean_effective_sample_size",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 110.39311235445864,
+      "categorical": false,
+      "current": 196.20603454942355,
+      "difference": 85.81292219496491,
+      "field": "mean_effective_sample_size",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 99.37747552514527,
+      "categorical": false,
+      "current": 184.00641895124247,
+      "difference": 84.6289434260972,
+      "field": "mean_effective_sample_size",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 118.65377988238909,
+      "categorical": false,
+      "current": 191.84865271142235,
+      "difference": 73.19487282903326,
+      "field": "mean_effective_sample_size",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 118.80712121565493,
+      "categorical": false,
+      "current": 192.00180425154667,
+      "difference": 73.19468303589174,
+      "field": "mean_effective_sample_size",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 118.78379319030846,
+      "categorical": false,
+      "current": 191.94154632514508,
+      "difference": 73.15775313483663,
+      "field": "mean_effective_sample_size",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 114.83691731897568,
+      "categorical": false,
+      "current": 186.98395400986536,
+      "difference": 72.14703669088968,
+      "field": "mean_effective_sample_size",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 112.52793090792754,
+      "categorical": false,
+      "current": 182.84103507940074,
+      "difference": 70.3131041714732,
+      "field": "mean_effective_sample_size",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 110.22359150717853,
+      "categorical": false,
+      "current": 178.12735806253363,
+      "difference": 67.9037665553551,
+      "field": "mean_effective_sample_size",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 110.13378468446636,
+      "categorical": false,
+      "current": 177.95010714953116,
+      "difference": 67.8163224650648,
+      "field": "mean_effective_sample_size",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 110.32307200934926,
+      "categorical": false,
+      "current": 178.1250788567002,
+      "difference": 67.80200684735095,
+      "field": "mean_effective_sample_size",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 106.89376803995481,
+      "categorical": false,
+      "current": 173.70813574777958,
+      "difference": 66.81436770782477,
+      "field": "mean_effective_sample_size",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 103.46923527679793,
+      "categorical": false,
+      "current": 168.0885530230106,
+      "difference": 64.61931774621267,
+      "field": "mean_effective_sample_size",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -2.648516961690255,
+      "categorical": false,
+      "current": -1.6383865357640897,
+      "difference": 1.0101304259261652,
+      "field": "brier_skill_score",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.974100540445354,
+      "categorical": false,
+      "current": -0.343680773649806,
+      "difference": 0.630419766795548,
+      "field": "brier_skill_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.277,
+      "categorical": false,
+      "current": 0.7852,
+      "difference": 0.5082,
+      "field": "area_under_the_curve",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.352769097290159,
+      "categorical": false,
+      "current": -0.1325436954135864,
+      "difference": 0.22022540187657258,
+      "field": "mean_brier_skill_score",
+      "row": "120",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.4223829562323613,
+      "categorical": false,
+      "current": -0.2180914102797988,
+      "difference": 0.20429154595256246,
+      "field": "skill_lower_bound",
+      "row": "120",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.49286272573943807,
+      "categorical": false,
+      "current": 0.28894648072730267,
+      "difference": -0.2039162450121354,
+      "field": "area_under_the_curve",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6987501186520617,
+      "categorical": false,
+      "current": 0.5249153148738731,
+      "difference": -0.1738348037781886,
+      "field": "logarithmic_loss",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.17510204081632652,
+      "categorical": false,
+      "current": 0.33653061224489794,
+      "difference": 0.16142857142857142,
+      "field": "area_under_the_curve",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.35755856673142294,
+      "categorical": false,
+      "current": -0.2103807244232021,
+      "difference": 0.14717784230822084,
+      "field": "brier_skill_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.44116603595080417,
+      "categorical": false,
+      "current": 0.5883396404919584,
+      "difference": 0.14717360454115425,
+      "field": "area_under_the_curve",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.3448237993928409,
+      "categorical": false,
+      "current": -0.20430268898284454,
+      "difference": 0.14052111040999637,
+      "field": "brier_skill_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6035665294924554,
+      "categorical": false,
+      "current": 0.4653043848446147,
+      "difference": -0.13826214464784065,
+      "field": "area_under_the_curve",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4222860683905132,
+      "categorical": false,
+      "current": 0.5603064616077967,
+      "difference": 0.13802039321728354,
+      "field": "area_under_the_curve",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.5132403590988651,
+      "categorical": false,
+      "current": 0.37561402518209025,
+      "difference": -0.13762633391677487,
+      "field": "area_under_the_curve",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3230158769775697,
+      "categorical": false,
+      "current": 0.19404067433850636,
+      "difference": -0.12897520263906337,
+      "field": "brier_skill_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7379988432620012,
+      "categorical": false,
+      "current": 0.8663967611336032,
+      "difference": 0.12839791787160204,
+      "field": "area_under_the_curve",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.49275727069351233,
+      "categorical": false,
+      "current": 0.3820469798657718,
+      "difference": -0.11071029082774053,
+      "field": "area_under_the_curve",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.39304899453543535,
+      "categorical": false,
+      "current": 0.2836274019379797,
+      "difference": -0.10942159259745565,
+      "field": "expected_calibration_error",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.12151413997041027,
+      "categorical": false,
+      "current": -0.014053168514720616,
+      "difference": 0.10746097145568966,
+      "field": "skill_upper_bound",
+      "row": "120",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7201809581077484,
+      "categorical": false,
+      "current": 0.8267941278617114,
+      "difference": 0.10661316975396296,
+      "field": "logarithmic_loss",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.16628406227015158,
+      "categorical": false,
+      "current": -0.061270735673052634,
+      "difference": 0.10501332659709894,
+      "field": "brier_skill_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.9213679845234323,
+      "categorical": false,
+      "current": 0.8175805787493504,
+      "difference": -0.10378740577408185,
+      "field": "logarithmic_loss",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.5055805430618024,
+      "categorical": false,
+      "current": 0.6086623354989172,
+      "difference": 0.1030817924371148,
+      "field": "area_under_the_curve",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8989149780388384,
+      "categorical": false,
+      "current": 0.7976006361467839,
+      "difference": -0.10131434189205446,
+      "field": "logarithmic_loss",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.39592382225192113,
+      "categorical": false,
+      "current": 0.49710435460518987,
+      "difference": 0.10118053235326874,
+      "field": "area_under_the_curve",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.12658507482987202,
+      "categorical": false,
+      "current": -0.025539498492896717,
+      "difference": 0.1010455763369753,
+      "field": "brier_skill_score",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.923854852897321,
+      "categorical": false,
+      "current": 0.8228344151534369,
+      "difference": -0.10102043774388414,
+      "field": "logarithmic_loss",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.9281822391513067,
+      "categorical": false,
+      "current": 0.8338718836545895,
+      "difference": -0.09431035549671718,
+      "field": "logarithmic_loss",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.30734825546051103,
+      "categorical": false,
+      "current": 0.40144342869051675,
+      "difference": 0.09409517323000571,
+      "field": "brier_skill_score",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3507726252592452,
+      "categorical": false,
+      "current": 0.44403015238193744,
+      "difference": 0.09325752712269225,
+      "field": "expected_calibration_error",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1808590879442439,
+      "categorical": false,
+      "current": 0.08937490962926717,
+      "difference": -0.09148417831497674,
+      "field": "reliability",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8733296399939388,
+      "categorical": false,
+      "current": 0.7846464406698955,
+      "difference": -0.08868319932404323,
+      "field": "logarithmic_loss",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2813875363850225,
+      "categorical": false,
+      "current": 0.36953314576787777,
+      "difference": 0.08814560938285526,
+      "field": "expected_calibration_error",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08610881269971804,
+      "categorical": false,
+      "current": 0.1740307919892039,
+      "difference": 0.08792197928948586,
+      "field": "brier_skill_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0244090215195919,
+      "categorical": false,
+      "current": 0.11049321196989659,
+      "difference": 0.08608419045030469,
+      "field": "brier_skill_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.39497169946271854,
+      "categorical": false,
+      "current": 0.3100728775621507,
+      "difference": -0.08489882190056786,
+      "field": "expected_calibration_error",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.46043418325127944,
+      "categorical": false,
+      "current": 0.379982085447921,
+      "difference": -0.08045209780335844,
+      "field": "logarithmic_loss",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3648884509652929,
+      "categorical": false,
+      "current": 0.44077755112889716,
+      "difference": 0.07588910016360428,
+      "field": "brier_skill_score",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.23521652267693044,
+      "categorical": false,
+      "current": 0.16010122721229453,
+      "difference": -0.07511529546463591,
+      "field": "brier_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.62533150434385,
+      "categorical": false,
+      "current": 0.5502819692120103,
+      "difference": -0.07504953513183965,
+      "field": "area_under_the_curve",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.045924403613297304,
+      "categorical": false,
+      "current": 0.028474430284614827,
+      "difference": 0.07439883389791213,
+      "field": "brier_skill_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.24508630156687441,
+      "categorical": false,
+      "current": 0.31853851760143287,
+      "difference": 0.07345221603455845,
+      "field": "expected_calibration_error",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3512103768821307,
+      "categorical": false,
+      "current": 0.2793813324089916,
+      "difference": -0.07182904447313909,
+      "field": "expected_calibration_error",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.19931561496866163,
+      "categorical": false,
+      "current": -0.1298403301911891,
+      "difference": 0.06947528477747253,
+      "field": "skill_lower_bound",
+      "row": "60",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.22293088789026827,
+      "categorical": false,
+      "current": 0.2904665036573726,
+      "difference": 0.06753561576710432,
+      "field": "expected_calibration_error",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3188492063492063,
+      "categorical": false,
+      "current": 0.2515873015873016,
+      "difference": -0.06726190476190474,
+      "field": "area_under_the_curve",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.16323386825423583,
+      "categorical": false,
+      "current": 0.23039243427493997,
+      "difference": 0.06715856602070414,
+      "field": "reliability",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.10261618873161059,
+      "categorical": false,
+      "current": 0.03597496420461521,
+      "difference": -0.06664122452699538,
+      "field": "expected_calibration_error",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8527631109800183,
+      "categorical": false,
+      "current": 0.9182968340202489,
+      "difference": 0.06553372304023053,
+      "field": "logarithmic_loss",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.17135904625798126,
+      "categorical": false,
+      "current": 0.10702264775775758,
+      "difference": -0.06433639850022368,
+      "field": "reliability",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.9869956127641986,
+      "categorical": false,
+      "current": 0.9235805585339569,
+      "difference": -0.06341505423024163,
+      "field": "logarithmic_loss",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.41734396575418986,
+      "categorical": false,
+      "current": 0.35410415027880915,
+      "difference": -0.06323981547538071,
+      "field": "mean_distance_to_stationary",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4173343844229826,
+      "categorical": false,
+      "current": 0.35411179482210076,
+      "difference": -0.06322258960088184,
+      "field": "mean_distance_to_stationary",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4173343844229826,
+      "categorical": false,
+      "current": 0.35411179482210076,
+      "difference": -0.06322258960088184,
+      "field": "mean_distance_to_stationary",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4173343844229826,
+      "categorical": false,
+      "current": 0.35411179482210076,
+      "difference": -0.06322258960088184,
+      "field": "mean_distance_to_stationary",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4173343844229826,
+      "categorical": false,
+      "current": 0.35411179482210076,
+      "difference": -0.06322258960088184,
+      "field": "mean_distance_to_stationary",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4173343844229826,
+      "categorical": false,
+      "current": 0.35411179482210076,
+      "difference": -0.06322258960088184,
+      "field": "mean_distance_to_stationary",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4173222227104673,
+      "categorical": false,
+      "current": 0.354202316451523,
+      "difference": -0.06311990625894431,
+      "field": "mean_distance_to_stationary",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.41731267363844454,
+      "categorical": false,
+      "current": 0.3542097208843917,
+      "difference": -0.06310295275405287,
+      "field": "mean_distance_to_stationary",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.04470016248094344,
+      "categorical": false,
+      "current": 0.10775294710212469,
+      "difference": 0.06305278462118125,
+      "field": "brier_skill_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4172544946118196,
+      "categorical": false,
+      "current": 0.35476221754969833,
+      "difference": -0.06249227706212129,
+      "field": "mean_distance_to_stationary",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4172544946118196,
+      "categorical": false,
+      "current": 0.35476221754969833,
+      "difference": -0.06249227706212129,
+      "field": "mean_distance_to_stationary",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8026683087027915,
+      "categorical": false,
+      "current": 0.7408456486042693,
+      "difference": -0.06182266009852222,
+      "field": "area_under_the_curve",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2791819007860617,
+      "categorical": false,
+      "current": 0.21797647952673804,
+      "difference": -0.061205421259323656,
+      "field": "expected_calibration_error",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4843699774991964,
+      "categorical": false,
+      "current": 0.4246223079395693,
+      "difference": -0.059747669559627126,
+      "field": "area_under_the_curve",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3396501275923571,
+      "categorical": false,
+      "current": 0.2822505351293837,
+      "difference": -0.05739959246297338,
+      "field": "expected_calibration_error",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3991804309036997,
+      "categorical": false,
+      "current": 0.3428158508595258,
+      "difference": -0.056364580044173884,
+      "field": "brier_skill_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6100197147327621,
+      "categorical": false,
+      "current": 0.5536621198646332,
+      "difference": -0.05635759486812886,
+      "field": "logarithmic_loss",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.302086574995486,
+      "categorical": false,
+      "current": 0.2464086385349607,
+      "difference": -0.055677936460525324,
+      "field": "expected_calibration_error",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.15184025513465257,
+      "categorical": false,
+      "current": 0.20722842669767885,
+      "difference": 0.05538817156302628,
+      "field": "expected_calibration_error",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3265954044753846,
+      "categorical": false,
+      "current": 0.381965948643725,
+      "difference": 0.05537054416834042,
+      "field": "brier_skill_score",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7588601618121461,
+      "categorical": false,
+      "current": 0.7041425343992231,
+      "difference": -0.054717627412922965,
+      "field": "logarithmic_loss",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.30120108713558974,
+      "categorical": false,
+      "current": 0.24660446369741357,
+      "difference": -0.05459662343817617,
+      "field": "expected_calibration_error",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1408977834923255,
+      "categorical": false,
+      "current": 0.08788340946621864,
+      "difference": -0.05301437402610687,
+      "field": "brier_skill_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.34344244390853773,
+      "categorical": false,
+      "current": 0.29247633059521005,
+      "difference": -0.05096611331332768,
+      "field": "logarithmic_loss",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.26471027571631683,
+      "categorical": false,
+      "current": 0.31514138671302644,
+      "difference": 0.050431110996709605,
+      "field": "brier_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4705745462067539,
+      "categorical": false,
+      "current": 0.4204375032321456,
+      "difference": -0.05013704297460825,
+      "field": "area_under_the_curve",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7573613040233563,
+      "categorical": false,
+      "current": 0.7084064053960517,
+      "difference": -0.04895489862730462,
+      "field": "logarithmic_loss",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.12403701546917326,
+      "categorical": false,
+      "current": 0.0759931956216781,
+      "difference": -0.04804381984749516,
+      "field": "expected_calibration_error",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6765381229191665,
+      "categorical": false,
+      "current": 0.6288614078546321,
+      "difference": -0.047676715064534414,
+      "field": "logarithmic_loss",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1333848635569297,
+      "categorical": false,
+      "current": 0.18073665815297754,
+      "difference": 0.04735179459604785,
+      "field": "area_under_the_curve",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11739198678723733,
+      "categorical": false,
+      "current": 0.07283589070661904,
+      "difference": -0.04455609608061829,
+      "field": "mean_distance_to_stationary",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11739198678723733,
+      "categorical": false,
+      "current": 0.07283589070661904,
+      "difference": -0.04455609608061829,
+      "field": "mean_distance_to_stationary",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11694265434025806,
+      "categorical": false,
+      "current": 0.07268490853551686,
+      "difference": -0.044257745804741205,
+      "field": "mean_distance_to_stationary",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11699749027923007,
+      "categorical": false,
+      "current": 0.07280922951746262,
+      "difference": -0.04418826076176745,
+      "field": "mean_distance_to_stationary",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11675764000262812,
+      "categorical": false,
+      "current": 0.07260140462754164,
+      "difference": -0.04415623537508648,
+      "field": "mean_distance_to_stationary",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11681287042159605,
+      "categorical": false,
+      "current": 0.07272560192138446,
+      "difference": -0.04408726850021159,
+      "field": "mean_distance_to_stationary",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11681287042159605,
+      "categorical": false,
+      "current": 0.07272560192138446,
+      "difference": -0.04408726850021159,
+      "field": "mean_distance_to_stationary",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11681287042159605,
+      "categorical": false,
+      "current": 0.07272560192138446,
+      "difference": -0.04408726850021159,
+      "field": "mean_distance_to_stationary",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11681287042159605,
+      "categorical": false,
+      "current": 0.07272560192138446,
+      "difference": -0.04408726850021159,
+      "field": "mean_distance_to_stationary",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11681287042159605,
+      "categorical": false,
+      "current": 0.07272560192138446,
+      "difference": -0.04408726850021159,
+      "field": "mean_distance_to_stationary",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11245724891766765,
+      "categorical": false,
+      "current": 0.06927969080394565,
+      "difference": -0.043177558113721995,
+      "field": "reliability",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4553464039814945,
+      "categorical": false,
+      "current": 0.49799435265093606,
+      "difference": 0.04264794866944155,
+      "field": "brier_skill_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09563370530560363,
+      "categorical": false,
+      "current": 0.13825879614171369,
+      "difference": 0.04262509083611006,
+      "field": "reliability",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.14574640894708635,
+      "categorical": false,
+      "current": -0.10343398788122538,
+      "difference": 0.04231242106586097,
+      "field": "brier_skill_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09785603988568259,
+      "categorical": false,
+      "current": 0.0560067050779642,
+      "difference": -0.04184933480771839,
+      "field": "reliability",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09187019288195607,
+      "categorical": false,
+      "current": 0.050885963080241826,
+      "difference": -0.04098422980171424,
+      "field": "reliability",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.5694878085043116,
+      "categorical": false,
+      "current": 0.6097606303895332,
+      "difference": 0.04027282188522163,
+      "field": "area_under_the_curve",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09965405699458324,
+      "categorical": false,
+      "current": 0.1385937976756965,
+      "difference": 0.03893974068111325,
+      "field": "skill_lower_bound",
+      "row": "12",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3511634548671507,
+      "categorical": false,
+      "current": 0.31309255254926016,
+      "difference": -0.038070902317890565,
+      "field": "brier_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.21537738742364834,
+      "categorical": false,
+      "current": 0.25342765640378284,
+      "difference": 0.0380502689801345,
+      "field": "mean_brier_skill_score",
+      "row": "12",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7403036576949621,
+      "categorical": false,
+      "current": 0.7773636991028295,
+      "difference": 0.03706004140786745,
+      "field": "area_under_the_curve",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.16097944818781454,
+      "categorical": false,
+      "current": 0.12534757528965917,
+      "difference": -0.035631872898155365,
+      "field": "reliability",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.25315900861024404,
+      "categorical": false,
+      "current": 0.21892204059105333,
+      "difference": -0.03423696801919071,
+      "field": "expected_calibration_error",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.12147701248860253,
+      "categorical": false,
+      "current": 0.08784481955821714,
+      "difference": -0.033632192930385385,
+      "field": "brier_score",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.03179250040713688,
+      "categorical": false,
+      "current": -0.06537574898070475,
+      "difference": -0.03358324857356787,
+      "field": "brier_skill_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09480644533543157,
+      "categorical": false,
+      "current": 0.061505202137183614,
+      "difference": -0.03330124319824796,
+      "field": "reliability",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.316968913365666,
+      "categorical": false,
+      "current": 0.28384872045139536,
+      "difference": -0.03312019291427065,
+      "field": "brier_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4784015124887123,
+      "categorical": false,
+      "current": 0.5114356053514825,
+      "difference": 0.03303409286277015,
+      "field": "brier_skill_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09866769152605079,
+      "categorical": false,
+      "current": 0.06567852963691269,
+      "difference": -0.0329891618891381,
+      "field": "reliability",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.12215214699066934,
+      "categorical": false,
+      "current": 0.15450344314879938,
+      "difference": 0.03235129615813004,
+      "field": "brier_skill_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.521889957521264,
+      "categorical": false,
+      "current": 0.48982103503542124,
+      "difference": -0.032068922485842755,
+      "field": "logarithmic_loss",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.35667517197109627,
+      "categorical": false,
+      "current": 0.3246842916353598,
+      "difference": -0.031990880335736493,
+      "field": "brier_score",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1751063246946787,
+      "categorical": false,
+      "current": 0.20663477390028942,
+      "difference": 0.03152844920561071,
+      "field": "expected_calibration_error",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3100280319705206,
+      "categorical": false,
+      "current": 0.2792543643923446,
+      "difference": -0.03077366757817601,
+      "field": "logarithmic_loss",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3274256402151123,
+      "categorical": false,
+      "current": 0.3581423639299844,
+      "difference": 0.030716723714872107,
+      "field": "brier_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3275860511556335,
+      "categorical": false,
+      "current": 0.35814524247498464,
+      "difference": 0.030559191319351142,
+      "field": "skill_upper_bound",
+      "row": "12",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.33604366851179923,
+      "categorical": false,
+      "current": 0.3057859768790873,
+      "difference": -0.030257691632711914,
+      "field": "brier_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08266068688053115,
+      "categorical": false,
+      "current": 0.05276847587944913,
+      "difference": -0.02989221100108202,
+      "field": "resolution",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7143591632670985,
+      "categorical": false,
+      "current": 0.7440675265923105,
+      "difference": 0.029708363325211984,
+      "field": "logarithmic_loss",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.004169491943488701,
+      "categorical": false,
+      "current": 0.03338869316729154,
+      "difference": 0.029219201223802838,
+      "field": "brier_skill_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.10269546027742749,
+      "categorical": false,
+      "current": 0.1317780580075662,
+      "difference": 0.029082597730138715,
+      "field": "area_under_the_curve",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.01045689031266284,
+      "categorical": false,
+      "current": 0.03940313092166692,
+      "difference": 0.028946240609004078,
+      "field": "resolution",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.32766609699916105,
+      "categorical": false,
+      "current": 0.2987534980510659,
+      "difference": -0.02891259894809517,
+      "field": "brier_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.053458926238146784,
+      "categorical": false,
+      "current": 0.024856325208208758,
+      "difference": -0.028602601029938026,
+      "field": "resolution",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.5467406742916947,
+      "categorical": false,
+      "current": 0.5185019062570083,
+      "difference": -0.02823876803468639,
+      "field": "area_under_the_curve",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6049763632085171,
+      "categorical": false,
+      "current": 0.5769516722792867,
+      "difference": -0.028024690929230434,
+      "field": "logarithmic_loss",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.16896949221969157,
+      "categorical": false,
+      "current": 0.14097780829443693,
+      "difference": -0.02799168392525464,
+      "field": "reliability",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.48122493137384936,
+      "categorical": false,
+      "current": 0.508694709689538,
+      "difference": 0.027469778315688642,
+      "field": "brier_skill_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.32193487413007993,
+      "categorical": false,
+      "current": 0.2946558982730475,
+      "difference": -0.027278975857032428,
+      "field": "area_under_the_curve",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1989580282919745,
+      "categorical": false,
+      "current": 0.2261170771555434,
+      "difference": 0.027159048863568902,
+      "field": "expected_calibration_error",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.018459729570840678,
+      "categorical": false,
+      "current": 0.045353223593964334,
+      "difference": 0.026893494023123656,
+      "field": "resolution",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8191620803141763,
+      "categorical": false,
+      "current": 0.7926668749531313,
+      "difference": -0.026495205361044993,
+      "field": "logarithmic_loss",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.35956227201667534,
+      "categorical": false,
+      "current": 0.385617509119333,
+      "difference": 0.02605523710265767,
+      "field": "area_under_the_curve",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2372276056915531,
+      "categorical": false,
+      "current": 0.21174215900094806,
+      "difference": -0.02548544669060504,
+      "field": "expected_calibration_error",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.07276206990291953,
+      "categorical": false,
+      "current": 0.09788723023459077,
+      "difference": 0.02512516033167124,
+      "field": "mean_brier_skill_score",
+      "row": "60",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.33623057014268876,
+      "categorical": false,
+      "current": 0.31121774108028205,
+      "difference": -0.025012829062406705,
+      "field": "logarithmic_loss",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2486913309832011,
+      "categorical": false,
+      "current": 0.2237349598958982,
+      "difference": -0.024956371087302892,
+      "field": "expected_calibration_error",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.45773358585858587,
+      "categorical": false,
+      "current": 0.48251262626262625,
+      "difference": 0.024779040404040387,
+      "field": "area_under_the_curve",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.24072186263461953,
+      "categorical": false,
+      "current": 0.21756293199254817,
+      "difference": -0.023158930642071363,
+      "field": "brier_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3156137146175096,
+      "categorical": false,
+      "current": 0.29316343785887233,
+      "difference": -0.022450276758637255,
+      "field": "brier_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.12707136601685268,
+      "categorical": false,
+      "current": 0.10495553848406013,
+      "difference": -0.02211582753279255,
+      "field": "expected_calibration_error",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3161455155703003,
+      "categorical": false,
+      "current": 0.2951671601681348,
+      "difference": -0.02097835540216547,
+      "field": "logarithmic_loss",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.009061541853375408,
+      "categorical": false,
+      "current": 0.029863986342758254,
+      "difference": 0.020802444489382847,
+      "field": "resolution",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.13903353816270816,
+      "categorical": false,
+      "current": 0.11863489378201877,
+      "difference": -0.02039864438068939,
+      "field": "expected_calibration_error",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2900878048780488,
+      "categorical": false,
+      "current": 0.3104780487804878,
+      "difference": 0.020390243902438987,
+      "field": "area_under_the_curve",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.3975937546201732,
+      "categorical": false,
+      "current": 0.41692452403600294,
+      "difference": 0.01933076941582973,
+      "field": "expected_calibration_error",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.31499002966247724,
+      "categorical": false,
+      "current": 0.3340066577721076,
+      "difference": 0.01901662810963034,
+      "field": "expected_calibration_error",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7765774386679756,
+      "categorical": false,
+      "current": 0.7952613182763935,
+      "difference": 0.018683879608417886,
+      "field": "logarithmic_loss",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.032033788312527234,
+      "categorical": false,
+      "current": 0.013793268280184326,
+      "difference": -0.01824052003234291,
+      "field": "mean_distance_to_stationary",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.032033788312527234,
+      "categorical": false,
+      "current": 0.013793268280184326,
+      "difference": -0.01824052003234291,
+      "field": "mean_distance_to_stationary",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.032033788312527234,
+      "categorical": false,
+      "current": 0.013793268280184326,
+      "difference": -0.01824052003234291,
+      "field": "mean_distance_to_stationary",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.032033788312527234,
+      "categorical": false,
+      "current": 0.013793268280184326,
+      "difference": -0.01824052003234291,
+      "field": "mean_distance_to_stationary",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.032033788312527234,
+      "categorical": false,
+      "current": 0.013793268280184326,
+      "difference": -0.01824052003234291,
+      "field": "mean_distance_to_stationary",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.03197822060697675,
+      "categorical": false,
+      "current": 0.01373895682570267,
+      "difference": -0.01823926378127408,
+      "field": "mean_distance_to_stationary",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.27582359443449805,
+      "categorical": false,
+      "current": 0.25761837235628166,
+      "difference": -0.0182052220782164,
+      "field": "brier_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.18040268827452668,
+      "categorical": false,
+      "current": 0.16233260630518442,
+      "difference": -0.01807008196934226,
+      "field": "reliability",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.03163940377866015,
+      "categorical": false,
+      "current": 0.013749087924910372,
+      "difference": -0.017890315853749776,
+      "field": "mean_distance_to_stationary",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.03158215714684318,
+      "categorical": false,
+      "current": 0.013694408963675894,
+      "difference": -0.01788774818316729,
+      "field": "mean_distance_to_stationary",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.022513649404115668,
+      "categorical": false,
+      "current": 0.0049177734468982956,
+      "difference": -0.017595875957217372,
+      "field": "reliability",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.07956512102597367,
+      "categorical": false,
+      "current": 0.09688522066530972,
+      "difference": 0.017320099639336048,
+      "field": "resolution",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.03702866406570109,
+      "categorical": false,
+      "current": 0.019731352323944913,
+      "difference": -0.01729731174175618,
+      "field": "resolution",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08907028839301932,
+      "categorical": false,
+      "current": 0.10631380792897674,
+      "difference": 0.017243519535957416,
+      "field": "reliability",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.37110557192941834,
+      "categorical": false,
+      "current": 0.35466292111655,
+      "difference": -0.01644265081286833,
+      "field": "logarithmic_loss",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.7213919943740188,
+      "categorical": false,
+      "current": 0.7050541646844244,
+      "difference": -0.016337829689594408,
+      "field": "logarithmic_loss",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0294217492938188,
+      "categorical": false,
+      "current": 0.013441372439848668,
+      "difference": -0.01598037685397013,
+      "field": "mean_distance_to_stationary",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0294217492938188,
+      "categorical": false,
+      "current": 0.013441372439848668,
+      "difference": -0.01598037685397013,
+      "field": "mean_distance_to_stationary",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.05953425906443375,
+      "categorical": false,
+      "current": 0.07537548343176151,
+      "difference": 0.01584122436732776,
+      "field": "reliability",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.25531572770625405,
+      "categorical": false,
+      "current": 0.2710710164522075,
+      "difference": 0.015755288745953444,
+      "field": "brier_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2132259785763935,
+      "categorical": false,
+      "current": 0.22872820598829013,
+      "difference": 0.015502227411896635,
+      "field": "expected_calibration_error",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.04195670850375788,
+      "categorical": false,
+      "current": 0.026769395259579446,
+      "difference": -0.015187313244178432,
+      "field": "reliability",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.27721252999696994,
+      "categorical": false,
+      "current": 0.26253378538128447,
+      "difference": -0.014678744615685468,
+      "field": "brier_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.06721756895614592,
+      "categorical": false,
+      "current": 0.05258574330974115,
+      "difference": -0.014631825646404771,
+      "field": "reliability",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8220522359050292,
+      "categorical": false,
+      "current": 0.807593363865044,
+      "difference": -0.014458872039985193,
+      "field": "logarithmic_loss",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.038543375513584346,
+      "categorical": false,
+      "current": 0.0526984132246865,
+      "difference": 0.014155037711102152,
+      "field": "reliability",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1621464409001729,
+      "categorical": false,
+      "current": 0.14838853523315162,
+      "difference": -0.013757905667021286,
+      "field": "expected_calibration_error",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.014926751176707323,
+      "categorical": false,
+      "current": 0.0015712092786959958,
+      "difference": -0.013355541898011327,
+      "field": "resolution",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1755058482680393,
+      "categorical": false,
+      "current": 0.16237144077231683,
+      "difference": -0.013134407495722478,
+      "field": "expected_calibration_error",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6265955112486659,
+      "categorical": false,
+      "current": 0.6395411522121355,
+      "difference": 0.012945640963469618,
+      "field": "logarithmic_loss",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.05761656650826651,
+      "categorical": false,
+      "current": 0.04483474189838277,
+      "difference": -0.012781824609883745,
+      "field": "reliability",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.049131988656551995,
+      "categorical": false,
+      "current": 0.036590181403747014,
+      "difference": -0.01254180725280498,
+      "field": "expected_calibration_error",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.06676813621402278,
+      "categorical": false,
+      "current": 0.05451610921329253,
+      "difference": -0.012252027000730248,
+      "field": "brier_skill_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.012376400587937184,
+      "categorical": false,
+      "current": 0.00016419975804901786,
+      "difference": -0.012212200829888166,
+      "field": "resolution",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.019477639116180768,
+      "categorical": false,
+      "current": 0.007828214253921042,
+      "difference": -0.011649424862259726,
+      "field": "reliability",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08557979663528989,
+      "categorical": false,
+      "current": 0.0739539747805567,
+      "difference": -0.011625821854733195,
+      "field": "brier_score",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.24783288856575714,
+      "categorical": false,
+      "current": 0.2363250357922415,
+      "difference": -0.011507852773515626,
+      "field": "brier_skill_score",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0736937454463723,
+      "categorical": false,
+      "current": 0.08505370787389599,
+      "difference": 0.011359962427523684,
+      "field": "brier_skill_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2996426999481849,
+      "categorical": false,
+      "current": 0.2885768934219655,
+      "difference": -0.011065806526219357,
+      "field": "brier_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.021761078660586523,
+      "categorical": false,
+      "current": 0.010926190371440062,
+      "difference": -0.010834888289146461,
+      "field": "resolution",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.07380261986564304,
+      "categorical": false,
+      "current": 0.0632126957797777,
+      "difference": -0.010589924085865343,
+      "field": "expected_calibration_error",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.005081790766393421,
+      "categorical": false,
+      "current": 0.015477820180758921,
+      "difference": 0.010396029414365501,
+      "field": "resolution",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08128509013727049,
+      "categorical": false,
+      "current": 0.07157238320159827,
+      "difference": -0.009712706935672222,
+      "field": "brier_score",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.040232575333146725,
+      "categorical": false,
+      "current": 0.03060180687664298,
+      "difference": -0.009630768456503746,
+      "field": "resolution",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2886986502228396,
+      "categorical": false,
+      "current": 0.2980953443541319,
+      "difference": 0.009396694131292294,
+      "field": "brier_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.018183150123725733,
+      "categorical": false,
+      "current": 0.027422694199138564,
+      "difference": 0.009239544075412831,
+      "field": "brier_skill_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.21804606410177227,
+      "categorical": false,
+      "current": 0.22722090868714534,
+      "difference": 0.009174844585373071,
+      "field": "skill_upper_bound",
+      "row": "60",
+      "section": "horizons"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6535714237016748,
+      "categorical": false,
+      "current": 0.6444934712893161,
+      "difference": -0.009077952412358647,
+      "field": "brier_skill_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.01107340102179396,
+      "categorical": false,
+      "current": 0.0021591758945137107,
+      "difference": -0.00891422512728025,
+      "field": "resolution",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.008795065990173474,
+      "categorical": false,
+      "current": 0.0,
+      "difference": -0.008795065990173474,
+      "field": "resolution",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6833197764717158,
+      "categorical": false,
+      "current": 0.6919868888589764,
+      "difference": 0.00866711238726059,
+      "field": "logarithmic_loss",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.027085780049296796,
+      "categorical": false,
+      "current": 0.018605831706165265,
+      "difference": -0.008479948343131531,
+      "field": "resolution",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11987406263028229,
+      "categorical": false,
+      "current": 0.11174833269081781,
+      "difference": -0.008125729939464477,
+      "field": "expected_calibration_error",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.03661120601233842,
+      "categorical": false,
+      "current": 0.02862598688949728,
+      "difference": -0.007985219122841142,
+      "field": "resolution",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.8174420258927301,
+      "categorical": false,
+      "current": 0.8250960307298335,
+      "difference": 0.007654004837103434,
+      "field": "area_under_the_curve",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6277165417745335,
+      "categorical": false,
+      "current": 0.6353652205027079,
+      "difference": 0.0076486787281744295,
+      "field": "brier_skill_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.58954089388872,
+      "categorical": false,
+      "current": 0.597027972027972,
+      "difference": 0.007487078139251979,
+      "field": "area_under_the_curve",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.027739749378974176,
+      "categorical": false,
+      "current": 0.02026046230257138,
+      "difference": -0.007479287076402795,
+      "field": "reliability",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.011454914113026132,
+      "categorical": false,
+      "current": 0.003995844907746725,
+      "difference": -0.007459069205279407,
+      "field": "reliability",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.19447308182058784,
+      "categorical": false,
+      "current": 0.20157703958423773,
+      "difference": 0.007103957763649887,
+      "field": "expected_calibration_error",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08560463980356003,
+      "categorical": false,
+      "current": 0.07856581719860704,
+      "difference": -0.007038822604952991,
+      "field": "brier_score",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.030012771392081736,
+      "categorical": false,
+      "current": 0.022988505747126436,
+      "difference": -0.007024265644955299,
+      "field": "area_under_the_curve",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.08942725780369012,
+      "categorical": false,
+      "current": 0.08242484539268108,
+      "difference": -0.007002412411009046,
+      "field": "brier_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.02147945864912713,
+      "categorical": false,
+      "current": 0.014576394720801328,
+      "difference": -0.006903063928325803,
+      "field": "reliability",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.008328579194361025,
+      "categorical": false,
+      "current": 0.0015004434095808423,
+      "difference": -0.006828135784780183,
+      "field": "reliability",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.10173874684928716,
+      "categorical": false,
+      "current": 0.095295386119472,
+      "difference": -0.006443360729815162,
+      "field": "brier_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.03792679938540369,
+      "categorical": false,
+      "current": 0.04424862161236536,
+      "difference": 0.0063218222269616695,
+      "field": "resolution",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.23702898289621416,
+      "categorical": false,
+      "current": 0.2432887659455552,
+      "difference": 0.00625978304934105,
+      "field": "reliability",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.23747442758417334,
+      "categorical": false,
+      "current": 0.24369730208198848,
+      "difference": 0.00622287449781514,
+      "field": "brier_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.16563572320957962,
+      "categorical": false,
+      "current": 0.1595315557077173,
+      "difference": -0.006104167501862323,
+      "field": "brier_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.4329423763386028,
+      "categorical": false,
+      "current": 0.43897671256161824,
+      "difference": 0.0060343362230154685,
+      "field": "area_under_the_curve",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.19512891633609364,
+      "categorical": false,
+      "current": 0.1894035333267559,
+      "difference": -0.005725383009337726,
+      "field": "brier_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.02136599455209814,
+      "categorical": false,
+      "current": 0.015747594274761478,
+      "difference": -0.005618400277336663,
+      "field": "reliability",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.6262645814956224,
+      "categorical": false,
+      "current": 0.6318055265669913,
+      "difference": 0.00554094507136893,
+      "field": "logarithmic_loss",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1463220835293068,
+      "categorical": false,
+      "current": 0.14116679669794985,
+      "difference": -0.005155286831356964,
+      "field": "resolution",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.06501112615096152,
+      "categorical": false,
+      "current": 0.06935531224154813,
+      "difference": 0.0043441860905866075,
+      "field": "reliability",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.11476280310349286,
+      "categorical": false,
+      "current": 0.11853538431669054,
+      "difference": 0.003772581213197679,
+      "field": "reliability",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.01423724677271381,
+      "categorical": false,
+      "current": 0.01784856106751551,
+      "difference": 0.0036113142948016996,
+      "field": "resolution",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.24615481158436783,
+      "categorical": false,
+      "current": 0.24938647942054343,
+      "difference": 0.0032316678361755946,
+      "field": "brier_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2623927548902353,
+      "categorical": false,
+      "current": 0.2591748430795848,
+      "difference": -0.0032179118106504534,
+      "field": "brier_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.04532808370551606,
+      "categorical": false,
+      "current": 0.04218782705249492,
+      "difference": -0.003140256653021138,
+      "field": "resolution",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": -0.044828131895997325,
+      "categorical": false,
+      "current": -0.041751514553273195,
+      "difference": 0.0030766173427241306,
+      "field": "brier_skill_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.04624170131084603,
+      "categorical": false,
+      "current": 0.043199354220914005,
+      "difference": -0.003042347089932028,
+      "field": "resolution",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.04886671399505625,
+      "categorical": false,
+      "current": 0.051892277081299135,
+      "difference": 0.003025563086242883,
+      "field": "resolution",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.18966595864760372,
+      "categorical": false,
+      "current": 0.19256777115054927,
+      "difference": 0.00290181250294555,
+      "field": "brier_score",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.30415117995165536,
+      "categorical": false,
+      "current": 0.3012889167575512,
+      "difference": -0.002862263194104153,
+      "field": "brier_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.05049927681730794,
+      "categorical": false,
+      "current": 0.05331360132967314,
+      "difference": 0.002814324512365199,
+      "field": "reliability",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.09979080465776338,
+      "categorical": false,
+      "current": 0.1024610291159795,
+      "difference": 0.0026702244582161166,
+      "field": "resolution",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.1286277113320538,
+      "categorical": false,
+      "current": 0.12598501524179828,
+      "difference": -0.002642696090255525,
+      "field": "brier_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.033305204912068516,
+      "categorical": false,
+      "current": 0.03526343989068554,
+      "difference": 0.001958234978617024,
+      "field": "resolution",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.004574888561796245,
+      "categorical": false,
+      "current": 0.002776274873072866,
+      "difference": -0.0017986136887233788,
+      "field": "resolution",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.791909412163518,
+      "categorical": false,
+      "current": 0.7902376283367213,
+      "difference": -0.001671783826796669,
+      "field": "logarithmic_loss",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0371756949649119,
+      "categorical": false,
+      "current": 0.035857190178982014,
+      "difference": -0.0013185047859298887,
+      "field": "reliability",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.2969809413080171,
+      "categorical": false,
+      "current": 0.296106446559461,
+      "difference": -0.0008744947485561094,
+      "field": "brier_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0005353139951152598,
+      "categorical": false,
+      "current": 0.0,
+      "difference": -0.0005353139951152598,
+      "field": "resolution",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.0005818732505275535,
+      "categorical": false,
+      "current": 0.00029523801247345843,
+      "difference": -0.00028663523805409503,
+      "field": "resolution",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "MOVED",
+      "baseline": 0.010747810702615638,
+      "categorical": false,
+      "current": 0.010935083628016588,
+      "difference": 0.0001872729254009508,
+      "field": "resolution",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 31.5,
+      "categorical": false,
+      "current": 31.5,
+      "difference": 0.0,
+      "field": "effective_independent_observations",
+      "row": "12",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 2.25,
+      "categorical": false,
+      "current": 2.25,
+      "difference": 0.0,
+      "field": "effective_independent_observations",
+      "row": "120",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 5.5,
+      "categorical": false,
+      "current": 5.5,
+      "difference": 0.0,
+      "field": "effective_independent_observations",
+      "row": "60",
+      "section": "horizons"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1226158038147139,
+      "categorical": false,
+      "current": 0.1226158038147139,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1641910720087336,
+      "categorical": false,
+      "current": 0.1641910720087336,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 367,
+      "categorical": false,
+      "current": 367,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.667953667953668,
+      "categorical": false,
+      "current": 0.667953667953668,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.23569549669538173,
+      "categorical": false,
+      "current": 0.23569549669538173,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 259,
+      "categorical": false,
+      "current": 259,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3542319749216301,
+      "categorical": false,
+      "current": 0.3542319749216301,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3097840294653566,
+      "categorical": false,
+      "current": 0.3097840294653566,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 319,
+      "categorical": false,
+      "current": 319,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "consumer_price_inflation_above_five_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3058510638297872,
+      "categorical": false,
+      "current": 0.3058510638297872,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2634031993959083,
+      "categorical": false,
+      "current": 0.2634031993959083,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 376,
+      "categorical": false,
+      "current": 376,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3283582089552239,
+      "categorical": false,
+      "current": 0.3283582089552239,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2887298663745411,
+      "categorical": false,
+      "current": 0.2887298663745411,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 268,
+      "categorical": false,
+      "current": 268,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3231707317073171,
+      "categorical": false,
+      "current": 0.3231707317073171,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2637659740696764,
+      "categorical": false,
+      "current": 0.2637659740696764,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 328,
+      "categorical": false,
+      "current": 328,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "consumer_price_inflation_above_three_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.07407407407407407,
+      "categorical": false,
+      "current": 0.07407407407407407,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1235538599447083,
+      "categorical": false,
+      "current": 0.1235538599447083,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 378,
+      "categorical": false,
+      "current": 378,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "economy_in_recession_at_horizon_date @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.07407407407407407,
+      "categorical": false,
+      "current": 0.07407407407407407,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1279855330308731,
+      "categorical": false,
+      "current": 0.1279855330308731,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 270,
+      "categorical": false,
+      "current": 270,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "economy_in_recession_at_horizon_date @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.08484848484848485,
+      "categorical": false,
+      "current": 0.08484848484848485,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1271221497038787,
+      "categorical": false,
+      "current": 0.1271221497038787,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 330,
+      "categorical": false,
+      "current": 330,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "economy_in_recession_at_horizon_date @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.16137566137566137,
+      "categorical": false,
+      "current": 0.16137566137566137,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2521593350258907,
+      "categorical": false,
+      "current": 0.2521593350258907,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 378,
+      "categorical": false,
+      "current": 378,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "economy_in_recession_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.9666666666666667,
+      "categorical": false,
+      "current": 0.9666666666666667,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.03329490139805343,
+      "categorical": false,
+      "current": 0.03329490139805343,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.010427350427350426,
+      "categorical": false,
+      "current": 0.010427350427350426,
+      "difference": 0.0,
+      "field": "resolution",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 270,
+      "categorical": false,
+      "current": 270,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "economy_in_recession_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.6212121212121212,
+      "categorical": false,
+      "current": 0.6212121212121212,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.31659852410609873,
+      "categorical": false,
+      "current": 0.31659852410609873,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 330,
+      "categorical": false,
+      "current": 330,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "economy_in_recession_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.35714285714285715,
+      "categorical": false,
+      "current": 0.35714285714285715,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2971889989344164,
+      "categorical": false,
+      "current": 0.2971889989344164,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 378,
+      "categorical": false,
+      "current": 378,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2222222222222222,
+      "categorical": false,
+      "current": 0.2222222222222222,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.5449650062290697,
+      "categorical": false,
+      "current": 0.5449650062290697,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 270,
+      "categorical": false,
+      "current": 270,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2636363636363636,
+      "categorical": false,
+      "current": 0.2636363636363636,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3910140086218038,
+      "categorical": false,
+      "current": 0.3910140086218038,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 330,
+      "categorical": false,
+      "current": 330,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "federal_funds_rate_above_four_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.4365079365079365,
+      "categorical": false,
+      "current": 0.4365079365079365,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3455101441927426,
+      "categorical": false,
+      "current": 0.3455101441927426,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 378,
+      "categorical": false,
+      "current": 378,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 1.0,
+      "categorical": false,
+      "current": 1.0,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.6854931833904876,
+      "categorical": false,
+      "current": 0.6854931833904876,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.0,
+      "categorical": false,
+      "current": 0.0,
+      "difference": 0.0,
+      "field": "resolution",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 270,
+      "categorical": false,
+      "current": 270,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.8272727272727273,
+      "categorical": false,
+      "current": 0.8272727272727273,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.5343597770245586,
+      "categorical": false,
+      "current": 0.5343597770245586,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 330,
+      "categorical": false,
+      "current": 330,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "federal_funds_rate_below_one_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.5145888594164456,
+      "categorical": false,
+      "current": 0.5145888594164456,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.26152619603106536,
+      "categorical": false,
+      "current": 0.26152619603106536,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 377,
+      "categorical": false,
+      "current": 377,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.44609665427509293,
+      "categorical": false,
+      "current": 0.44609665427509293,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.28423903629882236,
+      "categorical": false,
+      "current": 0.28423903629882236,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 269,
+      "categorical": false,
+      "current": 269,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.44680851063829785,
+      "categorical": false,
+      "current": 0.44680851063829785,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2798030128237232,
+      "categorical": false,
+      "current": 0.2798030128237232,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 329,
+      "categorical": false,
+      "current": 329,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "industrial_production_growth_above_two_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.24338624338624337,
+      "categorical": false,
+      "current": 0.24338624338624337,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1886838620630756,
+      "categorical": false,
+      "current": 0.1886838620630756,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 378,
+      "categorical": false,
+      "current": 378,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.9037037037037037,
+      "categorical": false,
+      "current": 0.9037037037037037,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.11915123766891121,
+      "categorical": false,
+      "current": 0.11915123766891121,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 270,
+      "categorical": false,
+      "current": 270,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.6636363636363637,
+      "categorical": false,
+      "current": 0.6636363636363637,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2586727847128118,
+      "categorical": false,
+      "current": 0.2586727847128118,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 330,
+      "categorical": false,
+      "current": 330,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "treasury_yield_curve_inverted_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.47214854111405835,
+      "categorical": false,
+      "current": 0.47214854111405835,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2881319220445284,
+      "categorical": false,
+      "current": 0.2881319220445284,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 377,
+      "categorical": false,
+      "current": 377,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.45724907063197023,
+      "categorical": false,
+      "current": 0.45724907063197023,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.33586421382200315,
+      "categorical": false,
+      "current": 0.33586421382200315,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 269,
+      "categorical": false,
+      "current": 269,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.46200607902735563,
+      "categorical": false,
+      "current": 0.46200607902735563,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.3017557612454364,
+      "categorical": false,
+      "current": 0.3017557612454364,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 329,
+      "categorical": false,
+      "current": 329,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "unemployment_rate_above_five_percent_at_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.23705722070844687,
+      "categorical": false,
+      "current": 0.23705722070844687,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.19505184406249929,
+      "categorical": false,
+      "current": 0.19505184406249929,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 367,
+      "categorical": false,
+      "current": 367,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 12",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.7799227799227799,
+      "categorical": false,
+      "current": 0.7799227799227799,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.1959459112343448,
+      "categorical": false,
+      "current": 0.1959459112343448,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 259,
+      "categorical": false,
+      "current": 259,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 120",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.5736677115987461,
+      "categorical": false,
+      "current": 0.5736677115987461,
+      "difference": 0.0,
+      "field": "base_rate",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 0.2832678216306314,
+      "categorical": false,
+      "current": 0.2832678216306314,
+      "difference": 0.0,
+      "field": "climatology_brier_score",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    },
+    {
+      "band": "IDENTICAL",
+      "baseline": 319,
+      "categorical": false,
+      "current": 319,
+      "difference": 0.0,
+      "field": "resolved_forecasts",
+      "row": "unemployment_rate_above_seven_percent_within_horizon @ 60",
+      "section": "indicators"
+    }
+  ],
+  "format_version": 1,
+  "numerical_drift_tolerance": 1e-09,
+  "structural": []
+}
