@@ -1,0 +1,35 @@
+<p><b>What changed.</b> Pure post-processing, with the model unchanged. Every forecast becomes half the
+model's probability and half the climatology's, at every horizon and for every indicator. There is no
+fitted weight, because the research showed that fitting one on about 31 outcomes does harm.</p>
+<p><b>What happened.</b> Its numbers alone give no verdict at one year, and it is not harmful. Pulling halfway to climatology gives
+back some of the model's one-year skill. It helps most at ten years, where main's skill is negative, as
+the registration predicted, but ten-year evidence is uninformative. The blend was the combination
+competitions' most robust result, and here it does not beat the model at the horizon that matters.</p>
+<p><b>The prediction that failed.</b> One-year calibration error was registered to fall. By the only
+measure the tooling produces, the arm's report finds it rose slightly.</p>
+<p><b>Review: leak found, so the arm is void under the rule.</b> The arm's code does what the
+registration says; the leak is in the registered design. Main's climatology is clean only because main's
+forecasts never read it. Blending it into the forecast gives two known main-level approximations a way
+into the forecast:</p>
+<ul>
+<li><b>The recession lag (D14).</b> Post-trough labels read before NBER's announcements move the
+blended forecast by at most 0.00083, on exactly D14's eight dates.</li>
+<li><b>Revised values (D5).</b> The climatology averages outcomes from today's revised data, back to
+1919, and main's forecasts have no such channel. Rebuilt from archival vintages, industrial production
+moves the blend by up to 0.0047, and the one-year difference moves by 0.0002.</li>
+</ul>
+<p>Neither could move a verdict. The pre-registration voids an arm for any such path, not only a large
+one, and the rule is applied as written.</p>
+<p>Everything else checked clean:</p>
+<ul>
+<li>There is one publication boundary, not two.</li>
+<li>The carry-forward never looks ahead and never reaches a scored row.</li>
+<li>The model parameters are identical to main's.</li>
+</ul>
+<p>The arm's own report is wrong on two points:</p>
+<ul>
+<li>It says no test assertion was loosened, but one was: <code>bool</code> became
+<code>bool | float</code>. The change was needed for the new setting and hides nothing.</li>
+<li>It calls the audit an end-to-end check of the blend. The audit sees neither leak channel.</li>
+</ul>
+

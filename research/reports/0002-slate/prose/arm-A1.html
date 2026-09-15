@@ -1,0 +1,14 @@
+<p><b>What changed.</b> A Dirichlet prior on each row of the transition matrix, pulling toward staying
+in the current regime, at a strength fixed at registration. Main's fit declares some regime switches
+effectively impossible, with transition probabilities as small as 1e-184 to 1e-299. Under the prior, the
+smallest is about 0.0014, per the reviewer's measurement.</p>
+<p><b>What happened.</b> The one-year interval straddles zero at both levels, so there is no verdict.
+That is the outcome the pre-registration named as the most likely for any single arm. Persistence fell,
+as predicted. The ten-year difference is large, but ten-year evidence is about 2.2 observations.</p>
+<p><b>Review: clean.</b> With the prior switched off, the reviewer reproduced main's cached 1994-03 fit
+bit for bit on real data. It left two notes, neither of them a leak:</p>
+<ul>
+<li>The report's test count (500) cannot be reproduced; the committed tree has 489 tests.</li>
+<li>A code comment claims a monotonicity guarantee that holds for the mode update, not for the
+posterior-mean update the arm actually uses.</li>
+</ul>

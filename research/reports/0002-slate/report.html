@@ -1,0 +1,451 @@
+<title>All Weather Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Source+Serif+4:opsz,wght@8..60,200..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root { --bg:#EFF0ED; --surface:#F7F8F5; --ink:#1B2126; --ink-2:#4F5A61; --ink-3:#6E787E; --line:#D2D7D3;
+    --accent:#35618C; --red:#B23A2E; --bronze:#9A6533; --peacock:#2F6E85; --straw:#B98F3B;
+    --ok:#2167B5; --bad:#B8392C; --wait:#A97A12; --none:#6E787E; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#14181B; --surface:#1B2125; --ink:#E6E9E3; --ink-2:#A6B0B5; --ink-3:#8A9499; --line:#2B3439;
+    --accent:#7FAEDB; --red:#D96A57; --bronze:#C9955B; --peacock:#6FA8BD; --straw:#D3B25F;
+    --ok:#4F88D0; --bad:#D2566A; --wait:#B08A1E; --none:#8A9499; } }
+  :root[data-theme="dark"] { --bg:#14181B; --surface:#1B2125; --ink:#E6E9E3; --ink-2:#A6B0B5; --ink-3:#8A9499; --line:#2B3439;
+    --accent:#7FAEDB; --red:#D96A57; --bronze:#C9955B; --peacock:#6FA8BD; --straw:#D3B25F;
+    --ok:#4F88D0; --bad:#D2566A; --wait:#B08A1E; --none:#8A9499; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62; }
+  .wrap { max-width:960px; margin:0 auto; padding:44px 24px 90px; }
+  .prose { max-width:68ch; }
+  .eyebrow, .mono, code, .sub, .chip, th, .tick, .row-sub, .value, figcaption {
+    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; }
+  .eyebrow { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); }
+  h1 { font-family:Archivo,"Arial Narrow",Arial,sans-serif; font-stretch:120%; font-weight:900;
+    font-size:clamp(36px,7vw,62px); line-height:1; text-transform:uppercase; margin:.25em 0 0; text-wrap:balance; }
+  .heat-strip { height:8px; border-radius:2px; margin:16px 0 22px;
+    background:linear-gradient(90deg,var(--red),var(--bronze),var(--straw),var(--peacock)); }
+  h2 { font-family:Archivo,Arial,sans-serif; font-stretch:112%; font-weight:800; font-size:25px;
+    margin:2.4em 0 .5em; text-wrap:balance; }
+  h3 { font-family:Archivo,Arial,sans-serif; font-weight:700; font-size:18px; margin:0 0 .3em; }
+  p { margin:.6em 0; }
+  .lede { font-size:20px; line-height:1.55; max-width:62ch; }
+  .generated { font-size:12px; color:var(--ink-3); margin-top:10px; }
+  code { font-size:.86em; background:color-mix(in srgb, var(--line) 45%, transparent); padding:1px 4px; border-radius:3px; }
+  .sub { font-size:11.5px; color:var(--ink-2); font-weight:400; }
+  .table-scroll { overflow-x:auto; margin:16px 0; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2);
+    text-align:left; padding:8px 10px; border-bottom:2px solid var(--line); vertical-align:bottom; }
+  td { padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .num { text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tr.reference td { color:var(--ink-2); font-style:italic; }
+  tr.pending td.status { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2); }
+  .chip { display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    padding:2px 8px; border-radius:999px; border:1.5px solid currentColor; white-space:nowrap; }
+  .chip-confirmed, .chip-promising, .chip-control { color:var(--ok); }
+  .chip-harmful, .chip-void { color:var(--bad); }
+  .chip-pending { color:var(--wait); border-style:dashed; }
+  .chip-none { color:var(--none); }
+  figure.chart { margin:18px 0 8px; overflow-x:auto; }
+  svg.forest { width:100%; min-width:640px; height:auto; display:block; }
+  svg .grid { stroke:var(--line); stroke-width:1; }
+  svg .zero { stroke:var(--ink-2); stroke-width:1.5; }
+  svg .harm { stroke:var(--bad); stroke-width:1.5; stroke-dasharray:4 4; }
+  svg .tick { font-size:11px; fill:var(--ink-2); }
+  svg .harm-label { fill:var(--bad); }
+  svg .row-label { font-family:"Source Serif 4",Georgia,serif; font-size:14px; font-weight:600; fill:var(--ink); }
+  svg .row-sub { font-size:10.5px; fill:var(--ink-2); letter-spacing:.03em; }
+  svg .value { font-size:12.5px; fill:var(--ink); }
+  svg .value-sub { fill:var(--ink-2); font-size:11px; }
+  svg .hit { fill:transparent; }
+  svg .mark:hover .hit { fill:color-mix(in srgb, var(--line) 40%, transparent); }
+  svg .ci-wide { stroke-width:2; stroke-linecap:round; }
+  svg .point { stroke:var(--bg); stroke-width:2; }
+  svg .mark-confirmed .ci-wide, svg .mark-promising .ci-wide { stroke:var(--ok); }
+  svg .mark-confirmed .ci-narrow, svg .mark-promising .ci-narrow { fill:color-mix(in srgb, var(--ok) 45%, transparent); }
+  svg .mark-confirmed .point, svg .mark-promising .point { fill:var(--ok); }
+  svg .mark-harmful .ci-wide, svg .mark-void .ci-wide { stroke:var(--bad); }
+  svg .mark-harmful .ci-narrow, svg .mark-void .ci-narrow { fill:color-mix(in srgb, var(--bad) 45%, transparent); }
+  svg .mark-harmful .point, svg .mark-void .point { fill:var(--bad); }
+  svg .mark-none .ci-wide { stroke:var(--none); }
+  svg .mark-none .ci-narrow { fill:color-mix(in srgb, var(--none) 40%, transparent); }
+  svg .mark-none .point { fill:var(--none); }
+  svg .mark-pending .ci-wide { stroke:var(--wait); stroke-dasharray:3 3; }
+  svg .mark-pending .ci-narrow { fill:color-mix(in srgb, var(--wait) 35%, transparent); }
+  svg .mark-pending .point { fill:var(--wait); }
+  figcaption { font-size:12px; color:var(--ink-2); line-height:1.5; margin-top:6px; max-width:90ch; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px 18px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-2); margin:6px 0 0; }
+  .arms { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:14px; margin:16px 0; align-items:start; }
+  .verdict { display:inline-block; text-align:right; line-height:1.3; }
+  .verdicts td:nth-child(6) { white-space:nowrap; }
+  .arm { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px 18px; }
+  .arm header { display:flex; justify-content:space-between; gap:10px; align-items:baseline; margin-bottom:6px; }
+  .arm p { font-size:15.5px; }
+  .arm .label { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2); }
+  .reading { font-size:17px; }
+  .callout { border-left:3px solid var(--bad); padding:4px 0 4px 16px; margin:18px 0; }
+  .decisions li, .limits li { margin:.55em 0; }
+  ol.decisions { padding-left:1.3em; }
+  footer { margin-top:64px; border-top:1px solid var(--line); padding-top:16px; font-size:13px; color:var(--ink-2); }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Experiment 0002 · research slate · pre-registered 2026-09-15</div>
+  <h1>All Weather Slate</h1>
+  <div class="heat-strip" aria-hidden="true"></div>
+  <p class="lede"><b>The systematic method is A4: two hidden Markov chains in place of main's one, a
+growth chain and an inflation-and-rates chain.</b> Of the six pre-registered ideas it has the largest
+one-year difference over main, +0.0590 in Brier skill score, and it clears the family-wise bar: its
+98.33% interval is [+0.0147, +0.1019]. Its independent look-ahead review is clean, and two further seeds, fixed
+before they ran, reproduce it.</p>
+<p class="prose">In All Weather's terms, the frame survives as two axes, not as a grid. Imposing the
+four quadrants as the state space (A2) also helps at one year. Defining them over surprises, as Dalio's
+own sources do (A3), does not. Modelling growth and inflation as separate processes, each moving at its
+own speed, helps most. Nothing combines with A4 under the rule written before the results: no stackable
+layer qualified, and a model has only one state space.</p>
+<p class="prose">This is the strongest claim the design allows, and no stronger. The result is <i>in
+sample</i>: every arm was designed by someone who had already seen main's results. The only
+out-of-sample test is forecasts registered forward, the first of which resolves on 2027-07-01. Nothing
+has been merged or shipped; that is your call, below.</p>
+
+  <p class="generated">generated 2026-09-15 22:28 JST from main at <code>6a9cef1</code> by <code>research/tools/build_slate_report.py</code></p>
+</header>
+
+<h2>Six ideas, one rule</h2>
+<div class="prose">
+<p>Each arm is one idea, built on its own branch and scored against <code>main</code> on the same
+391 forecast dates from 1994-03, the first date the model is honest about. The statistic is the paired
+difference in mean Brier skill score, arm minus main, with a moving-block bootstrap over forecast dates
+(10,000 resamples, seed 20260908). The rule was committed before any arm ran:
+<b>promising</b> if the one-year 90% interval is above zero; <b>confirmed in sample</b> if the
+one-year 98.33% interval is (1 − 0.10/6, a Bonferroni correction for six arms); <b>harmful</b> if any
+horizon's 90% interval is below −0.02; <b>void</b> if the look-ahead audit fails or the
+independent review finds a leak.</p>
+</div>
+<div class='table-scroll'><table class='verdicts'><thead><tr><th>Arm</th><th>Idea</th><th class='num'>1 year: arm − main<br><span class='sub'>90% · 98.33%</span></th><th class='num'>5 years<br><span class='sub'>90%</span></th><th class='num'>10 years<br><span class='sub'>90%</span></th><th>Audit</th><th>Review</th><th>Verdict</th></tr></thead><tbody><tr class='reference'><td>main</td><td>Brier skill score of main itself</td><td class='num'>+0.2154</td><td class='num'>+0.0728</td><td class='num'>−0.3528</td><td></td><td></td><td></td></tr><tr><td><b>A0</b></td><td>Control: main, unchanged</td><td class='num'><b>+0.0000</b><br><span class='sub'>[+0.0000, +0.0000]<br>[+0.0000, +0.0000]</span></td><td class='num'>+0.0000<br><span class='sub'>[+0.0000, +0.0000]</span></td><td class='num'>+0.0000<br><span class='sub'>[+0.0000, +0.0000]</span></td><td>exit 0</td><td>—</td><td><span class="verdict"><span class="chip chip-control">Control passes</span></span></td></tr><tr><td><b>A1</b></td><td>Sticky prior on the transition matrix</td><td class='num'><b>+0.0046</b><br><span class='sub'>[−0.0126, +0.0232]<br>[−0.0206, +0.0321]</span></td><td class='num'>−0.0030<br><span class='sub'>[−0.0430, +0.0574]</span></td><td class='num'>+0.1905<br><span class='sub'>[+0.0899, +0.2320]</span></td><td>exit 0</td><td>Clean</td><td><span class="verdict"><span class="chip chip-none">No verdict</span></span></td></tr><tr><td><b>A2</b></td><td>All Weather quadrants over levels, four states</td><td class='num'><b>+0.0381</b><br><span class='sub'>[+0.0144, +0.0583]<br>[+0.0054, +0.0690]</span></td><td class='num'>+0.0251<br><span class='sub'>[+0.0013, +0.0831]</span></td><td class='num'>+0.2202<br><span class='sub'>[+0.1021, +0.2506]</span></td><td>exit 0</td><td>Clean</td><td><span class="verdict"><span class="chip chip-confirmed">Confirmed in sample</span></span></td></tr><tr><td><b>A3</b></td><td>All Weather quadrants over surprises</td><td class='num'><b>+0.0184</b><br><span class='sub'>[−0.0050, +0.0404]<br>[−0.0150, +0.0511]</span></td><td class='num'>−0.0517<br><span class='sub'>[−0.1097, −0.0183]</span></td><td class='num'>−0.1181<br><span class='sub'>[−0.2331, +0.0689]</span></td><td>exit 0</td><td>Clean</td><td><span class="verdict"><span class="chip chip-none">No verdict</span></span></td></tr><tr><td><b>A4</b></td><td>Two chains: growth, and inflation with rates</td><td class='num'><b>+0.0590</b><br><span class='sub'>[+0.0275, +0.0877]<br>[+0.0147, +0.1019]</span></td><td class='num'>+0.0465<br><span class='sub'>[+0.0249, +0.0953]</span></td><td class='num'>+0.1855<br><span class='sub'>[+0.0843, +0.2228]</span></td><td>exit 0</td><td>Clean</td><td><span class="verdict"><span class="chip chip-confirmed">Confirmed in sample</span></span></td></tr><tr><td><b>A5</b></td><td>Direct per-horizon regime rates</td><td class='num'><b>−0.1017</b><br><span class='sub'>[−0.1448, −0.0586]<br>[−0.1658, −0.0421]</span></td><td class='num'>−0.1583<br><span class='sub'>[−0.2285, +0.0019]</span></td><td class='num'>+0.2647<br><span class='sub'>[+0.0459, +0.2526]</span></td><td>exit 0</td><td>Clean</td><td><span class="verdict"><span class="chip chip-harmful">Harmful</span></span></td></tr><tr><td><b>A6</b></td><td>Fixed 50/50 blend with climatology</td><td class='num'><b>−0.0209</b><br><span class='sub'>[−0.0697, +0.0296]<br>[−0.0895, +0.0543]</span></td><td class='num'>+0.0141<br><span class='sub'>[−0.0515, +0.1742]</span></td><td class='num'>+0.2779<br><span class='sub'>[+0.1204, +0.3310]</span></td><td>exit 0</td><td>Leak Found</td><td><span class="verdict"><span class="chip chip-void">Void</span></span></td></tr></tbody></table></div>
+<figure class='chart'><svg viewBox='0 0 820 340' role='img' aria-label='One year, the registered primary endpoint. Dot: arm minus main in mean Brier skill score. Thick bar: 90% interval, which decides PROMISING. Thin line: 98.33% interval (1 − 0.10/6, Bonferroni across six arms), which decides CONFIRMED_IN_SAMPLE.' class='forest'><line x1='288.3' x2='288.3' y1='26' y2='314' class='grid'/><text x='288.3' y='330' class='tick' text-anchor='middle'>−0.15</text><line x1='348.3' x2='348.3' y1='26' y2='314' class='grid'/><text x='348.3' y='330' class='tick' text-anchor='middle'>−0.10</text><line x1='408.3' x2='408.3' y1='26' y2='314' class='grid'/><text x='408.3' y='330' class='tick' text-anchor='middle'>−0.05</text><line x1='468.4' x2='468.4' y1='26' y2='314' class='grid'/><text x='468.4' y='330' class='tick' text-anchor='middle'>0</text><line x1='528.4' x2='528.4' y1='26' y2='314' class='grid'/><text x='528.4' y='330' class='tick' text-anchor='middle'>+0.05</text><line x1='588.4' x2='588.4' y1='26' y2='314' class='grid'/><text x='588.4' y='330' class='tick' text-anchor='middle'>+0.10</text><line x1='468.4' x2='468.4' y1='20' y2='314' class='zero'/><text x='473.4' y='16' class='tick' text-anchor='start'>no difference</text><line x1='444.3' x2='444.3' y1='20' y2='314' class='harm'/><text x='439.3' y='16' class='tick harm-label' text-anchor='end'>harm floor −0.02</text><text x='0' y='54.0' class='row-label'>A1 · Sticky prior on the transition matrix</text><text x='0' y='70.0' class='row-sub'>No verdict</text><g class='mark mark-none'><title>A1 at 12 months: +0.0046, 90% [−0.0126, +0.0232], 98.33% [−0.0206, +0.0321]</title><rect x='246' y='36.0' width='368' height='42' class='hit'/><line x1='443.7' x2='506.9' y1='57.0' y2='57.0' class='ci-wide'/><rect x='453.2' y='53.0' width='43.0' height='8' rx='4' class='ci-narrow'/><circle cx='473.9' cy='57.0' r='5.5' class='point'/></g><text x='626' y='61.0' class='value'>+0.0046 <tspan class='value-sub'>[−0.0126, +0.0232]</tspan></text><text x='0' y='100.0' class='row-label'>A2 · All Weather quadrants over levels, four states</text><text x='0' y='116.0' class='row-sub'>Confirmed in sample</text><g class='mark mark-confirmed'><title>A2 at 12 months: +0.0381, 90% [+0.0144, +0.0583], 98.33% [+0.0054, +0.0690]</title><rect x='246' y='82.0' width='368' height='42' class='hit'/><line x1='474.9' x2='551.2' y1='103.0' y2='103.0' class='ci-wide'/><rect x='485.6' y='99.0' width='52.7' height='8' rx='4' class='ci-narrow'/><circle cx='514.0' cy='103.0' r='5.5' class='point'/></g><text x='626' y='107.0' class='value'>+0.0381 <tspan class='value-sub'>[+0.0144, +0.0583]</tspan></text><text x='0' y='146.0' class='row-label'>A3 · All Weather quadrants over surprises</text><text x='0' y='162.0' class='row-sub'>No verdict</text><g class='mark mark-none'><title>A3 at 12 months: +0.0184, 90% [−0.0050, +0.0404], 98.33% [−0.0150, +0.0511]</title><rect x='246' y='128.0' width='368' height='42' class='hit'/><line x1='450.4' x2='529.8' y1='149.0' y2='149.0' class='ci-wide'/><rect x='462.3' y='145.0' width='54.6' height='8' rx='4' class='ci-narrow'/><circle cx='490.4' cy='149.0' r='5.5' class='point'/></g><text x='626' y='153.0' class='value'>+0.0184 <tspan class='value-sub'>[−0.0050, +0.0404]</tspan></text><text x='0' y='192.0' class='row-label'>A4 · Two chains: growth, and inflation with rates</text><text x='0' y='208.0' class='row-sub'>Confirmed in sample</text><g class='mark mark-confirmed'><title>A4 at 12 months: +0.0590, 90% [+0.0275, +0.0877], 98.33% [+0.0147, +0.1019]</title><rect x='246' y='174.0' width='368' height='42' class='hit'/><line x1='486.0' x2='590.7' y1='195.0' y2='195.0' class='ci-wide'/><rect x='501.3' y='191.0' width='72.3' height='8' rx='4' class='ci-narrow'/><circle cx='539.2' cy='195.0' r='5.5' class='point'/></g><text x='626' y='199.0' class='value'>+0.0590 <tspan class='value-sub'>[+0.0275, +0.0877]</tspan></text><text x='0' y='238.0' class='row-label'>A5 · Direct per-horizon regime rates</text><text x='0' y='254.0' class='row-sub'>Harmful</text><g class='mark mark-harmful'><title>A5 at 12 months: −0.1017, 90% [−0.1448, −0.0586], 98.33% [−0.1658, −0.0421]</title><rect x='246' y='220.0' width='368' height='42' class='hit'/><line x1='269.3' x2='417.8' y1='241.0' y2='241.0' class='ci-wide'/><rect x='294.6' y='237.0' width='103.4' height='8' rx='4' class='ci-narrow'/><circle cx='346.3' cy='241.0' r='5.5' class='point'/></g><text x='626' y='245.0' class='value'>−0.1017 <tspan class='value-sub'>[−0.1448, −0.0586]</tspan></text><text x='0' y='284.0' class='row-label'>A6 · Fixed 50/50 blend with climatology</text><text x='0' y='300.0' class='row-sub'>Void</text><g class='mark mark-void'><title>A6 at 12 months: −0.0209, 90% [−0.0697, +0.0296], 98.33% [−0.0895, +0.0543]</title><rect x='246' y='266.0' width='368' height='42' class='hit'/><line x1='360.9' x2='533.6' y1='287.0' y2='287.0' class='ci-wide'/><rect x='384.7' y='283.0' width='119.2' height='8' rx='4' class='ci-narrow'/><circle cx='443.3' cy='287.0' r='5.5' class='point'/></g><text x='626' y='291.0' class='value'>−0.0209 <tspan class='value-sub'>[−0.0697, +0.0296]</tspan></text></svg><figcaption>One year, the registered primary endpoint. Dot: arm minus main in mean Brier skill score. Thick bar: 90% interval, which decides PROMISING. Thin line: 98.33% interval (1 − 0.10/6, Bonferroni across six arms), which decides CONFIRMED_IN_SAMPLE.</figcaption></figure>
+<div class="legend"><span>● point estimate</span><span>▬ 90% interval</span><span>─ 98.33% interval</span><span>┆ harm floor −0.02</span></div>
+
+<h2>What each arm found</h2>
+<div class='arms'><article class='arm'><header><h3>A1 · Sticky prior on the transition matrix</h3><span class="verdict"><span class="chip chip-none">No verdict</span></span></header><p class='label'>research/sticky-dirichlet-prior · 1 year +0.0046 · 90% [−0.0126, +0.0232] · review clean</p><p><b>What changed.</b> A Dirichlet prior on each row of the transition matrix, pulling toward staying
+in the current regime, at a strength fixed at registration. Main's fit declares some regime switches
+effectively impossible, with transition probabilities as small as 1e-184 to 1e-299. Under the prior, the
+smallest is about 0.0014, per the reviewer's measurement.</p>
+<p><b>What happened.</b> The one-year interval straddles zero at both levels, so there is no verdict.
+That is the outcome the pre-registration named as the most likely for any single arm. Persistence fell,
+as predicted. The ten-year difference is large, but ten-year evidence is about 2.2 observations.</p>
+<p><b>Review: clean.</b> With the prior switched off, the reviewer reproduced main's cached 1994-03 fit
+bit for bit on real data. It left two notes, neither of them a leak:</p>
+<ul>
+<li>The report's test count (500) cannot be reproduced; the committed tree has 489 tests.</li>
+<li>A code comment claims a monotonicity guarantee that holds for the mode update, not for the
+posterior-mean update the arm actually uses.</li>
+</ul>
+</article><article class='arm'><header><h3>A2 · All Weather quadrants over levels, four states</h3><span class="verdict"><span class="chip chip-confirmed">Confirmed in sample</span></span></header><p class='label'>research/quadrant-structure-levels · 1 year +0.0381 · 90% [+0.0144, +0.0583] · review clean</p><p><b>What changed.</b> All Weather's growth-by-inflation grid, imposed on the state space.</p>
+<ul>
+<li>Every fit has four states, each started from the centroid of one quadrant.</li>
+<li>The quadrants are split at each series' expanding median, so no threshold is written down
+anywhere.</li>
+<li>The burn-in sweep still runs, and would have chosen six states; it now chooses nothing.</li>
+</ul>
+<p><b>What happened.</b> Confirmed in sample at one year, and its five-year interval is above zero too.
+That is the opposite of its registered prediction, which expected one-year skill to fall with fewer
+states. It is second to A4. Both arms replace the state space, so only one can be used, and 0003's rule
+picks the one with the higher one-year difference.</p>
+<p><b>Four runs, one scored.</b></p>
+<ul>
+<li>An early run ended with a truncated log.</li>
+<li>The next was voided, because its code was edited while it ran.</li>
+<li>The author discarded a third after committing further tests.</li>
+<li>The scored run started on a clean tree and stayed clean. It gives the same one-year numbers as the
+voided run to four decimals, so the edits never touched a forecast.</li>
+</ul>
+<p><b>What its audit did not test.</b> The deterministic audit passed, but it fitted main's six
+states, not A2's four-state seeding (D15). So A2's defence against leaks rests on its independent
+review.</p>
+<p><b>Review: clean, and it closed the audit's gap by hand.</b> The reviewer confirmed that the
+recorded audit never ran A2's code, then ran the checks that did:</p>
+<ul>
+<li>The same audit, forced onto four states, with every fit quadrant-seeded: it passed, with all 2,190
+rows identical.</li>
+<li>Its own perturbation checks at six cutoffs, from 2005 to today: every earlier fit and centroid came
+out byte-identical.</li>
+<li>All 34 models refitted with no cache, and the quadrant centroids recomputed by its own loop: both
+bit-identical to what the scored run used.</li>
+<li>The recession-lag leak (D14) barely touches this arm: dropping the 8 exposed dates moves its
+one-year difference only in the fourth decimal.</li>
+</ul>
+
+</article><article class='arm'><header><h3>A3 · All Weather quadrants over surprises</h3><span class="verdict"><span class="chip chip-none">No verdict</span></span></header><p class='label'>research/quadrant-structure-surprises · 1 year +0.0184 · 90% [−0.0050, +0.0404] · review clean</p><p><b>What changed.</b> The model reads surprises instead of levels. Each month's growth and inflation
+has a recursive AR(1) forecast subtracted, fitted only on earlier months, which is how All Weather's
+primary sources define the quadrants. The state count is fixed at four.</p>
+<p><b>What happened.</b> No verdict at one year. At five years it came closer to the harm floor than any
+other arm without crossing it. It is faithful to the source, and no better than main.</p>
+<p><b>Review: clean.</b> The reviewer's checks:</p>
+<ul>
+<li>The recursive fit agrees with separate regressions on real data, to 9e-15.</li>
+<li>The arm's tests caught two deliberately leaky copies of the code.</li>
+<li>The audit alone would miss one version of this leak: a single regression over each date's own
+panel. The arm's invariance test is what guards that case.</li>
+<li>Notebooks 02 and 04 still draw this model on the level matrix. That gives a wrong chart, not a
+leak, and matters only if the arm ships.</li>
+</ul>
+</article><article class='arm'><header><h3>A4 · Two chains: growth, and inflation with rates</h3><span class="verdict"><span class="chip chip-confirmed">Confirmed in sample</span></span></header><p class='label'>research/two-timescale-chains · 1 year +0.0590 · 90% [+0.0275, +0.0877] · review clean</p><p><b>What changed.</b> Two independent hidden Markov chains replace main's one: a growth chain, and an
+inflation-and-rates chain.</p>
+<ul>
+<li>The joint regime is the pair: sixteen joint regimes, chosen as four by four on the burn-in panel
+that ends on 1994-01-01.</li>
+<li>Filtering is main's own forward pass.</li>
+<li>The fit is exact expectation maximisation, because the likelihood separates by chain.</li>
+</ul>
+<p><b>What happened.</b> It has the largest one-year difference of the six arms, and its one-year 98.33%
+interval is above zero,
+and it also improves at five and ten years. Under experiment 0001's rule, its one-year verdict flips from
+the base rate to the model. At every refit, the joint persistence equals the slower chain's, as
+predicted.</p>
+<p>Two further seeds, fixed before they ran, reproduce it. That rules out a lucky starting point as the explanation (see <i>Is A4 just a lucky seed?</i> below).</p>
+<p><b>Review: clean.</b></p>
+<ul>
+<li>Both state counts were chosen before the first forecast date.</li>
+<li>Forecasts use filtered probabilities. The arm's test fails, by 0.396, if smoothed ones are swapped
+in.</li>
+<li>The arm's regimes-exist gate used a restricted null. Against main's full-covariance null on the same
+panel, the reviewer measured the gap at 1.81 per month in held-out log likelihood. The easier null
+accounts for 0.08 of it.</li>
+</ul>
+<p><b>Caveats that travel with it.</b></p>
+<ul>
+<li>It changes the structure and the state count at once: 16 joint states against 6, with fewer free
+parameters (58 against 89). So the gain cannot be attributed to the timescale split alone.</li>
+<li>Each forecast rests on thinner evidence: about 45 to 48 months of effective sample, against 112 to
+122 for main.</li>
+</ul>
+</article><article class='arm'><header><h3>A5 · Direct per-horizon regime rates</h3><span class="verdict"><span class="chip chip-harmful">Harmful</span></span></header><p class='label'>research/direct-horizon-rates · 1 year −0.1017 · 90% [−0.1448, −0.0586] · review clean</p><p><b>What changed.</b> Each horizon's forecast normally comes from one-month rates composed through the
+transition matrix. This arm instead estimates each regime's rate of the h-horizon outcome directly, from
+months whose outcome had resolved and been published by the refit date, with main's shrinkage. The
+benchmark and the new rates share one implementation of the publication boundary.</p>
+<p><b>What happened.</b> Harmful at one year, so it is disqualified from any combination.</p>
+<p><b>Review: clean, and it found D14.</b></p>
+<ul>
+<li>The reviewer rebuilt all 11,730 backtest probabilities from the registered formula, with its own
+date arithmetic, and every one matched.</li>
+<li>Checking the recession series' lag against NBER's announcements, it found the main-level leak now
+recorded as D14.</li>
+<li>It traced this arm's odd ten-year interval to the bootstrap, which every arm shares. With 120-month
+blocks over 270 dates, 4,557 of 10,000 resamples are refused because a rare outcome is missing from
+them.</li>
+</ul>
+</article><article class='arm'><header><h3>A6 · Fixed 50/50 blend with climatology</h3><span class="verdict"><span class="chip chip-void">Void</span></span></header><p class='label'>research/fixed-climatology-blend · 1 year −0.0209 · 90% [−0.0697, +0.0296] · review leak found</p><p><b>What changed.</b> Pure post-processing, with the model unchanged. Every forecast becomes half the
+model's probability and half the climatology's, at every horizon and for every indicator. There is no
+fitted weight, because the research showed that fitting one on about 31 outcomes does harm.</p>
+<p><b>What happened.</b> Its numbers alone give no verdict at one year, and it is not harmful. Pulling halfway to climatology gives
+back some of the model's one-year skill. It helps most at ten years, where main's skill is negative, as
+the registration predicted, but ten-year evidence is uninformative. The blend was the combination
+competitions' most robust result, and here it does not beat the model at the horizon that matters.</p>
+<p><b>The prediction that failed.</b> One-year calibration error was registered to fall. By the only
+measure the tooling produces, the arm's report finds it rose slightly.</p>
+<p><b>Review: leak found, so the arm is void under the rule.</b> The arm's code does what the
+registration says; the leak is in the registered design. Main's climatology is clean only because main's
+forecasts never read it. Blending it into the forecast gives two known main-level approximations a way
+into the forecast:</p>
+<ul>
+<li><b>The recession lag (D14).</b> Post-trough labels read before NBER's announcements move the
+blended forecast by at most 0.00083, on exactly D14's eight dates.</li>
+<li><b>Revised values (D5).</b> The climatology averages outcomes from today's revised data, back to
+1919, and main's forecasts have no such channel. Rebuilt from archival vintages, industrial production
+moves the blend by up to 0.0047, and the one-year difference moves by 0.0002.</li>
+</ul>
+<p>Neither could move a verdict. The pre-registration voids an arm for any such path, not only a large
+one, and the rule is applied as written.</p>
+<p>Everything else checked clean:</p>
+<ul>
+<li>There is one publication boundary, not two.</li>
+<li>The carry-forward never looks ahead and never reaches a scored row.</li>
+<li>The model parameters are identical to main's.</li>
+</ul>
+<p>The arm's own report is wrong on two points:</p>
+<ul>
+<li>It says no test assertion was loosened, but one was: <code>bool</code> became
+<code>bool | float</code>. The change was needed for the new setting and hides nothing.</li>
+<li>It calls the audit an end-to-end check of the blend. The audit sees neither leak channel.</li>
+</ul>
+
+</article></div>
+
+<h2>Is A4 just a lucky seed?</h2>
+<div class="prose">
+<p>A4 fits sixteen joint states by expectation maximisation from random starting points, so one lucky
+local optimum could produce a result this size. Before either variant ran, diagnostic 0004 fixed how
+to read two more seeds, the next two integers after the registered one:
+<b>robust to initialisation</b> if both keep the one-year 90% interval above zero, and
+<b>seed-dependent</b> if either does not. The diagnostic cannot change A4's registered verdict. It
+decides how strongly the result can be stated, and whether A4 can be recommended.</p>
+</div>
+<p class='reading'>Reading under diagnostic 0004's pre-committed rule: <b>ROBUST TO INITIALISATION</b></p><div class='table-scroll'><table class='seeds'><thead><tr><th>Seed</th><th>States: growth × levels</th><th class='num'>1 year: arm − main</th><th class='num'>90% interval</th><th>Audit</th><th>Note</th></tr></thead><tbody><tr><td>20260908 (registered)</td><td>4 × 4</td><td class='num'>+0.0590</td><td class='num'>[+0.0275, +0.0877]</td><td>exit 0</td><td>the scored run</td></tr><tr><td>20260909</td><td>4 × 4</td><td class='num'>+0.0603</td><td class='num'>[+0.0299, +0.0874]</td><td>exit 0</td><td></td></tr><tr><td>20260910</td><td>4 × 4</td><td class='num'>+0.0603</td><td class='num'>[+0.0296, +0.0881]</td><td>exit 0</td><td></td></tr></tbody></table></div>
+
+<h2>Combining the survivors: experiment 0003</h2>
+<div class="prose">
+<p>The combination rule was also written before any arm reported. Stackable layers (A1's prior, A5's
+rates, A6's blend) change different stages and all compose; structures (A2, A3, A4) each replace the
+state space, so at most one is used, the one with the highest one-year difference. Eligible means
+promising or better, not harmful, not void, and a look-ahead review of exactly <i>clean</i>.
+Nothing is re-tuned.</p>
+</div>
+<p class='reading'><b>NO COMBINATION TO RUN: no layer is eligible, and of the eligible structures [&#x27;A2&#x27;, &#x27;A4&#x27;] the rule takes A4, which 0002 already ran alone</b></p><p class='sub'>Eligible under 0003's rule: A2, A4.</p>
+
+<h2>Five and ten years</h2>
+<div class="prose"><p>Secondary endpoints. The bootstrap blocks are as long as the horizon, so the
+five-year comparison rests on about 5.5 independent observations and the ten-year one on about 2.2.
+The dots move a lot; the intervals say how little that means.</p></div>
+<figure class='chart'><svg viewBox='0 0 820 340' role='img' aria-label='Five years. About 5.5 independent observations, so read the width, not the dot.' class='forest'><line x1='307.1' x2='307.1' y1='26' y2='314' class='grid'/><text x='307.1' y='330' class='tick' text-anchor='middle'>−0.20</text><line x1='364.9' x2='364.9' y1='26' y2='314' class='grid'/><text x='364.9' y='330' class='tick' text-anchor='middle'>−0.10</text><line x1='422.7' x2='422.7' y1='26' y2='314' class='grid'/><text x='422.7' y='330' class='tick' text-anchor='middle'>0</text><line x1='480.5' x2='480.5' y1='26' y2='314' class='grid'/><text x='480.5' y='330' class='tick' text-anchor='middle'>+0.10</text><line x1='538.3' x2='538.3' y1='26' y2='314' class='grid'/><text x='538.3' y='330' class='tick' text-anchor='middle'>+0.20</text><line x1='596.2' x2='596.2' y1='26' y2='314' class='grid'/><text x='596.2' y='330' class='tick' text-anchor='middle'>+0.30</text><line x1='422.7' x2='422.7' y1='20' y2='314' class='zero'/><text x='427.7' y='16' class='tick' text-anchor='start'>no difference</text><line x1='411.1' x2='411.1' y1='20' y2='314' class='harm'/><text x='406.1' y='16' class='tick harm-label' text-anchor='end'>harm floor −0.02</text><text x='0' y='54.0' class='row-label'>A1 · Sticky prior on the transition matrix</text><text x='0' y='70.0' class='row-sub'>No verdict</text><g class='mark mark-none'><title>A1 at 60 months: −0.0030, 90% [−0.0430, +0.0574], 98.33% [−0.0593, +0.0874]</title><rect x='246' y='36.0' width='368' height='42' class='hit'/><line x1='388.4' x2='473.2' y1='57.0' y2='57.0' class='ci-wide'/><rect x='397.9' y='53.0' width='58.0' height='8' rx='4' class='ci-narrow'/><circle cx='421.0' cy='57.0' r='5.5' class='point'/></g><text x='626' y='61.0' class='value'>−0.0030 <tspan class='value-sub'>[−0.0430, +0.0574]</tspan></text><text x='0' y='100.0' class='row-label'>A2 · All Weather quadrants over levels, four states</text><text x='0' y='116.0' class='row-sub'>Confirmed in sample</text><g class='mark mark-confirmed'><title>A2 at 60 months: +0.0251, 90% [+0.0013, +0.0831], 98.33% [−0.0095, +0.1220]</title><rect x='246' y='82.0' width='368' height='42' class='hit'/><line x1='417.2' x2='493.3' y1='103.0' y2='103.0' class='ci-wide'/><rect x='423.5' y='99.0' width='47.3' height='8' rx='4' class='ci-narrow'/><circle cx='437.2' cy='103.0' r='5.5' class='point'/></g><text x='626' y='107.0' class='value'>+0.0251 <tspan class='value-sub'>[+0.0013, +0.0831]</tspan></text><text x='0' y='146.0' class='row-label'>A3 · All Weather quadrants over surprises</text><text x='0' y='162.0' class='row-sub'>No verdict</text><g class='mark mark-none'><title>A3 at 60 months: −0.0517, 90% [−0.1097, −0.0183], 98.33% [−0.1451, −0.0034]</title><rect x='246' y='128.0' width='368' height='42' class='hit'/><line x1='338.8' x2='420.7' y1='149.0' y2='149.0' class='ci-wide'/><rect x='359.3' y='145.0' width='52.8' height='8' rx='4' class='ci-narrow'/><circle cx='392.8' cy='149.0' r='5.5' class='point'/></g><text x='626' y='153.0' class='value'>−0.0517 <tspan class='value-sub'>[−0.1097, −0.0183]</tspan></text><text x='0' y='192.0' class='row-label'>A4 · Two chains: growth, and inflation with rates</text><text x='0' y='208.0' class='row-sub'>Confirmed in sample</text><g class='mark mark-confirmed'><title>A4 at 60 months: +0.0465, 90% [+0.0249, +0.0953], 98.33% [+0.0132, +0.1295]</title><rect x='246' y='174.0' width='368' height='42' class='hit'/><line x1='430.4' x2='497.6' y1='195.0' y2='195.0' class='ci-wide'/><rect x='437.1' y='191.0' width='40.8' height='8' rx='4' class='ci-narrow'/><circle cx='449.6' cy='195.0' r='5.5' class='point'/></g><text x='626' y='199.0' class='value'>+0.0465 <tspan class='value-sub'>[+0.0249, +0.0953]</tspan></text><text x='0' y='238.0' class='row-label'>A5 · Direct per-horizon regime rates</text><text x='0' y='254.0' class='row-sub'>Harmful</text><g class='mark mark-harmful'><title>A5 at 60 months: −0.1583, 90% [−0.2285, +0.0019], 98.33% [−0.2654, +0.1114]</title><rect x='246' y='220.0' width='368' height='42' class='hit'/><line x1='269.3' x2='487.1' y1='241.0' y2='241.0' class='ci-wide'/><rect x='290.6' y='237.0' width='133.2' height='8' rx='4' class='ci-narrow'/><circle cx='331.2' cy='241.0' r='5.5' class='point'/></g><text x='626' y='245.0' class='value'>−0.1583 <tspan class='value-sub'>[−0.2285, +0.0019]</tspan></text><text x='0' y='284.0' class='row-label'>A6 · Fixed 50/50 blend with climatology</text><text x='0' y='300.0' class='row-sub'>Void</text><g class='mark mark-void'><title>A6 at 60 months: +0.0141, 90% [−0.0515, +0.1742], 98.33% [−0.0789, +0.2906]</title><rect x='246' y='266.0' width='368' height='42' class='hit'/><line x1='377.1' x2='590.7' y1='287.0' y2='287.0' class='ci-wide'/><rect x='392.9' y='283.0' width='130.5' height='8' rx='4' class='ci-narrow'/><circle cx='430.9' cy='287.0' r='5.5' class='point'/></g><text x='626' y='291.0' class='value'>+0.0141 <tspan class='value-sub'>[−0.0515, +0.1742]</tspan></text></svg><figcaption>Five years. About 5.5 independent observations, so read the width, not the dot.</figcaption></figure>
+<figure class='chart'><svg viewBox='0 0 820 340' role='img' aria-label='Ten years. About 2.2 independent observations: no ten-year result here is informative.' class='forest'><line x1='294.4' x2='294.4' y1='26' y2='314' class='grid'/><text x='294.4' y='330' class='tick' text-anchor='middle'>−1.00</text><line x1='340.4' x2='340.4' y1='26' y2='314' class='grid'/><text x='340.4' y='330' class='tick' text-anchor='middle'>−0.50</text><line x1='386.3' x2='386.3' y1='26' y2='314' class='grid'/><text x='386.3' y='330' class='tick' text-anchor='middle'>0</text><line x1='432.2' x2='432.2' y1='26' y2='314' class='grid'/><text x='432.2' y='330' class='tick' text-anchor='middle'>+0.50</text><line x1='478.2' x2='478.2' y1='26' y2='314' class='grid'/><text x='478.2' y='330' class='tick' text-anchor='middle'>+1.00</text><line x1='524.1' x2='524.1' y1='26' y2='314' class='grid'/><text x='524.1' y='330' class='tick' text-anchor='middle'>+1.50</text><line x1='570.0' x2='570.0' y1='26' y2='314' class='grid'/><text x='570.0' y='330' class='tick' text-anchor='middle'>+2.00</text><line x1='386.3' x2='386.3' y1='20' y2='314' class='zero'/><text x='391.3' y='16' class='tick' text-anchor='start'>no difference</text><line x1='384.5' x2='384.5' y1='20' y2='314' class='harm'/><text x='379.5' y='16' class='tick harm-label' text-anchor='end'>harm floor −0.02</text><text x='0' y='54.0' class='row-label'>A1 · Sticky prior on the transition matrix</text><text x='0' y='70.0' class='row-sub'>No verdict</text><g class='mark mark-none'><title>A1 at 120 months: +0.1905, 90% [+0.0899, +0.2320], 98.33% [+0.0549, +0.5913]</title><rect x='246' y='36.0' width='368' height='42' class='hit'/><line x1='391.3' x2='440.6' y1='57.0' y2='57.0' class='ci-wide'/><rect x='394.6' y='53.0' width='13.1' height='8' rx='4' class='ci-narrow'/><circle cx='403.8' cy='57.0' r='5.5' class='point'/></g><text x='626' y='61.0' class='value'>+0.1905 <tspan class='value-sub'>[+0.0899, +0.2320]</tspan></text><text x='0' y='100.0' class='row-label'>A2 · All Weather quadrants over levels, four states</text><text x='0' y='116.0' class='row-sub'>Confirmed in sample</text><g class='mark mark-confirmed'><title>A2 at 120 months: +0.2202, 90% [+0.1021, +0.2506], 98.33% [+0.0545, +0.8055]</title><rect x='246' y='82.0' width='368' height='42' class='hit'/><line x1='391.3' x2='460.3' y1='103.0' y2='103.0' class='ci-wide'/><rect x='395.7' y='99.0' width='13.6' height='8' rx='4' class='ci-narrow'/><circle cx='406.5' cy='103.0' r='5.5' class='point'/></g><text x='626' y='107.0' class='value'>+0.2202 <tspan class='value-sub'>[+0.1021, +0.2506]</tspan></text><text x='0' y='146.0' class='row-label'>A3 · All Weather quadrants over surprises</text><text x='0' y='162.0' class='row-sub'>No verdict</text><g class='mark mark-none'><title>A3 at 120 months: −0.1181, 90% [−0.2331, +0.0689], 98.33% [−1.2738, +0.1202]</title><rect x='246' y='128.0' width='368' height='42' class='hit'/><line x1='269.3' x2='397.3' y1='149.0' y2='149.0' class='ci-wide'/><rect x='364.9' y='145.0' width='27.7' height='8' rx='4' class='ci-narrow'/><circle cx='375.5' cy='149.0' r='5.5' class='point'/></g><text x='626' y='153.0' class='value'>−0.1181 <tspan class='value-sub'>[−0.2331, +0.0689]</tspan></text><text x='0' y='192.0' class='row-label'>A4 · Two chains: growth, and inflation with rates</text><text x='0' y='208.0' class='row-sub'>Confirmed in sample</text><g class='mark mark-confirmed'><title>A4 at 120 months: +0.1855, 90% [+0.0843, +0.2228], 98.33% [+0.0700, +0.3834]</title><rect x='246' y='174.0' width='368' height='42' class='hit'/><line x1='392.7' x2='421.5' y1='195.0' y2='195.0' class='ci-wide'/><rect x='394.0' y='191.0' width='12.7' height='8' rx='4' class='ci-narrow'/><circle cx='403.3' cy='195.0' r='5.5' class='point'/></g><text x='626' y='199.0' class='value'>+0.1855 <tspan class='value-sub'>[+0.0843, +0.2228]</tspan></text><text x='0' y='238.0' class='row-label'>A5 · Direct per-horizon regime rates</text><text x='0' y='254.0' class='row-sub'>Harmful</text><g class='mark mark-harmful'><title>A5 at 120 months: +0.2647, 90% [+0.0459, +0.2526], 98.33% [+0.0043, +2.2253]</title><rect x='246' y='220.0' width='368' height='42' class='hit'/><line x1='386.7' x2='590.7' y1='241.0' y2='241.0' class='ci-wide'/><rect x='390.5' y='237.0' width='19.0' height='8' rx='4' class='ci-narrow'/><circle cx='410.6' cy='241.0' r='5.5' class='point'/></g><text x='626' y='245.0' class='value'>+0.2647 <tspan class='value-sub'>[+0.0459, +0.2526]</tspan></text><text x='0' y='284.0' class='row-label'>A6 · Fixed 50/50 blend with climatology</text><text x='0' y='300.0' class='row-sub'>Void</text><g class='mark mark-void'><title>A6 at 120 months: +0.2779, 90% [+0.1204, +0.3310], 98.33% [+0.0804, +1.8342]</title><rect x='246' y='266.0' width='368' height='42' class='hit'/><line x1='393.7' x2='554.8' y1='287.0' y2='287.0' class='ci-wide'/><rect x='397.4' y='283.0' width='19.3' height='8' rx='4' class='ci-narrow'/><circle cx='411.8' cy='287.0' r='5.5' class='point'/></g><text x='626' y='291.0' class='value'>+0.2779 <tspan class='value-sub'>[+0.1204, +0.3310]</tspan></text></svg><figcaption>Ten years. About 2.2 independent observations: no ten-year result here is informative.</figcaption></figure>
+
+<h2>What you need to decide</h2>
+<div class="prose">
+<ol class="decisions">
+<li><b>Whether to adopt A4 as main's method.</b> That means merging <code>research/two-timescale-chains</code>,
+which changes the shipped configuration and needs your shipping token. Under experiment 0001's rule,
+A4's one-year verdict on the honest start is <i>ship the model</i>, where main's is <i>ship the base
+rate</i>, because main fails the calibration gate. A4 edited two existing tests without removing any
+assertion. The covenant asks you to review that before it merges.</li>
+<li><b>Whether to register A4's forecasts forward</b> in <code>forecasts/register.jsonl</code>, beside the
+shipped configuration's, so both are scored as they resolve from 2027-07-01. It is the only
+out-of-sample test there is, and it is outward-facing, so nothing is registered without you.</li>
+<li><b>Experiment 0001's calibration gate at n ≈ 31.</b> You can keep it and report the one-year
+failure as uninformative, or register a new, sample-size-aware test. Moving the threshold is not one of
+the options.</li>
+<li><b>How to fix D14</b>: either a longer fixed recession lag, or availability by turning point, from
+a dated table of NBER announcements. Either way, it lands after this slate, measured against main.</li>
+<li><b>Re-shipping.</b> <code>submission/forecasts.csv</code> still carries the benchmark's pre-fix base
+rates, which moved by at most 0.0061, and D14 would move them again. The shipping guard refuses a
+re-ship without your token.</li>
+<li><b>Whether a forced re-run counts as A2's deterministic check.</b> The pre-registration's
+check (a) passed for A2 by its letter, but the recorded audit tested six states, not A2's four (D15).
+A2's reviewer re-ran the same audit forced onto four states, and it passed. Whether that counts in its
+place is a rule question, so it is yours. It cannot change the outcome, because A4 takes the one
+structure slot either way.</li>
+<li><b>A materiality floor for judged leaks, in the next registration.</b> A6 is void under 0002's
+rule for a leak that moves its one-year difference by 0.0002, because the rule voids for any path. That
+rule is not reinterpreted here. Whether a future registration should state, in advance, a size below
+which a found leak is recorded but does not void an arm is a choice for next time.</li>
+<li><b>Two test changes on main from this session, for review.</b> One test's assertion changed,
+because it had encoded the benchmark leak as the specification. Another test's fixture changed, with its
+assertions byte-identical.</li>
+</ol>
+</div>
+
+<h2>What the checks caught</h2>
+<div class="prose">
+<p>The most important findings of this slate are not arms. They are leaks and defects that would have
+mis-scored everything, and each was caught by a check rather than by someone reading the code.</p>
+
+<div class="callout">
+<p><b>Main had a look-ahead, found the first time the audit ran.</b> The climatology benchmark counted
+each outcome h months after its forecast date, before the observation it rests on was published: 32 to
+400 days early. The pre-registration had said the slate halts until main is clean. It halted, main was
+fixed (ADR 0009), and the harness measured the effect: one-year skill +0.2128 → +0.2154, paired
+interval [+0.0021, +0.0028]. The leak flattered the benchmark, not the model, and no verdict moved.</p>
+</div>
+
+<div class="callout">
+<p><b>A second, smaller one, found by a reviewer where the audit cannot look</b> (technical debt D14).
+The registry says a recession month is known 400 days after it. NBER announces turning points, not
+months: every peak since 1990 was announced within 400 days (128 to 366), and every trough after them
+(474 to 662, all eight dates checked at nber.org). So the months just after each trough reached the
+benchmark and the rates early, on 8 of the 391 scored dates, for the two recession indicators only. The
+audit trusts registered lags, so it could not see this. Main and every arm read the same registry, so
+it cannot favour an arm. Fixing it is deferred until this slate closes, so the reference stays put.</p>
+</div>
+
+<p>Defects caught before they could mis-score anything:</p>
+<ul>
+<li><b>The runner only asked for the 90% interval.</b> No arm could have reached <i>confirmed</i>, and
+each report would have recorded that as a result.</li>
+<li><b>A reviewed fix that was never wired in.</b> ADR 0007's likelihood allowance was tested but never
+called. It is now wired in, and full recomputation of 35 fits and 11,730 rows proved it byte-identical.</li>
+<li><b>The run summary borrowed its fallback count from another command's file</b>, which would have
+given every arm a spurious categorical change.</li>
+<li><b>The audit's own gap.</b> It perturbed by label, not by publication date, so the classic
+one-month look-ahead inside a publication lag would have passed. It was closed with a test that the old
+rule passes and the new one fails.</li>
+<li><b>The scorer's review parser, three times.</b> A substring search would have voided a clean arm
+whose reviewer wrote "no leak found". A regex emptied every section. And the first real review titled
+itself with the arm's name, which the parser took as the arm's section and read as unreadable. Each
+failed safe, and fixtures now pin all three.</li>
+<li><b>A run whose code was being edited while it ran.</b> One arm's <code>exit_codes.json</code> named
+a commit whose code never ran whole. The runner now refuses a dirty tree and records whether it stayed
+clean. The scorer refuses any arm whose worktree differs from its run's commit, and it applied that to
+earlier runs too.</li>
+<li><b>The audit tested one arm with main's state count.</b> Its from-scratch run chooses the
+number of regimes by calling the sweep directly. The backtest decides it one layer up, and that is where
+A2 fixes four states. So A2's audit fitted six states and never ran A2's seeding. A2's own author found
+it after the run, and it is verified in the code. The audit logs show that every other arm's audit
+fitted the arm's own count, so only A2 was affected (D15).</li>
+<li><b>A leak by design, in the blend arm.</b> Main's benchmark is clean as a benchmark, because no
+forecast reads it. A6's reviewer found that blending it into the forecast gives D14 and the
+revised-values approximation (D5) a way into forecasts. The leak is tiny: at most 0.0047 on one
+forecast, and 0.0002 on the one-year difference. The rule voids A6 anyway, as written, and the debt
+table's benchmark row now carries the warning.</li>
+<li><b>An arm stopped, correctly, before writing code.</b> A6's brief said to stop if the climatology
+was ever missing, and it was missing at today's date. The cause was index coverage, never a scored row,
+and it was resolved with the rule <code>submit()</code> already uses.</li>
+</ul>
+</div>
+
+<h2>What the research says</h2>
+<div class="prose">
+<p>Three briefings in <code>research/briefings/</code> fed the slate's design. Each number below was
+derived or fetched, not quoted from memory.</p>
+<ul>
+<li><b>The one-year calibration gate cannot be passed reliably at this sample size.</b> A perfectly
+calibrated forecaster fails experiment 0001's ten-bin calibration-error gate (below 0.10) about 91% of
+the time at n = 31, the honest one-year sample. The threshold was not moved. That is your decision,
+below.</li>
+<li><b>Fitted recalibration on about 31 outcomes makes forecasts worse out of sample.</b> Platt, beta
+and isotonic maps all did, which is why the blend arm uses fixed weights.</li>
+<li><b>The model is not a business-cycle model.</b> Its second eigenvalue, about 0.98, matches the
+published volatility and level chains, not the growth chains (0.83 to 0.93). Output growth fitted alone
+runs about three times faster, with a half-life of 12 months against 25 to 43 for inflation and rates.
+That was the motivation for A4.</li>
+<li><b>The information horizon is algebra, not bad luck.</b> Hamilton (eq. 3–4) and Krolzig (eq. 21)
+show that regime forecasts converge to the unconditional mean.</li>
+<li><b>All Weather's primary sources define the quadrants over surprises, not levels.</b> The widely
+quoted 55/30/15 split appears in neither primary document. Hence two quadrant arms: A2 over levels and
+A3 over surprises.</li>
+<li><b>External yardsticks.</b> Professional forecasters' recession probabilities beat climatology one
+quarter ahead (+0.13) but not three to four quarters ahead. A real-time yield-curve model scores about
++0.06, and is negative after 1990.</li>
+</ul>
+</div>
+
+<h2>What this does not show</h2>
+<div class="prose">
+<ul class="limits">
+<li><b>Every arm was designed by someone who had seen main's results.</b> Pre-registration closes the
+tuning path but not the idea-selection path, so <i>confirmed in sample</i> is the ceiling here.
+Out-of-sample confirmation comes only from forecasts registered forward, the first resolving on
+2027-07-01.</li>
+<li><b>The look-ahead audit trusts the registry's publication lags</b> (D14 is the proof that this
+matters). Revised values (D5) remain an accepted approximation. And it sees information on or after its
+cutoff, not between an earlier forecast and the cutoff.</li>
+<li><b>Ten-year evidence is about 2.2 independent observations.</b> No ten-year verdict here is
+informative, and the ten-year bootstrap rejects a large share of its resamples because rare outcomes sit
+in rarely drawn dates.</li>
+<li><b>ADR 0007's other promise</b>, that a fall in likelihood abandons one restart rather than the
+whole fit, is still not true in code.</li>
+<li><b>The machine hibernated for 4 h 44 min mid-slate</b> (16:00 to 20:44). Every run paused and
+resumed. No number depends on it, and it is recorded because it looked like a hang.</li>
+</ul>
+</div>
+
+
+<footer>
+  <p>Every number in the tables and charts is read by <code>research/tools/build_slate_report.py</code>
+  from the files each arm's run wrote, through <code>research/tools/score_slate.py</code>, which applies
+  the pre-registered rule in code. Registration: <code>proving/experiments/0002-research-slate-2026-09/experiment.json</code>.
+  Arm branches: <code>research/&lt;arm&gt;</code>. Reviews: <code>research/arms/lookahead-review-*.md</code>.</p>
+</footer>
+</div>

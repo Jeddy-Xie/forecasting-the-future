@@ -1,0 +1,30 @@
+<p><b>What changed.</b> Two independent hidden Markov chains replace main's one: a growth chain, and an
+inflation-and-rates chain.</p>
+<ul>
+<li>The joint regime is the pair: sixteen joint regimes, chosen as four by four on the burn-in panel
+that ends on 1994-01-01.</li>
+<li>Filtering is main's own forward pass.</li>
+<li>The fit is exact expectation maximisation, because the likelihood separates by chain.</li>
+</ul>
+<p><b>What happened.</b> It has the largest one-year difference of the six arms, and its one-year 98.33%
+interval is above zero,
+and it also improves at five and ten years. Under experiment 0001's rule, its one-year verdict flips from
+the base rate to the model. At every refit, the joint persistence equals the slower chain's, as
+predicted.</p>
+<p>Two further seeds, fixed before they ran, reproduce it. That rules out a lucky starting point as the explanation (see <i>Is A4 just a lucky seed?</i> below).</p>
+<p><b>Review: clean.</b></p>
+<ul>
+<li>Both state counts were chosen before the first forecast date.</li>
+<li>Forecasts use filtered probabilities. The arm's test fails, by 0.396, if smoothed ones are swapped
+in.</li>
+<li>The arm's regimes-exist gate used a restricted null. Against main's full-covariance null on the same
+panel, the reviewer measured the gap at 1.81 per month in held-out log likelihood. The easier null
+accounts for 0.08 of it.</li>
+</ul>
+<p><b>Caveats that travel with it.</b></p>
+<ul>
+<li>It changes the structure and the state count at once: 16 joint states against 6, with fewer free
+parameters (58 against 89). So the gain cannot be attributed to the timescale split alone.</li>
+<li>Each forecast rests on thinner evidence: about 45 to 48 months of effective sample, against 112 to
+122 for main.</li>
+</ul>

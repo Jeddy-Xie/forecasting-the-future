@@ -1,0 +1,15 @@
+<p><b>What changed.</b> Each horizon's forecast normally comes from one-month rates composed through the
+transition matrix. This arm instead estimates each regime's rate of the h-horizon outcome directly, from
+months whose outcome had resolved and been published by the refit date, with main's shrinkage. The
+benchmark and the new rates share one implementation of the publication boundary.</p>
+<p><b>What happened.</b> Harmful at one year, so it is disqualified from any combination.</p>
+<p><b>Review: clean, and it found D14.</b></p>
+<ul>
+<li>The reviewer rebuilt all 11,730 backtest probabilities from the registered formula, with its own
+date arithmetic, and every one matched.</li>
+<li>Checking the recession series' lag against NBER's announcements, it found the main-level leak now
+recorded as D14.</li>
+<li>It traced this arm's odd ten-year interval to the bootstrap, which every arm shares. With 120-month
+blocks over 270 dates, 4,557 of 10,000 resamples are refused because a rare outcome is missing from
+them.</li>
+</ul>

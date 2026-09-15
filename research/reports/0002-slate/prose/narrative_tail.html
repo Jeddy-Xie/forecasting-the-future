@@ -1,0 +1,137 @@
+<h2>What you need to decide</h2>
+<div class="prose">
+<ol class="decisions">
+<li><b>Whether to adopt A4 as main's method.</b> That means merging <code>research/two-timescale-chains</code>,
+which changes the shipped configuration and needs your shipping token. Under experiment 0001's rule,
+A4's one-year verdict on the honest start is <i>ship the model</i>, where main's is <i>ship the base
+rate</i>, because main fails the calibration gate. A4 edited two existing tests without removing any
+assertion. The covenant asks you to review that before it merges.</li>
+<li><b>Whether to register A4's forecasts forward</b> in <code>forecasts/register.jsonl</code>, beside the
+shipped configuration's, so both are scored as they resolve from 2027-07-01. It is the only
+out-of-sample test there is, and it is outward-facing, so nothing is registered without you.</li>
+<li><b>Experiment 0001's calibration gate at n ≈ 31.</b> You can keep it and report the one-year
+failure as uninformative, or register a new, sample-size-aware test. Moving the threshold is not one of
+the options.</li>
+<li><b>How to fix D14</b>: either a longer fixed recession lag, or availability by turning point, from
+a dated table of NBER announcements. Either way, it lands after this slate, measured against main.</li>
+<li><b>Re-shipping.</b> <code>submission/forecasts.csv</code> still carries the benchmark's pre-fix base
+rates, which moved by at most 0.0061, and D14 would move them again. The shipping guard refuses a
+re-ship without your token.</li>
+<li><b>Whether a forced re-run counts as A2's deterministic check.</b> The pre-registration's
+check (a) passed for A2 by its letter, but the recorded audit tested six states, not A2's four (D15).
+A2's reviewer re-ran the same audit forced onto four states, and it passed. Whether that counts in its
+place is a rule question, so it is yours. It cannot change the outcome, because A4 takes the one
+structure slot either way.</li>
+<li><b>A materiality floor for judged leaks, in the next registration.</b> A6 is void under 0002's
+rule for a leak that moves its one-year difference by 0.0002, because the rule voids for any path. That
+rule is not reinterpreted here. Whether a future registration should state, in advance, a size below
+which a found leak is recorded but does not void an arm is a choice for next time.</li>
+<li><b>Two test changes on main from this session, for review.</b> One test's assertion changed,
+because it had encoded the benchmark leak as the specification. Another test's fixture changed, with its
+assertions byte-identical.</li>
+</ol>
+</div>
+
+<h2>What the checks caught</h2>
+<div class="prose">
+<p>The most important findings of this slate are not arms. They are leaks and defects that would have
+mis-scored everything, and each was caught by a check rather than by someone reading the code.</p>
+
+<div class="callout">
+<p><b>Main had a look-ahead, found the first time the audit ran.</b> The climatology benchmark counted
+each outcome h months after its forecast date, before the observation it rests on was published: 32 to
+400 days early. The pre-registration had said the slate halts until main is clean. It halted, main was
+fixed (ADR 0009), and the harness measured the effect: one-year skill +0.2128 → +0.2154, paired
+interval [+0.0021, +0.0028]. The leak flattered the benchmark, not the model, and no verdict moved.</p>
+</div>
+
+<div class="callout">
+<p><b>A second, smaller one, found by a reviewer where the audit cannot look</b> (technical debt D14).
+The registry says a recession month is known 400 days after it. NBER announces turning points, not
+months: every peak since 1990 was announced within 400 days (128 to 366), and every trough after them
+(474 to 662, all eight dates checked at nber.org). So the months just after each trough reached the
+benchmark and the rates early, on 8 of the 391 scored dates, for the two recession indicators only. The
+audit trusts registered lags, so it could not see this. Main and every arm read the same registry, so
+it cannot favour an arm. Fixing it is deferred until this slate closes, so the reference stays put.</p>
+</div>
+
+<p>Defects caught before they could mis-score anything:</p>
+<ul>
+<li><b>The runner only asked for the 90% interval.</b> No arm could have reached <i>confirmed</i>, and
+each report would have recorded that as a result.</li>
+<li><b>A reviewed fix that was never wired in.</b> ADR 0007's likelihood allowance was tested but never
+called. It is now wired in, and full recomputation of 35 fits and 11,730 rows proved it byte-identical.</li>
+<li><b>The run summary borrowed its fallback count from another command's file</b>, which would have
+given every arm a spurious categorical change.</li>
+<li><b>The audit's own gap.</b> It perturbed by label, not by publication date, so the classic
+one-month look-ahead inside a publication lag would have passed. It was closed with a test that the old
+rule passes and the new one fails.</li>
+<li><b>The scorer's review parser, three times.</b> A substring search would have voided a clean arm
+whose reviewer wrote "no leak found". A regex emptied every section. And the first real review titled
+itself with the arm's name, which the parser took as the arm's section and read as unreadable. Each
+failed safe, and fixtures now pin all three.</li>
+<li><b>A run whose code was being edited while it ran.</b> One arm's <code>exit_codes.json</code> named
+a commit whose code never ran whole. The runner now refuses a dirty tree and records whether it stayed
+clean. The scorer refuses any arm whose worktree differs from its run's commit, and it applied that to
+earlier runs too.</li>
+<li><b>The audit tested one arm with main's state count.</b> Its from-scratch run chooses the
+number of regimes by calling the sweep directly. The backtest decides it one layer up, and that is where
+A2 fixes four states. So A2's audit fitted six states and never ran A2's seeding. A2's own author found
+it after the run, and it is verified in the code. The audit logs show that every other arm's audit
+fitted the arm's own count, so only A2 was affected (D15).</li>
+<li><b>A leak by design, in the blend arm.</b> Main's benchmark is clean as a benchmark, because no
+forecast reads it. A6's reviewer found that blending it into the forecast gives D14 and the
+revised-values approximation (D5) a way into forecasts. The leak is tiny: at most 0.0047 on one
+forecast, and 0.0002 on the one-year difference. The rule voids A6 anyway, as written, and the debt
+table's benchmark row now carries the warning.</li>
+<li><b>An arm stopped, correctly, before writing code.</b> A6's brief said to stop if the climatology
+was ever missing, and it was missing at today's date. The cause was index coverage, never a scored row,
+and it was resolved with the rule <code>submit()</code> already uses.</li>
+</ul>
+</div>
+
+<h2>What the research says</h2>
+<div class="prose">
+<p>Three briefings in <code>research/briefings/</code> fed the slate's design. Each number below was
+derived or fetched, not quoted from memory.</p>
+<ul>
+<li><b>The one-year calibration gate cannot be passed reliably at this sample size.</b> A perfectly
+calibrated forecaster fails experiment 0001's ten-bin calibration-error gate (below 0.10) about 91% of
+the time at n = 31, the honest one-year sample. The threshold was not moved. That is your decision,
+below.</li>
+<li><b>Fitted recalibration on about 31 outcomes makes forecasts worse out of sample.</b> Platt, beta
+and isotonic maps all did, which is why the blend arm uses fixed weights.</li>
+<li><b>The model is not a business-cycle model.</b> Its second eigenvalue, about 0.98, matches the
+published volatility and level chains, not the growth chains (0.83 to 0.93). Output growth fitted alone
+runs about three times faster, with a half-life of 12 months against 25 to 43 for inflation and rates.
+That was the motivation for A4.</li>
+<li><b>The information horizon is algebra, not bad luck.</b> Hamilton (eq. 3–4) and Krolzig (eq. 21)
+show that regime forecasts converge to the unconditional mean.</li>
+<li><b>All Weather's primary sources define the quadrants over surprises, not levels.</b> The widely
+quoted 55/30/15 split appears in neither primary document. Hence two quadrant arms: A2 over levels and
+A3 over surprises.</li>
+<li><b>External yardsticks.</b> Professional forecasters' recession probabilities beat climatology one
+quarter ahead (+0.13) but not three to four quarters ahead. A real-time yield-curve model scores about
++0.06, and is negative after 1990.</li>
+</ul>
+</div>
+
+<h2>What this does not show</h2>
+<div class="prose">
+<ul class="limits">
+<li><b>Every arm was designed by someone who had seen main's results.</b> Pre-registration closes the
+tuning path but not the idea-selection path, so <i>confirmed in sample</i> is the ceiling here.
+Out-of-sample confirmation comes only from forecasts registered forward, the first resolving on
+2027-07-01.</li>
+<li><b>The look-ahead audit trusts the registry's publication lags</b> (D14 is the proof that this
+matters). Revised values (D5) remain an accepted approximation. And it sees information on or after its
+cutoff, not between an earlier forecast and the cutoff.</li>
+<li><b>Ten-year evidence is about 2.2 independent observations.</b> No ten-year verdict here is
+informative, and the ten-year bootstrap rejects a large share of its resamples because rare outcomes sit
+in rarely drawn dates.</li>
+<li><b>ADR 0007's other promise</b>, that a fall in likelihood abandons one restart rather than the
+whole fit, is still not true in code.</li>
+<li><b>The machine hibernated for 4 h 44 min mid-slate</b> (16:00 to 20:44). Every run paused and
+resumed. No number depends on it, and it is recorded because it looked like a hang.</li>
+</ul>
+</div>

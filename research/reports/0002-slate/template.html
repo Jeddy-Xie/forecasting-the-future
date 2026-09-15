@@ -1,0 +1,157 @@
+<title>All Weather Slate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Source+Serif+4:opsz,wght@8..60,200..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root { --bg:#EFF0ED; --surface:#F7F8F5; --ink:#1B2126; --ink-2:#4F5A61; --ink-3:#6E787E; --line:#D2D7D3;
+    --accent:#35618C; --red:#B23A2E; --bronze:#9A6533; --peacock:#2F6E85; --straw:#B98F3B;
+    --ok:#2167B5; --bad:#B8392C; --wait:#A97A12; --none:#6E787E; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#14181B; --surface:#1B2125; --ink:#E6E9E3; --ink-2:#A6B0B5; --ink-3:#8A9499; --line:#2B3439;
+    --accent:#7FAEDB; --red:#D96A57; --bronze:#C9955B; --peacock:#6FA8BD; --straw:#D3B25F;
+    --ok:#4F88D0; --bad:#D2566A; --wait:#B08A1E; --none:#8A9499; } }
+  :root[data-theme="dark"] { --bg:#14181B; --surface:#1B2125; --ink:#E6E9E3; --ink-2:#A6B0B5; --ink-3:#8A9499; --line:#2B3439;
+    --accent:#7FAEDB; --red:#D96A57; --bronze:#C9955B; --peacock:#6FA8BD; --straw:#D3B25F;
+    --ok:#4F88D0; --bad:#D2566A; --wait:#B08A1E; --none:#8A9499; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.62; }
+  .wrap { max-width:960px; margin:0 auto; padding:44px 24px 90px; }
+  .prose { max-width:68ch; }
+  .eyebrow, .mono, code, .sub, .chip, th, .tick, .row-sub, .value, figcaption {
+    font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; }
+  .eyebrow { font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); }
+  h1 { font-family:Archivo,"Arial Narrow",Arial,sans-serif; font-stretch:120%; font-weight:900;
+    font-size:clamp(36px,7vw,62px); line-height:1; text-transform:uppercase; margin:.25em 0 0; text-wrap:balance; }
+  .heat-strip { height:8px; border-radius:2px; margin:16px 0 22px;
+    background:linear-gradient(90deg,var(--red),var(--bronze),var(--straw),var(--peacock)); }
+  h2 { font-family:Archivo,Arial,sans-serif; font-stretch:112%; font-weight:800; font-size:25px;
+    margin:2.4em 0 .5em; text-wrap:balance; }
+  h3 { font-family:Archivo,Arial,sans-serif; font-weight:700; font-size:18px; margin:0 0 .3em; }
+  p { margin:.6em 0; }
+  .lede { font-size:20px; line-height:1.55; max-width:62ch; }
+  .generated { font-size:12px; color:var(--ink-3); margin-top:10px; }
+  code { font-size:.86em; background:color-mix(in srgb, var(--line) 45%, transparent); padding:1px 4px; border-radius:3px; }
+  .sub { font-size:11.5px; color:var(--ink-2); font-weight:400; }
+  .table-scroll { overflow-x:auto; margin:16px 0; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-2);
+    text-align:left; padding:8px 10px; border-bottom:2px solid var(--line); vertical-align:bottom; }
+  td { padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .num { text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tr.reference td { color:var(--ink-2); font-style:italic; }
+  tr.pending td.status { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2); }
+  .chip { display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    padding:2px 8px; border-radius:999px; border:1.5px solid currentColor; white-space:nowrap; }
+  .chip-confirmed, .chip-promising, .chip-control { color:var(--ok); }
+  .chip-harmful, .chip-void { color:var(--bad); }
+  .chip-pending { color:var(--wait); border-style:dashed; }
+  .chip-none { color:var(--none); }
+  figure.chart { margin:18px 0 8px; overflow-x:auto; }
+  svg.forest { width:100%; min-width:640px; height:auto; display:block; }
+  svg .grid { stroke:var(--line); stroke-width:1; }
+  svg .zero { stroke:var(--ink-2); stroke-width:1.5; }
+  svg .harm { stroke:var(--bad); stroke-width:1.5; stroke-dasharray:4 4; }
+  svg .tick { font-size:11px; fill:var(--ink-2); }
+  svg .harm-label { fill:var(--bad); }
+  svg .row-label { font-family:"Source Serif 4",Georgia,serif; font-size:14px; font-weight:600; fill:var(--ink); }
+  svg .row-sub { font-size:10.5px; fill:var(--ink-2); letter-spacing:.03em; }
+  svg .value { font-size:12.5px; fill:var(--ink); }
+  svg .value-sub { fill:var(--ink-2); font-size:11px; }
+  svg .hit { fill:transparent; }
+  svg .mark:hover .hit { fill:color-mix(in srgb, var(--line) 40%, transparent); }
+  svg .ci-wide { stroke-width:2; stroke-linecap:round; }
+  svg .point { stroke:var(--bg); stroke-width:2; }
+  svg .mark-confirmed .ci-wide, svg .mark-promising .ci-wide { stroke:var(--ok); }
+  svg .mark-confirmed .ci-narrow, svg .mark-promising .ci-narrow { fill:color-mix(in srgb, var(--ok) 45%, transparent); }
+  svg .mark-confirmed .point, svg .mark-promising .point { fill:var(--ok); }
+  svg .mark-harmful .ci-wide, svg .mark-void .ci-wide { stroke:var(--bad); }
+  svg .mark-harmful .ci-narrow, svg .mark-void .ci-narrow { fill:color-mix(in srgb, var(--bad) 45%, transparent); }
+  svg .mark-harmful .point, svg .mark-void .point { fill:var(--bad); }
+  svg .mark-none .ci-wide { stroke:var(--none); }
+  svg .mark-none .ci-narrow { fill:color-mix(in srgb, var(--none) 40%, transparent); }
+  svg .mark-none .point { fill:var(--none); }
+  svg .mark-pending .ci-wide { stroke:var(--wait); stroke-dasharray:3 3; }
+  svg .mark-pending .ci-narrow { fill:color-mix(in srgb, var(--wait) 35%, transparent); }
+  svg .mark-pending .point { fill:var(--wait); }
+  figcaption { font-size:12px; color:var(--ink-2); line-height:1.5; margin-top:6px; max-width:90ch; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px 18px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-2); margin:6px 0 0; }
+  .arms { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:14px; margin:16px 0; align-items:start; }
+  .verdict { display:inline-block; text-align:right; line-height:1.3; }
+  .verdicts td:nth-child(6) { white-space:nowrap; }
+  .arm { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px 18px; }
+  .arm header { display:flex; justify-content:space-between; gap:10px; align-items:baseline; margin-bottom:6px; }
+  .arm p { font-size:15.5px; }
+  .arm .label { font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2); }
+  .reading { font-size:17px; }
+  .callout { border-left:3px solid var(--bad); padding:4px 0 4px 16px; margin:18px 0; }
+  .decisions li, .limits li { margin:.55em 0; }
+  ol.decisions { padding-left:1.3em; }
+  footer { margin-top:64px; border-top:1px solid var(--line); padding-top:16px; font-size:13px; color:var(--ink-2); }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Experiment 0002 · research slate · pre-registered 2026-09-15</div>
+  <h1>All Weather Slate</h1>
+  <div class="heat-strip" aria-hidden="true"></div>
+  <!--@ANSWER-->
+  <p class="generated"><!--@GENERATED--></p>
+</header>
+
+<h2>Six ideas, one rule</h2>
+<div class="prose">
+<p>Each arm is one idea, built on its own branch and scored against <code>main</code> on the same
+391 forecast dates from 1994-03, the first date the model is honest about. The statistic is the paired
+difference in mean Brier skill score, arm minus main, with a moving-block bootstrap over forecast dates
+(10,000 resamples, seed 20260908). The rule was committed before any arm ran:
+<b>promising</b> if the one-year 90% interval is above zero; <b>confirmed in sample</b> if the
+one-year 98.33% interval is (1 − 0.10/6, a Bonferroni correction for six arms); <b>harmful</b> if any
+horizon's 90% interval is below −0.02; <b>void</b> if the look-ahead audit fails or the
+independent review finds a leak.</p>
+</div>
+<!--@VERDICT_TABLE-->
+<!--@FOREST_12-->
+<div class="legend"><span>● point estimate</span><span>▬ 90% interval</span><span>─ 98.33% interval</span><span>┆ harm floor −0.02</span></div>
+
+<h2>What each arm found</h2>
+<!--@ARM_CARDS-->
+
+<h2>Is A4 just a lucky seed?</h2>
+<div class="prose">
+<p>A4 fits sixteen joint states by expectation maximisation from random starting points, so one lucky
+local optimum could produce a result this size. Before either variant ran, diagnostic 0004 fixed how
+to read two more seeds, the next two integers after the registered one:
+<b>robust to initialisation</b> if both keep the one-year 90% interval above zero, and
+<b>seed-dependent</b> if either does not. The diagnostic cannot change A4's registered verdict. It
+decides how strongly the result can be stated, and whether A4 can be recommended.</p>
+</div>
+<!--@SEEDS-->
+
+<h2>Combining the survivors: experiment 0003</h2>
+<div class="prose">
+<p>The combination rule was also written before any arm reported. Stackable layers (A1's prior, A5's
+rates, A6's blend) change different stages and all compose; structures (A2, A3, A4) each replace the
+state space, so at most one is used, the one with the highest one-year difference. Eligible means
+promising or better, not harmful, not void, and a look-ahead review of exactly <i>clean</i>.
+Nothing is re-tuned.</p>
+</div>
+<!--@COMBINATION-->
+
+<h2>Five and ten years</h2>
+<div class="prose"><p>Secondary endpoints. The bootstrap blocks are as long as the horizon, so the
+five-year comparison rests on about 5.5 independent observations and the ten-year one on about 2.2.
+The dots move a lot; the intervals say how little that means.</p></div>
+<!--@FOREST_60-->
+<!--@FOREST_120-->
+
+<!--@NARRATIVE_TAIL-->
+
+<footer>
+  <p>Every number in the tables and charts is read by <code>research/tools/build_slate_report.py</code>
+  from the files each arm's run wrote, through <code>research/tools/score_slate.py</code>, which applies
+  the pre-registered rule in code. Registration: <code>proving/experiments/0002-research-slate-2026-09/experiment.json</code>.
+  Arm branches: <code>research/&lt;arm&gt;</code>. Reviews: <code>research/arms/lookahead-review-*.md</code>.</p>
+</footer>
+</div>

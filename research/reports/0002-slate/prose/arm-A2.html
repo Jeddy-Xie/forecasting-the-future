@@ -1,0 +1,35 @@
+<p><b>What changed.</b> All Weather's growth-by-inflation grid, imposed on the state space.</p>
+<ul>
+<li>Every fit has four states, each started from the centroid of one quadrant.</li>
+<li>The quadrants are split at each series' expanding median, so no threshold is written down
+anywhere.</li>
+<li>The burn-in sweep still runs, and would have chosen six states; it now chooses nothing.</li>
+</ul>
+<p><b>What happened.</b> Confirmed in sample at one year, and its five-year interval is above zero too.
+That is the opposite of its registered prediction, which expected one-year skill to fall with fewer
+states. It is second to A4. Both arms replace the state space, so only one can be used, and 0003's rule
+picks the one with the higher one-year difference.</p>
+<p><b>Four runs, one scored.</b></p>
+<ul>
+<li>An early run ended with a truncated log.</li>
+<li>The next was voided, because its code was edited while it ran.</li>
+<li>The author discarded a third after committing further tests.</li>
+<li>The scored run started on a clean tree and stayed clean. It gives the same one-year numbers as the
+voided run to four decimals, so the edits never touched a forecast.</li>
+</ul>
+<p><b>What its audit did not test.</b> The deterministic audit passed, but it fitted main's six
+states, not A2's four-state seeding (D15). So A2's defence against leaks rests on its independent
+review.</p>
+<p><b>Review: clean, and it closed the audit's gap by hand.</b> The reviewer confirmed that the
+recorded audit never ran A2's code, then ran the checks that did:</p>
+<ul>
+<li>The same audit, forced onto four states, with every fit quadrant-seeded: it passed, with all 2,190
+rows identical.</li>
+<li>Its own perturbation checks at six cutoffs, from 2005 to today: every earlier fit and centroid came
+out byte-identical.</li>
+<li>All 34 models refitted with no cache, and the quadrant centroids recomputed by its own loop: both
+bit-identical to what the scored run used.</li>
+<li>The recession-lag leak (D14) barely touches this arm: dropping the 8 exposed dates moves its
+one-year difference only in the fourth decimal.</li>
+</ul>
+

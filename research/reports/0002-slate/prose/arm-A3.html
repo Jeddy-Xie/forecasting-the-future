@@ -1,0 +1,14 @@
+<p><b>What changed.</b> The model reads surprises instead of levels. Each month's growth and inflation
+has a recursive AR(1) forecast subtracted, fitted only on earlier months, which is how All Weather's
+primary sources define the quadrants. The state count is fixed at four.</p>
+<p><b>What happened.</b> No verdict at one year. At five years it came closer to the harm floor than any
+other arm without crossing it. It is faithful to the source, and no better than main.</p>
+<p><b>Review: clean.</b> The reviewer's checks:</p>
+<ul>
+<li>The recursive fit agrees with separate regressions on real data, to 9e-15.</li>
+<li>The arm's tests caught two deliberately leaky copies of the code.</li>
+<li>The audit alone would miss one version of this leak: a single regression over each date's own
+panel. The arm's invariance test is what guards that case.</li>
+<li>Notebooks 02 and 04 still draw this model on the level matrix. That gives a wrong chart, not a
+leak, and matters only if the arm ships.</li>
+</ul>
