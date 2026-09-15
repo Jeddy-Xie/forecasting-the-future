@@ -33,6 +33,9 @@ def test_the_shipped_configuration_hashes_to_the_recorded_digest() -> None:
     shipped = RunSettings(
         select_state_count_on_a_burn_in_window=False,
         start_walk_forward_when_every_input_is_point_in_time=False,
+        # Research arm A4's switch defaults on only on its own branch; the shipped
+        # run had one chain, so it is named at that value here like the other two.
+        separate_chains_for_growth_and_for_inflation_with_rates=False,
     )
     assert shipped.configuration_hash() == SHIPPED_HASH
 
@@ -113,4 +116,6 @@ def test_the_omission_map_holds_only_the_two_documented_switches() -> None:
     assert set(SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE) == {
         "select_state_count_on_a_burn_in_window",
         "start_walk_forward_when_every_input_is_point_in_time",
+        # Research arm A4, experiment 0002: False is main's single chain.
+        "separate_chains_for_growth_and_for_inflation_with_rates",
     }
