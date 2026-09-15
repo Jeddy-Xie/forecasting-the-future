@@ -77,8 +77,11 @@ case "$COMMAND" in
         "${CLI[@]}" check-gates > "$OUT/check_gates.log" 2>&1;                          GATES=$?
         "${CLI[@]}" baseline compare --against main              > "$OUT/compare.txt"  2>&1; COMPARE=$?
         "${CLI[@]}" baseline compare --against main --format json > "$OUT/compare.json" 2>/dev/null
-        "${CLI[@]}" baseline compare --against main --paired     > "$OUT/paired.txt"   2>&1; PAIRED=$?
-        "${CLI[@]}" baseline compare --against main --paired --format json > "$OUT/paired.json" 2>/dev/null
+        # Both levels, from ONE set of resamples: 90% decides PROMISING, and 98.33% (1 - 0.10/6, Bonferroni
+        # across experiment 0002's six arms) decides CONFIRMED_IN_SAMPLE. Without the second level no arm
+        # could ever be confirmed, and the omission would read as an honest non-result.
+        "${CLI[@]}" baseline compare --against main --paired --confidence-level 0.90 --confidence-level 0.9833     > "$OUT/paired.txt"   2>&1; PAIRED=$?
+        "${CLI[@]}" baseline compare --against main --paired --confidence-level 0.90 --confidence-level 0.9833 --format json > "$OUT/paired.json" 2>/dev/null
         # The deterministic half of the look-ahead defence: perturb everything unavailable at a cutoff
         # and require every forecast issued up to it to come out byte-identical. An arm that fails
         # this is void under the pre-registration, whatever its skill score says.
