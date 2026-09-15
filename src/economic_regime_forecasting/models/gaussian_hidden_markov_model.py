@@ -55,6 +55,57 @@ A collapsed state is not hidden by this: it shows up with a near-zero population
 which model selection reads as a reason to prefer fewer states."""
 
 
+def derive_sticky_dirichlet_prior(
+    state_count: int, prior_mean_visit_months: float, prior_row_strength: float
+) -> tuple[float, float]:
+    """The two Dirichlet concentrations the sticky prior (D1) needs, from D and M.
+
+    ``prior_mean_visit_months`` (D) and ``prior_row_strength`` (M) are the
+    pre-registered hyperparameters, held on ``RunSettings``. beta and kappa are
+    derived from them and the state count being fitted here, never stored and
+    never chosen per fit:
+
+        beta = M / (D * (K - 1))
+        kappa = M - K * beta
+
+    A one-state chain has no off-diagonal transition to regularise, so it returns
+    ``(0.0, 0.0)`` rather than dividing by ``K - 1 == 0``. ``prior_row_strength``
+    of exactly zero also returns ``(0.0, 0.0)`` regardless of D: this is the
+    arm's own required check, that no row strength reproduces the unregularised
+    fit bit for bit.
+    """
+    if state_count <= 1 or prior_row_strength == 0.0:
+        return 0.0, 0.0
+    beta = prior_row_strength / (prior_mean_visit_months * (state_count - 1))
+    kappa = prior_row_strength - state_count * beta
+    return float(beta), float(kappa)
+
+
+def _dirichlet_posterior_mean_transition_matrix(
+    transition_counts: np.ndarray, beta: float, kappa: float
+) -> np.ndarray:
+    """The M-step's transition update with a sticky Dirichlet prior (D1, arm A1).
+
+    Row k becomes the Dirichlet posterior MEAN given the expected transition
+    counts n[k, :]:
+
+        A[k, j] = (n[k, j] + beta + kappa * 1{j = k}) / (n[k] + K * beta + kappa)
+
+    A pure function of the counts and the two derived concentrations, so it is
+    checked directly against hand-built counts rather than only through a full
+    fit. For beta > 0 the numerator is strictly positive for every entry
+    regardless of the counts, which is what makes this never produce an exact
+    zero -- the property D1 exists to fix.
+    """
+    states = transition_counts.shape[0]
+    row_totals = transition_counts.sum(axis=1)
+    prior_counts = np.full((states, states), beta, dtype="float64")
+    prior_counts[np.diag_indices(states)] += kappa
+    denominator = row_totals + states * beta + kappa
+    matrix: np.ndarray = (transition_counts + prior_counts) / denominator[:, None]
+    return matrix
+
+
 class HiddenMarkovModelError(RuntimeError):
     """A fit failed, or a model was asked for something it cannot provide."""
 
@@ -386,8 +437,18 @@ def fit(
     max_iterations: int = 500,
     tolerance: float = 1e-6,
     covariance_type: str = "full",
+    transition_prior_beta: float = 0.0,
+    transition_prior_kappa: float = 0.0,
 ) -> GaussianHiddenMarkovModel:
     """Fit by Baum-Welch from several random starts, keeping the best likelihood.
+
+    ``transition_prior_beta`` and ``transition_prior_kappa`` default to zero,
+    which is no prior at all: the transition update in the maximisation step is
+    then the plain ratio of expected counts it always was. A caller passing
+    values derived by ``derive_sticky_dirichlet_prior`` instead gets the sticky
+    Dirichlet posterior mean (D1, arm A1): each row becomes rare rather than
+    impossible for a transition the data never observed. The two defaults
+    reproducing the unregularised fit bit for bit is the arm's required check.
 
     Expectation maximisation finds a local optimum, and for a hidden Markov model
     the surface has many. Restarts are not a nicety: a single start regularly
@@ -431,7 +492,13 @@ def fit(
             observations, state_count, generator, pooled_covariance, covariance_type
         )
         candidate, log_likelihood, iterations, converged = _run_expectation_maximisation(
-            candidate, observations, max_iterations, tolerance, pooled_covariance
+            candidate,
+            observations,
+            max_iterations,
+            tolerance,
+            pooled_covariance,
+            transition_prior_beta,
+            transition_prior_kappa,
         )
         log_likelihood_by_restart.append(log_likelihood)
         if log_likelihood > best_log_likelihood:
@@ -530,15 +597,40 @@ def _seed_means_by_furthest_point(
     return observations[chosen].copy()
 
 
+def _log_transition_prior_density(
+    transition_matrix: np.ndarray, beta: float, kappa: float
+) -> float:
+    """Log density of the sticky Dirichlet prior at this transition matrix.
+
+    Up to an additive constant: row k is Dirichlet(alpha) with alpha_j = beta for
+    j != k and alpha_k = beta + kappa, whose unnormalised log density is
+    sum_j (alpha_j - 1) * log(A[k, j]), summed over every row. The normalising
+    constant depends only on beta, kappa and the state count, all fixed within a
+    fit, so it cancels in the iteration-to-iteration difference the monotonicity
+    guard tests and is left out rather than computed for nothing.
+
+    Returns exactly 0.0 when beta and kappa are both zero, i.e. no prior, so a
+    caller adding this to the log likelihood gets the log likelihood back bit for
+    bit -- the arm's required check applies to the monitored quantity too.
+    """
+    if beta == 0.0 and kappa == 0.0:
+        return 0.0
+    log_matrix = _safe_log(transition_matrix)
+    return float((beta - 1.0) * log_matrix.sum() + kappa * np.trace(log_matrix))
+
+
 def _run_expectation_maximisation(
     model: GaussianHiddenMarkovModel,
     observations: np.ndarray,
     max_iterations: int,
     tolerance: float,
     pooled_covariance: np.ndarray,
+    transition_prior_beta: float = 0.0,
+    transition_prior_kappa: float = 0.0,
 ) -> tuple[GaussianHiddenMarkovModel, float, int, bool]:
     """Iterate expectation and maximisation until the likelihood stops moving."""
     previous_log_likelihood = -np.inf
+    previous_monitored_quantity = -np.inf
     log_likelihood = -np.inf
     converged = False
     iteration = 0
@@ -553,12 +645,35 @@ def _run_expectation_maximisation(
         # The allowance ADR 0007 decided on: the covariance ridge makes the update
         # not quite the maximiser, so a fall it can explain is not a bug. Until
         # 2026-09-15 this line kept a hard millionth and never called it.
-        if log_likelihood < previous_log_likelihood - _monotonicity_allowance(
-            previous_log_likelihood
+        #
+        # With a sticky Dirichlet prior (D1, arm A1) the M-step sets each
+        # transition row to the posterior MEAN, not to the maximiser of the
+        # likelihood's own auxiliary function, so plain expectation
+        # maximisation's monotone-likelihood guarantee does not apply on this
+        # arm's fits. What IS guaranteed to rise is the log POSTERIOR -- log
+        # likelihood plus the prior's log density at the current transition
+        # matrix -- so that is the quantity the guard watches. With beta =
+        # kappa = 0 the prior term is exactly 0.0 and this is the unregularised
+        # guard, unchanged; ``model.transition_matrix`` is then not even read,
+        # so a test double standing in for ``model`` with no prior in play
+        # never needs to grow that attribute.
+        if transition_prior_beta == 0.0 and transition_prior_kappa == 0.0:
+            monitored_quantity = log_likelihood
+        else:
+            monitored_quantity = log_likelihood + _log_transition_prior_density(
+                model.transition_matrix, transition_prior_beta, transition_prior_kappa
+            )
+        if monitored_quantity < previous_monitored_quantity - _monotonicity_allowance(
+            previous_monitored_quantity
         ):
+            quantity_name = (
+                "log likelihood"
+                if transition_prior_beta == 0.0 and transition_prior_kappa == 0.0
+                else "log posterior (log likelihood plus the transition prior's log density)"
+            )
             raise HiddenMarkovModelError(
-                "the log likelihood fell from "
-                f"{previous_log_likelihood:.6f} to {log_likelihood:.6f}. Expectation "
+                f"the {quantity_name} fell from "
+                f"{previous_monitored_quantity:.6f} to {monitored_quantity:.6f}. Expectation "
                 "maximisation cannot do that, so this is a bug in the update equations, not a "
                 "property of the data."
             )
@@ -568,6 +683,7 @@ def _run_expectation_maximisation(
             converged = True
             break
         previous_log_likelihood = log_likelihood
+        previous_monitored_quantity = monitored_quantity
 
         model = _maximisation_step(
             model,
@@ -577,6 +693,8 @@ def _run_expectation_maximisation(
             log_beta,
             log_likelihood,
             pooled_covariance,
+            transition_prior_beta,
+            transition_prior_kappa,
         )
 
     # On the iteration-cap path the loop runs one more maximisation step after the
@@ -609,6 +727,8 @@ def _maximisation_step(
     log_beta: np.ndarray,
     log_likelihood: float,
     pooled_covariance: np.ndarray,
+    transition_prior_beta: float = 0.0,
+    transition_prior_kappa: float = 0.0,
 ) -> GaussianHiddenMarkovModel:
     """Re-estimate every parameter from the posterior state responsibilities."""
     months, states = log_emissions.shape
@@ -629,23 +749,35 @@ def _maximisation_step(
 
     initial_distribution = responsibilities[0] / responsibilities[0].sum()
 
-    # A state the data have abandoned leaves a row of zeros, which is not a
-    # probability distribution and would fail the constructor's check, ending the
-    # whole fit. The documented behaviour is that a collapsed state survives with a
-    # near-zero population so that model selection can see it and prefer fewer
-    # states, so an abandoned row falls back to uniform.
     row_totals = transition_counts.sum(axis=1)
-    abandoned = row_totals <= MINIMUM_STATE_RESPONSIBILITY
-    transition_matrix = np.where(
-        abandoned[:, None],
-        1.0 / states,
-        transition_counts / np.maximum(row_totals, MINIMUM_STATE_RESPONSIBILITY)[:, None],
-    )
-    transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
-    if bool(abandoned.any()):
-        logger.warning(
-            "state_abandoned states=%s; their transition rows fall back to uniform",
-            np.flatnonzero(abandoned).tolist(),
+    if transition_prior_beta == 0.0 and transition_prior_kappa == 0.0:
+        # No prior (the arm's required check: beta = kappa = 0 reproduces this
+        # exactly). A state the data have abandoned leaves a row of zeros, which
+        # is not a probability distribution and would fail the constructor's
+        # check, ending the whole fit. The documented behaviour is that a
+        # collapsed state survives with a near-zero population so that model
+        # selection can see it and prefer fewer states, so an abandoned row
+        # falls back to uniform.
+        abandoned = row_totals <= MINIMUM_STATE_RESPONSIBILITY
+        transition_matrix = np.where(
+            abandoned[:, None],
+            1.0 / states,
+            transition_counts / np.maximum(row_totals, MINIMUM_STATE_RESPONSIBILITY)[:, None],
+        )
+        transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+        if bool(abandoned.any()):
+            logger.warning(
+                "state_abandoned states=%s; their transition rows fall back to uniform",
+                np.flatnonzero(abandoned).tolist(),
+            )
+    else:
+        # D1's sticky Dirichlet prior (arm A1). This is never zero and never
+        # undefined, even for a state the data have abandoned: with kappa > 0 an
+        # abandoned row (n[k] = 0) comes out concentrated on staying in k rather
+        # than uniform, which is what a prior favouring persistence should do, so
+        # the separate fallback above is not needed on this path.
+        transition_matrix = _dirichlet_posterior_mean_transition_matrix(
+            transition_counts, transition_prior_beta, transition_prior_kappa
         )
 
     means = (responsibilities.T @ observations) / state_totals[:, None]

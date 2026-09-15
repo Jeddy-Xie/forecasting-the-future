@@ -433,3 +433,90 @@ def test_the_snapshot_factory_produces_what_the_cache_expects(
     )
     assert isinstance(snapshot.request, SeriesRequest)
     assert snapshot.retrieved_at == datetime(2026, 9, 8, tzinfo=UTC)
+
+
+# --------------------------------------------- D1: the prior reaches every refit
+
+
+def test_fit_regime_model_receives_the_sticky_prior(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    """The second and third of the three places D1's notes require the prior to
+    reach: every walk-forward refit, and whatever ``forecast_now`` uses -- both
+    call ``fit_regime_model`` directly, so this one call site covers both.
+    """
+    from dataclasses import replace
+
+    from economic_regime_forecasting.backtest import walk_forward
+
+    histories = walk_forward.prepare_indicator_history(
+        synthetic_indicators,
+        synthetic_registry,
+        filled_cache,
+        settings.forecast_horizons_in_months,
+    )
+    no_prior = replace(
+        settings,
+        sticky_dirichlet_prior_mean_visit_months=30.0,
+        sticky_dirichlet_prior_row_strength=0.0,
+    )
+    with_prior = replace(
+        settings,
+        sticky_dirichlet_prior_mean_visit_months=30.0,
+        sticky_dirichlet_prior_row_strength=60.0,
+    )
+    as_of = date(2000, 1, 1)
+    fitted_without = walk_forward.fit_regime_model(
+        as_of, synthetic_registry, filled_cache, histories, no_prior, 2, artifacts=None
+    )
+    fitted_with = walk_forward.fit_regime_model(
+        as_of, synthetic_registry, filled_cache, histories, with_prior, 2, artifacts=None
+    )
+    assert not np.allclose(
+        fitted_without.model.transition_matrix, fitted_with.model.transition_matrix
+    )
+
+
+def test_fit_regime_model_defaults_to_no_prior_when_row_strength_is_zero(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    """The bit-for-bit required check, at the level every refit actually calls."""
+    from dataclasses import replace
+
+    from economic_regime_forecasting.backtest import walk_forward
+    from economic_regime_forecasting.models import gaussian_hidden_markov_model as hidden_markov
+    from economic_regime_forecasting.models.state_labelling import canonicalise
+
+    histories = walk_forward.prepare_indicator_history(
+        synthetic_indicators,
+        synthetic_registry,
+        filled_cache,
+        settings.forecast_horizons_in_months,
+    )
+    no_prior = replace(
+        settings,
+        sticky_dirichlet_prior_mean_visit_months=30.0,
+        sticky_dirichlet_prior_row_strength=0.0,
+    )
+    as_of = date(2000, 1, 1)
+    fitted = walk_forward.fit_regime_model(
+        as_of, synthetic_registry, filled_cache, histories, no_prior, 2, artifacts=None
+    )
+
+    from economic_regime_forecasting.data.panel import assemble_point_in_time_panel
+    from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
+
+    matrix = build_observation_matrix(
+        assemble_point_in_time_panel(synthetic_registry, as_of, filled_cache), synthetic_registry
+    )
+    directly_fitted = canonicalise(
+        hidden_markov.fit(
+            matrix.values,
+            state_count=2,
+            seed=no_prior.random_seed + as_of.year * 100 + as_of.month,
+            restarts=no_prior.expectation_maximisation_restarts,
+            max_iterations=no_prior.expectation_maximisation_max_iterations,
+            tolerance=no_prior.expectation_maximisation_tolerance,
+        )
+    )
+    np.testing.assert_array_equal(fitted.model.transition_matrix, directly_fitted.transition_matrix)

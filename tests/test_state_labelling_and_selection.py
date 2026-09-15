@@ -245,3 +245,46 @@ def test_fitting_the_real_shape_of_data_finishes_in_reasonable_time() -> None:
     fitted = hidden_markov.fit(sample, state_count=3, seed=1, restarts=3, max_iterations=200)
     assert fitted.fit_report is not None
     assert fitted.fit_report.iterations <= 200
+
+
+# --------------------------------------------------- D1: the prior reaches the sweep
+
+
+def test_the_sweep_defaults_to_no_prior() -> None:
+    """Every candidate the sweep already tested must keep fitting exactly as it
+    did before the sticky prior existed, when the two new arguments are left at
+    their defaults."""
+    sample = _simulated_sample(240)
+    without_the_arguments = sweep_state_counts(sample, (1, 2, 3), seed=7, restarts=3)
+    with_zero_row_strength = sweep_state_counts(
+        sample,
+        (1, 2, 3),
+        seed=7,
+        restarts=3,
+        sticky_dirichlet_prior_mean_visit_months=30.0,
+        sticky_dirichlet_prior_row_strength=0.0,
+    )
+    for state_count in (1, 2, 3):
+        np.testing.assert_array_equal(
+            without_the_arguments.models[state_count].transition_matrix,
+            with_zero_row_strength.models[state_count].transition_matrix,
+        )
+
+
+def test_the_sweep_passes_a_positive_prior_to_every_candidate() -> None:
+    """A2's non-negotiable, checked directly: if only some candidates in the
+    sweep received the prior, this arm would be testing a mixture rather than
+    its own hypothesis. Every candidate with more than one state must come back
+    with no exact zero in its transition matrix."""
+    sample = _simulated_sample(240)
+    sweep = sweep_state_counts(
+        sample,
+        (1, 2, 3),
+        seed=7,
+        restarts=3,
+        sticky_dirichlet_prior_mean_visit_months=30.0,
+        sticky_dirichlet_prior_row_strength=60.0,
+    )
+    for state_count, model in sweep.models.items():
+        if state_count > 1:
+            assert (model.transition_matrix > 0.0).all(), state_count

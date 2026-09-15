@@ -94,6 +94,27 @@ class RunSettings:
     conditional_rate_shrinkage_strength: float = 10.0
     """Beta prior strength pulling each per-regime rate toward the pooled rate."""
 
+    sticky_dirichlet_prior_mean_visit_months: float = 30.0
+    """D: the persistence, in months per regime visit, a sticky Dirichlet prior on
+    the transition matrix treats as typical (research arm A1, docs/
+    TECHNICAL_DEBT.md D1). Together with ``sticky_dirichlet_prior_row_strength``
+    it derives beta and kappa for the maximisation step's transition update, per
+    state count being fitted, via
+    ``models.gaussian_hidden_markov_model.derive_sticky_dirichlet_prior``. beta
+    and kappa are never stored; only D and M are settings.
+
+    This default is the value this arm's pre-registration fixed
+    (proving/experiments/0002-research-slate-2026-09/experiment.json), not a
+    value that reproduces main's behaviour -- this field exists only on the
+    ``research/sticky-dirichlet-prior`` branch, where the arm's own behaviour is
+    the default."""
+
+    sticky_dirichlet_prior_row_strength: float = 60.0
+    """M: the total pseudo-count strength of the sticky Dirichlet prior on each
+    transition row (research arm A1). ``0.0`` derives beta = kappa = 0, which
+    reproduces the unregularised transition update bit for bit -- the arm's own
+    required check. Not tuned; fixed by the pre-registration alongside D."""
+
     information_horizon_total_variation_threshold: float = 0.05
     """Below this distance to the stationary distribution, a projected regime
     distribution carries no information the unconditional base rate lacks."""

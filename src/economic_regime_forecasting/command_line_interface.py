@@ -278,6 +278,8 @@ def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.
         restarts=settings.expectation_maximisation_restarts,
         max_iterations=settings.expectation_maximisation_max_iterations,
         tolerance=settings.expectation_maximisation_tolerance,
+        sticky_dirichlet_prior_mean_visit_months=settings.sticky_dirichlet_prior_mean_visit_months,
+        sticky_dirichlet_prior_row_strength=settings.sticky_dirichlet_prior_row_strength,
     )
     model = sweep.recommended_model
     descriptions = describe_regimes(model, matrix.values, matrix.transformed.to_numpy())

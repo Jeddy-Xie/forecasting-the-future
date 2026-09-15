@@ -189,8 +189,18 @@ def sweep_state_counts(
     max_iterations: int = 500,
     tolerance: float = 1e-6,
     holdout_fraction: float = HOLDOUT_FRACTION,
+    sticky_dirichlet_prior_mean_visit_months: float = 0.0,
+    sticky_dirichlet_prior_row_strength: float = 0.0,
 ) -> StateCountSweep:
-    """Fit every candidate and pick one by the rule stated in this module."""
+    """Fit every candidate and pick one by the rule stated in this module.
+
+    The two ``sticky_dirichlet_prior_*`` arguments default to zero row strength,
+    which is no prior: every candidate fits exactly as it always did. Research
+    arm A1 passes ``RunSettings.sticky_dirichlet_prior_mean_visit_months`` and
+    ``RunSettings.sticky_dirichlet_prior_row_strength`` through the burn-in sweep
+    as well as every walk-forward refit, so the sweep this function runs is not
+    left testing a mixture of regularised and unregularised fits.
+    """
     observations = np.atleast_2d(np.asarray(observations, dtype="float64"))
     months = observations.shape[0]
     holdout_months = int(round(months * holdout_fraction))
@@ -207,6 +217,11 @@ def sweep_state_counts(
     for state_count in sorted(state_counts):
         # Each candidate gets its own derived seed so that adding a candidate to
         # the sweep does not change the fits of the others.
+        prior_beta, prior_kappa = hidden_markov.derive_sticky_dirichlet_prior(
+            state_count,
+            sticky_dirichlet_prior_mean_visit_months,
+            sticky_dirichlet_prior_row_strength,
+        )
         model = canonicalise(
             hidden_markov.fit(
                 training,
@@ -215,6 +230,8 @@ def sweep_state_counts(
                 restarts=restarts,
                 max_iterations=max_iterations,
                 tolerance=tolerance,
+                transition_prior_beta=prior_beta,
+                transition_prior_kappa=prior_kappa,
             )
         )
         models[state_count] = model

@@ -163,6 +163,8 @@ def choose_state_count_on_burn_in_window(
         restarts=settings.expectation_maximisation_restarts,
         max_iterations=settings.expectation_maximisation_max_iterations,
         tolerance=settings.expectation_maximisation_tolerance,
+        sticky_dirichlet_prior_mean_visit_months=settings.sticky_dirichlet_prior_mean_visit_months,
+        sticky_dirichlet_prior_row_strength=settings.sticky_dirichlet_prior_row_strength,
     )
 
     choice = BurnInStateCountChoice(

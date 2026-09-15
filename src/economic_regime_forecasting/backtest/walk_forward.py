@@ -240,6 +240,15 @@ def fit_regime_model(
         if model.state_count != state_count:  # pragma: no cover - key covers it
             model = None
     if model is None:
+        # Research arm A1: the sticky Dirichlet prior's beta and kappa are
+        # derived from RunSettings' D and M at this refit's state count, never
+        # stored. Zero row strength (the shipped default off this branch) derives
+        # beta = kappa = 0, which is no prior at all.
+        prior_beta, prior_kappa = hidden_markov.derive_sticky_dirichlet_prior(
+            state_count,
+            settings.sticky_dirichlet_prior_mean_visit_months,
+            settings.sticky_dirichlet_prior_row_strength,
+        )
         model = canonicalise(
             hidden_markov.fit(
                 matrix.values,
@@ -250,6 +259,8 @@ def fit_regime_model(
                 restarts=settings.expectation_maximisation_restarts,
                 max_iterations=settings.expectation_maximisation_max_iterations,
                 tolerance=settings.expectation_maximisation_tolerance,
+                transition_prior_beta=prior_beta,
+                transition_prior_kappa=prior_kappa,
             )
         )
         if artifacts is not None:

@@ -247,3 +247,163 @@ def test_a_richer_model_always_fits_the_training_data_at_least_as_well() -> None
     two = hidden_markov.fit(sample, state_count=2, seed=4, restarts=6)
     three = hidden_markov.fit(sample, state_count=3, seed=4, restarts=6)
     assert three.log_likelihood(sample) >= two.log_likelihood(sample) - 1e-6
+
+
+# --------------------------------------------------- D1: the sticky Dirichlet prior
+
+
+def test_deriving_the_sticky_prior_matches_the_pre_registration() -> None:
+    """The pre-registration's own worked examples, quoted verbatim in
+    proving/experiments/0002-research-slate-2026-09/experiment.json: at K = 5,
+    beta = 0.5 and kappa = 57.5; at K = 6, beta = 0.4 and kappa = 57.6."""
+    beta5, kappa5 = hidden_markov.derive_sticky_dirichlet_prior(
+        state_count=5, prior_mean_visit_months=30.0, prior_row_strength=60.0
+    )
+    assert beta5 == pytest.approx(0.5)
+    assert kappa5 == pytest.approx(57.5)
+
+    beta6, kappa6 = hidden_markov.derive_sticky_dirichlet_prior(
+        state_count=6, prior_mean_visit_months=30.0, prior_row_strength=60.0
+    )
+    assert beta6 == pytest.approx(0.4)
+    assert kappa6 == pytest.approx(57.6)
+
+
+def test_a_one_state_chain_derives_no_prior() -> None:
+    """A single state has no off-diagonal transition to regularise, and the
+    derivation divides by K - 1; this must not raise or silently divide by zero."""
+    beta, kappa = hidden_markov.derive_sticky_dirichlet_prior(
+        state_count=1, prior_mean_visit_months=30.0, prior_row_strength=60.0
+    )
+    assert (beta, kappa) == (0.0, 0.0)
+
+
+def test_zero_row_strength_derives_no_prior_whatever_the_mean_visit_is() -> None:
+    beta, kappa = hidden_markov.derive_sticky_dirichlet_prior(
+        state_count=6, prior_mean_visit_months=30.0, prior_row_strength=0.0
+    )
+    assert (beta, kappa) == (0.0, 0.0)
+
+
+def test_the_dirichlet_posterior_mean_matches_its_closed_form() -> None:
+    """A[k, j] = (n[k, j] + beta + kappa * 1{j = k}) / (n[k] + K*beta + kappa),
+    checked against counts worked out by hand for a 2-state row."""
+    counts = np.array([[8.0, 2.0], [1.0, 9.0]])
+    beta, kappa = 0.5, 57.5
+    matrix = hidden_markov._dirichlet_posterior_mean_transition_matrix(counts, beta, kappa)
+    denominator = 10.0 + 2 * beta + kappa
+    expected = np.array(
+        [
+            [(8.0 + beta + kappa) / denominator, (2.0 + beta) / denominator],
+            [(1.0 + beta) / denominator, (9.0 + beta + kappa) / denominator],
+        ]
+    )
+    np.testing.assert_allclose(matrix, expected, rtol=1e-12)
+    np.testing.assert_allclose(matrix.sum(axis=1), 1.0, rtol=1e-12)
+
+
+def test_a_positive_row_strength_never_produces_an_exact_zero() -> None:
+    """The defect D1 raises: plain Baum-Welch sets some transitions to exactly
+    zero from a handful of observed switches. A row with a transition NEVER
+    observed (count 0) is the sharpest case, and the posterior mean must still
+    come out strictly positive there."""
+    counts = np.array([[20.0, 0.0, 0.0], [0.0, 15.0, 0.0], [0.0, 0.0, 10.0]])
+    matrix = hidden_markov._dirichlet_posterior_mean_transition_matrix(counts, beta=0.5, kappa=57.5)
+    assert (matrix > 0.0).all()
+    np.testing.assert_allclose(matrix.sum(axis=1), 1.0, rtol=1e-12)
+
+    # The same counts with no prior reproduce the zero the defect describes.
+    unregularised = hidden_markov._dirichlet_posterior_mean_transition_matrix(
+        counts, beta=0.0, kappa=0.0
+    )
+    assert (unregularised == 0.0).any()
+
+
+def test_beta_and_kappa_both_zero_reproduces_the_unregularised_fit_bit_for_bit() -> None:
+    """The arm's own required check (proving/experiments/0002-research-slate-2026-09
+    /experiment.json, A1's ``required_check``): beta = 0 and kappa = 0 must
+    reproduce the fit with no prior argument at all, to the bit, not to a
+    tolerance."""
+    sample = _simulated_two_regime_sample(months=300)
+    without_the_argument = hidden_markov.fit(sample, state_count=3, seed=7, restarts=5)
+    with_zero_prior = hidden_markov.fit(
+        sample,
+        state_count=3,
+        seed=7,
+        restarts=5,
+        transition_prior_beta=0.0,
+        transition_prior_kappa=0.0,
+    )
+    np.testing.assert_array_equal(
+        with_zero_prior.transition_matrix, without_the_argument.transition_matrix
+    )
+    np.testing.assert_array_equal(with_zero_prior.means, without_the_argument.means)
+    np.testing.assert_array_equal(with_zero_prior.covariances, without_the_argument.covariances)
+    assert with_zero_prior.fit_report is not None and without_the_argument.fit_report is not None
+    assert (
+        with_zero_prior.fit_report.log_likelihood == without_the_argument.fit_report.log_likelihood
+    )
+
+
+def test_a_sticky_prior_fit_has_no_exact_zero_transitions() -> None:
+    """End to end, not just the closed-form M-step: fitting with the
+    pre-registered hyperparameters on a sample sparse enough to abandon a state
+    under plain Baum-Welch must still come out with every entry strictly
+    positive."""
+    sample = _simulated_two_regime_sample(months=250)
+    beta, kappa = hidden_markov.derive_sticky_dirichlet_prior(
+        state_count=4, prior_mean_visit_months=30.0, prior_row_strength=60.0
+    )
+    fitted = hidden_markov.fit(
+        sample,
+        state_count=4,
+        seed=13,
+        restarts=4,
+        transition_prior_beta=beta,
+        transition_prior_kappa=kappa,
+    )
+    assert (fitted.transition_matrix > 0.0).all()
+
+
+def test_the_prior_log_density_is_exactly_zero_with_no_prior() -> None:
+    """So the monitored quantity the monotonicity guard watches reduces to the
+    plain log likelihood, bit for bit, when beta and kappa are both zero."""
+    matrix = np.array([[0.9, 0.1], [0.2, 0.8]])
+    assert hidden_markov._log_transition_prior_density(matrix, 0.0, 0.0) == 0.0
+
+
+def test_the_prior_log_density_falls_as_a_row_moves_away_from_its_mode() -> None:
+    """A sanity check on the sign, not the exact value: with kappa > 0 favouring
+    the diagonal, a row that has moved probability mass off the diagonal must
+    score a lower log density than one still at the prior's own mode."""
+    near_mode = np.array([[0.95, 0.05], [0.05, 0.95]])
+    away_from_mode = np.array([[0.5, 0.5], [0.5, 0.5]])
+    beta, kappa = 0.5, 57.5
+    density_near = hidden_markov._log_transition_prior_density(near_mode, beta, kappa)
+    density_away = hidden_markov._log_transition_prior_density(away_from_mode, beta, kappa)
+    assert density_near > density_away
+
+
+def test_a_sticky_prior_fit_still_never_lets_its_monitored_quantity_fall() -> None:
+    """The guard ADR 0007 wired in on 2026-09-15 watches log likelihood plus the
+    prior's log density on this arm, exactly because a posterior-MEAN update is
+    not guaranteed to raise the likelihood alone. This does not assert the guard
+    is silent -- only that when it does not fire, the fit still finishes and
+    reports a finite likelihood, the same property
+    ``test_the_likelihood_never_falls_across_iterations`` pins for the
+    unregularised fit."""
+    sample = _simulated_two_regime_sample(months=200)
+    beta, kappa = hidden_markov.derive_sticky_dirichlet_prior(
+        state_count=3, prior_mean_visit_months=30.0, prior_row_strength=60.0
+    )
+    fitted = hidden_markov.fit(
+        sample,
+        state_count=3,
+        seed=9,
+        restarts=3,
+        max_iterations=60,
+        transition_prior_beta=beta,
+        transition_prior_kappa=kappa,
+    )
+    assert fitted.fit_report is not None
+    assert np.isfinite(fitted.fit_report.log_likelihood)
