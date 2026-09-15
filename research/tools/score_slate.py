@@ -27,6 +27,44 @@ REGISTRATION = Path("proving/experiments/0002-research-slate-2026-09/experiment.
 PROMISING_LEVEL = 0.90
 HARM_FLOOR = -0.02
 PRIMARY_HORIZON = 12
+# Experiment 0003's rule, committed in research/experiments-drafts/0003-combination-rule.md before any
+# 0002 arm reported. Stackable layers each change a different stage and all compose; exclusive
+# structures each REPLACE the state space, so at most one can be used.
+STACKABLE_LAYERS = ("A1", "A5", "A6")          # prior (fitting), direct rates (composition), blend (post-processing)
+EXCLUSIVE_STRUCTURES = ("A2", "A3", "A4")      # quadrant levels, quadrant surprises, two-timescale chains
+LAYER_ORDER = ("A1", "A5", "A6")               # the pipeline's own order
+
+
+def eligible_for_combination(record: dict) -> bool:
+    """0003's eligibility, verbatim in code: PROMISING or CONFIRMED_IN_SAMPLE, not HARMFUL, not VOID, and a
+    look-ahead review of exactly CLEAN (never PENDING or UNREADABLE)."""
+    verdict = record.get("verdict", "")
+    return (
+        verdict.split(";")[0].strip() in ("PROMISING", "CONFIRMED_IN_SAMPLE")
+        and "HARMFUL" not in verdict
+        and not verdict.startswith("VOID")
+        and record.get("look_ahead_review") == "CLEAN"
+    )
+
+
+def combination(records: list[dict]) -> dict:
+    """0003's construction from the eligible set, with no discretion left in it."""
+    by_label = {r["label"]: r for r in records}
+    eligible = [label for label in (*STACKABLE_LAYERS, *EXCLUSIVE_STRUCTURES) if label in by_label and eligible_for_combination(by_label[label])]
+    structures = [label for label in EXCLUSIVE_STRUCTURES if label in eligible]
+    structure = max(structures, key=lambda label: by_label[label]["d12"]) if structures else "main"
+    layers = [label for label in LAYER_ORDER if label in eligible]
+    if not eligible:
+        plan = "NO COMBINATION: nothing is eligible, so the systematic method is main as it stands"
+    elif structure != "main" and not layers:
+        plan = f"NO COMBINATION TO RUN: the only eligible arm is the structure {structure} alone, which 0002 already ran"
+    elif structure == "main" and len(layers) == 1:
+        plan = f"NO COMBINATION TO RUN: the only eligible arm is the layer {layers[0]} alone, which 0002 already ran"
+    else:
+        plan = f"RUN 0003: structure {structure}, then layers {' + '.join(layers) if layers else '(none)'}, each at its 0002-registered hyperparameters"
+    return {"eligible": eligible, "structure": structure, "layers": layers, "plan": plan}
+
+
 ARMS = {
     "A0": "aa-control",
     "A1": "sticky-dirichlet-prior",
@@ -170,8 +208,10 @@ def main() -> int:
         d12, ci = r.get("d12"), r.get("ci90_12")
         head = f"1y {d12:+.4f} 90% [{ci[0]:+.4f}, {ci[1]:+.4f}]" if d12 is not None and ci else "1y n/a"
         print(f"  {r['label']} {r['arm']:30s} {head}  audit={r.get('audit_exit')}  review={r.get('look_ahead_review', '-')}  -> {r['verdict']}")
+    plan = combination([r for r in rows_out if "verdict" in r])
+    print(f"experiment 0003 (rule committed before results): eligible {plan['eligible'] or 'none'} -> {plan['plan']}")
     if args.json:
-        Path(args.json).write_text(json.dumps(rows_out, indent=2, default=list))
+        Path(args.json).write_text(json.dumps({"arms": rows_out, "combination": plan}, indent=2, default=list))
     return 0
 
 
