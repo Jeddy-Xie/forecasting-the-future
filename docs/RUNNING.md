@@ -121,6 +121,31 @@ forty minutes, needs no network (every vintage it wants is already cached), and
 is **deliberately not part of `run_full_pipeline.sh`**: it is an analysis, not a
 stage gate.
 
+### Measuring what a change moved
+
+`forecast baseline` compares the run in the cache against a committed baseline in
+`baselines/`. It needs no network, and it reads what `check-gates` wrote, so run
+that first. [REGRESSION_TESTING.md](REGRESSION_TESTING.md) explains the tolerance
+bands, why the paired comparison is the one to trust, and the workflow a branch
+follows.
+
+```bash
+poetry run forecast baseline compare             # what moved; verdict and run-identity changes first
+poetry run forecast baseline compare --paired    # skill difference per horizon, with intervals (~15 s)
+poetry run forecast baseline list                # every committed baseline
+poetry run forecast baseline capture --name main --force   # on main, only when its numbers are meant to move
+```
+
+A comparison of `main` against itself ends with:
+
+```
+nothing moved.
+```
+
+Exit codes: 0 nothing moved, 1 something moved, 2 the comparison could not be
+made. `--paired` exits 0 whenever it could measure, because it measures and does
+not judge. Add `--format json` to either for the branch runner.
+
 ## Read the results
 
 ```bash

@@ -186,6 +186,7 @@ class ArtifactNames:
     evaluation_metrics: str = "evaluation_metrics.parquet"
     verdicts: str = "verdicts.parquet"
     gate_reports: str = "gate_reports.parquet"
+    run_summary: str = "run_summary.json"
     run_manifest: str = "run_manifest.json"
     burn_in_state_count_choice: str = "burn_in_state_count_choice.json"
     variant_comparison: str = "variant_comparison.parquet"

@@ -11,6 +11,7 @@
     forecast compare-variants  the 2x2 of the two look-ahead fixes (one-off, ~40 min)
     forecast register        record the shipped forecasts as dated, resolvable claims
     forecast resolve         score every registered forecast whose date has passed
+    forecast baseline ...    capture, compare and list the committed regression baselines
 
 Each stage reads what the previous one wrote and writes what the next one needs,
 under ``.cache/``. Nothing here contains analysis; every command is a few lines of
@@ -33,7 +34,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from economic_regime_forecasting import __version__, forecast_register, pipeline_gates
+from economic_regime_forecasting import (
+    __version__,
+    forecast_register,
+    pipeline_gates,
+    regression_baseline,
+)
 from economic_regime_forecasting.backtest import schedule as schedule_module
 from economic_regime_forecasting.backtest import state_count_on_burn_in, walk_forward
 from economic_regime_forecasting.configuration import shipping_approval
@@ -861,6 +867,7 @@ def check_gates(workspace: Workspace, today: date) -> int:
             _write_gate_reports(workspace, reports)
             return code
     _write_gate_reports(workspace, reports)
+    _write_run_summary(workspace)
     print(f"\n{'=' * 78}\nAll five gates passed.")
     return 0
 
@@ -870,6 +877,175 @@ def _write_gate_reports(workspace: Workspace, reports: list[pipeline_gates.GateR
         workspace.artifacts.write_table(
             ARTIFACTS.gate_reports, pd.concat([item.table() for item in reports])
         )
+
+
+def _write_run_summary(workspace: Workspace) -> None:
+    """Every run ends in the same shape, so two runs are comparable.
+
+    The same `assemble_run_summary` that `forecast baseline capture` uses, so a
+    committed baseline and a fresh run can never disagree about their own format.
+    Written only after all five gates pass: a run that stopped at gate 4 has no
+    evaluation to summarise, and a summary assembled from a half-finished cache
+    would describe a run that never happened.
+    """
+    destination = workspace.artifacts.write_json(
+        ARTIFACTS.run_summary, regression_baseline.assemble_run_summary(workspace.artifacts)
+    )
+    print(f"\nrun summary written to {_display_path(destination)}")
+
+
+# ------------------------------------------------------- the regression baseline
+
+
+def baseline_capture(
+    workspace: Workspace,
+    name: str,
+    deterministic: bool,
+    force: bool,
+    directory: Path = regression_baseline.BASELINE_DIRECTORY,
+) -> int:
+    """Freeze what the cache currently holds as `baselines/<name>.json`, with every
+    forecast beside it in `baselines/<name>.forecasts.parquet`.
+
+    `directory` is a parameter for the same reason the register's file is: a test
+    must be able to exercise the whole command without writing into the record the
+    repository actually commits.
+    """
+    try:
+        capture = regression_baseline.capture_baseline(
+            workspace.artifacts, name, directory, deterministic=deterministic, force=force
+        )
+    except regression_baseline.BaselineError as error:
+        print(f"baseline capture: {error}", file=sys.stderr)
+        return 2
+
+    document = capture.document
+    destination = capture.summary_path
+    run = document["run"]
+    print(
+        f"captured {name!r} from {_display_path(workspace.artifacts.directory)}: "
+        f"configuration {run['configuration_hash']}, {run['state_count']} regimes, "
+        f"{run['forecast_date_count']} forecast dates "
+        f"{run['first_forecast_date']} to {run['last_forecast_date']}"
+    )
+    print(
+        f"{len(document['horizons'])} horizon rows and {len(document['indicators'])} "
+        f"indicator rows written to {_display_path(destination)}, format version "
+        f"{document['format_version']}"
+    )
+    print(
+        f"{capture.forecast_count} forecasts written to "
+        f"{_display_path(capture.forecasts_path)} for the paired comparison"
+    )
+    if deterministic:
+        print(
+            "--deterministic: no capture time or commit recorded, so two captures match byte "
+            "for byte"
+        )
+    return 0
+
+
+def baseline_compare(
+    workspace: Workspace,
+    against: str,
+    output_format: str,
+    bands: list[str],
+    directory: Path = regression_baseline.BASELINE_DIRECTORY,
+    *,
+    paired: bool = False,
+    confidence_levels: list[float] | None = None,
+) -> int:
+    """Compare the artifacts in the cache against a committed baseline.
+
+    Exit 0 when nothing moved, 1 when something did, 2 when the comparison could
+    not be made at all. The third code is the important one: a comparison that
+    could not line its two sides up has produced no evidence, and reporting that
+    as a pass is the failure this whole module is built to avoid.
+
+    `paired` asks the other question -- is this run better, or only different --
+    by scoring both runs' forecasts on the same resampled dates. It measures and
+    does not judge, so it exits 0 whenever the measurement could be made. Its seed
+    and resample count come from the run settings. `confidence_levels` defaults to
+    the run settings' one level; several give one interval each, all read off the
+    same resamples. The output records every one of them.
+    """
+    try:
+        baseline = regression_baseline.read_baseline(against, directory)
+        current = regression_baseline.assemble_run_summary(workspace.artifacts)
+        if paired:
+            regression_baseline.check_format_version(baseline, current, against)
+            settings = workspace.settings
+            paired_comparison = regression_baseline.compare_paired(
+                baseline,
+                regression_baseline.read_baseline_forecasts(against, directory),
+                current,
+                regression_baseline.forecast_frame(workspace.artifacts),
+                random_seed=settings.random_seed,
+                resamples=settings.bootstrap_resamples,
+                confidence_levels=confidence_levels or [settings.bootstrap_confidence_level],
+                name=against,
+            )
+        else:
+            comparison = regression_baseline.compare(baseline, current, against)
+    except regression_baseline.BaselineError as error:
+        print(f"baseline compare: {error}", file=sys.stderr)
+        return 2
+
+    if paired:
+        if output_format == "json":
+            print(json.dumps(paired_comparison.as_dictionary(), indent=2, sort_keys=True))
+        else:
+            print(paired_comparison.describe())
+        return paired_comparison.exit_code
+    if output_format == "json":
+        print(json.dumps(comparison.as_dictionary(), indent=2, sort_keys=True))
+    else:
+        print(comparison.describe(bands))
+    return comparison.exit_code
+
+
+def _bands_to_show(chosen: list[str] | None) -> list[str]:
+    """`--tolerance-band` as the band names the comparison uses.
+
+    Nothing here changes a classification. `all` is the three field bands, and the
+    default is the only one a reader usually wants: what moved, not the four
+    hundred lines that did not.
+    """
+    if not chosen:
+        return [regression_baseline.MOVED]
+    if "all" in chosen:
+        return [
+            regression_baseline.IDENTICAL,
+            regression_baseline.NUMERICAL,
+            regression_baseline.MOVED,
+        ]
+    return [name.upper() for name in chosen]
+
+
+def _confidence_level(text: str) -> float:
+    """`--confidence-level` as a number strictly between zero and one, or argparse's
+    refusal, which exits 2, saying what a confidence level is."""
+    try:
+        value = float(text)
+    except ValueError:
+        value = float("nan")
+    if not 0.0 < value < 1.0:
+        raise argparse.ArgumentTypeError(
+            f"{text!r} is not a confidence level: it must lie strictly between 0 and 1, such "
+            "as 0.90, or 0.9833 for a Bonferroni family-wise level over six arms"
+        )
+    return value
+
+
+def baseline_list(directory: Path = regression_baseline.BASELINE_DIRECTORY) -> int:
+    """Every committed baseline, one row each."""
+    try:
+        listing = regression_baseline.list_baselines(directory)
+    except regression_baseline.BaselineError as error:
+        print(f"baseline list: {error}", file=sys.stderr)
+        return 2
+    print(regression_baseline.describe_listing(listing, directory))
+    return 0
 
 
 # ------------------------------------------------------------------ entry point
@@ -912,6 +1088,78 @@ def build_parser() -> argparse.ArgumentParser:
             "and whether the committed submission still records the approved one"
         ),
     )
+    # `baseline` is the first subcommand with subcommands of its own. Three verbs
+    # that all act on the same committed files belong under one name; three
+    # top-level commands sharing a prefix would be the same thing spelled worse.
+    baseline_parser = subparsers.add_parser(
+        "baseline", help="capture, compare and list the committed regression baselines"
+    )
+    baseline_actions = baseline_parser.add_subparsers(dest="baseline_command", required=True)
+
+    capture_parser = baseline_actions.add_parser(
+        "capture", help="freeze what the cache holds as baselines/<name>.json"
+    )
+    capture_parser.add_argument(
+        "--name", required=True, help="the baseline's name, and its filename"
+    )
+    capture_parser.add_argument(
+        "--deterministic",
+        action="store_true",
+        help=(
+            "omit the capture time and commit entirely, so two captures of one run are "
+            "byte-identical. The comparison ignores that block either way"
+        ),
+    )
+    capture_parser.add_argument(
+        "--force", action="store_true", help="replace a baseline of this name that already exists"
+    )
+
+    compare_parser = baseline_actions.add_parser(
+        "compare", help="the artifacts in the cache against a committed baseline"
+    )
+    compare_parser.add_argument(
+        "--against", default="main", help="which baseline to compare against (default: main)"
+    )
+    compare_parser.add_argument(
+        "--format", dest="output_format", choices=("table", "json"), default="table"
+    )
+    compare_parser.add_argument(
+        "--tolerance-band",
+        dest="tolerance_bands",
+        action="append",
+        choices=("moved", "numerical", "identical", "all"),
+        help=(
+            "which bands the table prints, repeatable (default: moved). This selects what "
+            "is shown and never how a difference is classified: the boundary between "
+            "NUMERICAL and MOVED is a constant in regression_baseline, not an argument, "
+            "because a tolerance a caller can widen after seeing a result is not a tolerance"
+        ),
+    )
+    compare_parser.add_argument(
+        "--paired",
+        action="store_true",
+        help=(
+            "instead of the field diff, the difference in the verdict's mean skill score per "
+            "horizon, this run minus the baseline, on the forecasts both runs resolved, with a "
+            "moving-block bootstrap interval that scores both runs on the same resampled dates. "
+            "The comparison to trust when asking whether a change is an improvement"
+        ),
+    )
+    compare_parser.add_argument(
+        "--confidence-level",
+        dest="confidence_levels",
+        action="append",
+        type=_confidence_level,
+        help=(
+            "with --paired, the interval's confidence level, strictly between 0 and 1 "
+            "(default: the run settings' bootstrap_confidence_level). Repeatable: "
+            "`--confidence-level 0.90 --confidence-level 0.9833` gives one interval per "
+            "level, every one read off the same resamples"
+        ),
+    )
+
+    baseline_actions.add_parser("list", help="every committed baseline, one row each")
+
     for name, help_text in (
         ("audit-data", "gate 1: measure the data against the registry"),
         ("fit-regimes", "gate 2: sweep the number of regimes and fit"),
@@ -1000,7 +1248,14 @@ def resolve_forecasts(workspace: Workspace, today: date) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    arguments = build_parser().parse_args(argv)
+    parser = build_parser()
+    arguments = parser.parse_args(argv)
+    if getattr(arguments, "paired", False) and getattr(arguments, "tolerance_bands", None):
+        parser.error(
+            "--tolerance-band selects rows of the field diff, which --paired does not print"
+        )
+    if getattr(arguments, "confidence_levels", None) and not getattr(arguments, "paired", False):
+        parser.error("--confidence-level sets the paired comparison's interval; add --paired")
     logging.basicConfig(
         level=logging.INFO if arguments.verbose else logging.WARNING,
         format="%(levelname)s %(name)s %(message)s",
@@ -1029,6 +1284,21 @@ def main(argv: list[str] | None = None) -> int:
         return register_forecasts(workspace, today)
     if arguments.command == "resolve":
         return resolve_forecasts(workspace, today)
+    if arguments.command == "baseline":
+        if arguments.baseline_command == "capture":
+            return baseline_capture(
+                workspace, arguments.name, arguments.deterministic, arguments.force
+            )
+        if arguments.baseline_command == "compare":
+            return baseline_compare(
+                workspace,
+                arguments.against,
+                arguments.output_format,
+                _bands_to_show(arguments.tolerance_bands),
+                paired=arguments.paired,
+                confidence_levels=arguments.confidence_levels,
+            )
+        return baseline_list()
 
     stages = {
         "audit-data": audit_data,

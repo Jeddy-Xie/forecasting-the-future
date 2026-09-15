@@ -284,3 +284,9 @@ is a claim the decision rule can make and this cannot.
 **Shape of the fix.** Nothing to fix retrospectively; the choice is made. For any
 future indicator set, register it the way the decision rule is registered, before
 looking at how often each condition holds.
+
+---
+
+## D13 · There is no canonical output to diff a change against
+**closed** 2026-09-15 by `forecast baseline`; see `docs/REGRESSION_TESTING.md`.
+Kept as a stub because `regression_baseline.py` refers to it by number.
