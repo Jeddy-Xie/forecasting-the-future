@@ -236,6 +236,67 @@ def test_the_monotonicity_allowance_scales_with_the_ridge() -> None:
     assert allowance < 10.0
 
 
+class _ScriptedLikelihood:
+    """Stands in for a model whose log likelihood follows a script, one value per
+    expectation step, so the loop's guard can be driven to an exact fall."""
+
+    def __init__(self, script: list[float]) -> None:
+        self.script = script
+        self.steps = 0
+
+    def log_emission_probabilities(self, observations: np.ndarray) -> np.ndarray:
+        return np.zeros((len(observations), 1))
+
+    def _forward(self, log_emissions: np.ndarray) -> np.ndarray:
+        value = self.script[min(self.steps, len(self.script) - 1)]
+        self.steps += 1
+        return np.array([[value]])
+
+    def _backward(self, log_emissions: np.ndarray) -> np.ndarray:
+        return np.zeros((1, 1))
+
+    def log_likelihood(self, observations: np.ndarray) -> float:
+        return self.script[-1]
+
+
+def _run_loop_on(script: list[float], monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    monkeypatch.setattr(hidden_markov, "_maximisation_step", lambda model, *rest: model)
+    return hidden_markov._run_expectation_maximisation(
+        _ScriptedLikelihood(script),  # type: ignore[arg-type]
+        np.zeros((5, 1)),
+        max_iterations=50,
+        tolerance=1e-6,
+        pooled_covariance=np.eye(1),
+    )
+
+
+def test_the_loop_continues_through_a_fall_the_ridge_can_explain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The defect: ADR 0007 decided the allowance and a test pinned the function,
+    but the loop kept a hard millionth and never called it. At a likelihood of
+    -1000 the allowance is 1.0, so a fall of 0.999 is the ridge, not a bug: the
+    loop carries on and converges, where before it raised. Found 2026-09-15 when
+    the publication-aware look-ahead audit's injected-leak test crashed on a fall
+    of 0.00133 at a likelihood of 583.9."""
+    allowance = hidden_markov._monotonicity_allowance(-1000.0)
+    assert allowance == pytest.approx(1.0)
+    _, log_likelihood, iterations, converged = _run_loop_on(
+        [-1000.0, -1000.999, -1000.999], monkeypatch
+    )
+    assert converged
+    assert iterations == 3
+    assert log_likelihood == -1000.999
+
+
+def test_the_loop_still_raises_on_a_fall_beyond_the_allowance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The allowance is not widened: a fall of 1.001 from -1000 is past it."""
+    with pytest.raises(hidden_markov.HiddenMarkovModelError, match="fell from"):
+        _run_loop_on([-1000.0, -1001.001], monkeypatch)
+
+
 # -------------------------------------------------------------- calibration
 
 

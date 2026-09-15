@@ -550,7 +550,12 @@ def _run_expectation_maximisation(
         log_beta = model._backward(log_emissions)
         log_likelihood = float(logsumexp(log_alpha[-1]))
 
-        if log_likelihood < previous_log_likelihood - 1e-6 * max(1.0, abs(previous_log_likelihood)):
+        # The allowance ADR 0007 decided on: the covariance ridge makes the update
+        # not quite the maximiser, so a fall it can explain is not a bug. Until
+        # 2026-09-15 this line kept a hard millionth and never called it.
+        if log_likelihood < previous_log_likelihood - _monotonicity_allowance(
+            previous_log_likelihood
+        ):
             raise HiddenMarkovModelError(
                 "the log likelihood fell from "
                 f"{previous_log_likelihood:.6f} to {log_likelihood:.6f}. Expectation "
