@@ -65,8 +65,15 @@ from economic_regime_forecasting.data.panel import (
     load_final_series,
 )
 from economic_regime_forecasting.evaluation import verdict as verdict_module
-from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
-from economic_regime_forecasting.models import indicator_forecast, regime_forecast
+from economic_regime_forecasting.features.observation_matrix import (
+    build_observation_matrix,
+    observations_as_configured,
+)
+from economic_regime_forecasting.models import (
+    indicator_forecast,
+    regime_forecast,
+    surprise_quadrants,
+)
 from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
 )
@@ -117,8 +124,11 @@ class Workspace:
         )
 
     def observation_matrix_as_of(self, as_of: date):  # type: ignore[no-untyped-def]
-        return build_observation_matrix(
-            assemble_point_in_time_panel(self.registry, as_of, self.cache), self.registry
+        return observations_as_configured(
+            build_observation_matrix(
+                assemble_point_in_time_panel(self.registry, as_of, self.cache), self.registry
+            ),
+            self.settings,
         )
 
     def _panel_length_first_forecast_date(self, today: date) -> date:
@@ -315,13 +325,16 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     # out of the same code path that was backtested. Every quantity below reads
     # from that single model: mixing a state distribution from one fit with a
     # transition matrix from another would be quietly incoherent.
+    # Research arm A3 fixes the state count for every fit; the sweep's winner is
+    # still what `fit-regimes` reports, but it no longer chooses.
+    fixed_state_count = surprise_quadrants.state_count_fixed_by_the_quadrant_structure(settings)
     fitted = walk_forward.fit_regime_model(
         today,
         workspace.registry,
         workspace.cache,
         histories,
         settings,
-        selected.state_count,
+        selected.state_count if fixed_state_count is None else fixed_state_count,
         workspace.artifacts,
     )
     filtered = fitted.model.filtered_state_probabilities(matrix.values)

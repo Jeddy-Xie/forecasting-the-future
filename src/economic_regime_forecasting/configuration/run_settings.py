@@ -121,6 +121,36 @@ class RunSettings:
     the model revised consumer price index values through the publication-lag
     fallback -- 41% of the walk-forward, every month from 1971-12 to 1994-02."""
 
+    growth_and_inflation_surprise_quadrants: bool = False
+    """Research arm A3 of experiment 0002, quadrant-structure-surprises.
+
+    When True, three things change together, exactly as the arm's ``change`` in
+    ``proving/experiments/0002-research-slate-2026-09/experiment.json`` specifies:
+
+    1. The growth and inflation columns of the observation matrix are replaced by
+       their surprises: each month's standardised value minus the one-month-ahead
+       forecast of it from a first-order autoregression with an intercept, fitted
+       by ordinary least squares on the months strictly before it, with
+       ``features.transforms.MINIMUM_MONTHS_BEFORE_FIRST_SURPRISE`` months behind
+       the first one. The rates column is unchanged.
+    2. Every regime fit uses ``models.surprise_quadrants.QUADRANT_COUNT`` states,
+       whatever the burn-in sweep recommends. The sweep still runs, is still
+       reported, and still feeds the regimes-exist gate; it no longer chooses.
+    3. Every expectation-maximisation restart begins its emission means at the
+       centroids of the four quadrants cut by the sign of the growth surprise and
+       the sign of the inflation surprise. The boundaries are zero, the expected
+       value of a surprise, so nothing is estimated to place them.
+
+    The field's own default, False, is main's behaviour, so ``RunSettings()``
+    still describes main's run and still carries main's digest. On the
+    ``research/quadrant-structure-surprises`` branch ``DEFAULT_RUN_SETTINGS``
+    turns it on, so every command runs the arm unless told otherwise.
+
+    The two hyperparameters are module constants beside the code that reads them,
+    as ``MINIMUM_PERIODS_FOR_STANDARDISATION`` already is, rather than fields: the
+    pre-registration fixes them, and this switch's place in the digest identifies
+    them."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
     def configuration_hash(self) -> str:
@@ -151,6 +181,7 @@ class RunSettings:
 SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, object] = {
     "select_state_count_on_a_burn_in_window": False,
     "start_walk_forward_when_every_input_is_point_in_time": False,
+    "growth_and_inflation_surprise_quadrants": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 
@@ -204,4 +235,10 @@ class ArtifactNames:
 
 ARTIFACTS = ArtifactNames()
 
-DEFAULT_RUN_SETTINGS = RunSettings()
+DEFAULT_RUN_SETTINGS = RunSettings(growth_and_inflation_surprise_quadrants=True)
+"""The configuration every command runs unless told otherwise.
+
+On the ``research/quadrant-structure-surprises`` branch this is research arm A3,
+so ``forecast check-gates``, ``forecast baseline compare`` and
+``forecast audit-look-ahead`` all measure the arm. ``RunSettings()`` is still
+main's configuration, with main's digest."""

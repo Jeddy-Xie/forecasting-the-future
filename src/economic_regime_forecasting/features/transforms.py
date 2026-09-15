@@ -201,6 +201,91 @@ def expanding_window_standardisation(
     return ((frame - means) / usable).astype("float64")
 
 
+MINIMUM_MONTHS_FOR_AN_AUTOREGRESSION = 3
+"""An intercept and a slope need two pairs of consecutive months, so three months."""
+
+MINIMUM_MONTHS_BEFORE_FIRST_SURPRISE = 60
+"""Five years of history behind an autoregression before it issues its first
+surprise. Fixed by research arm A3's pre-registration
+(``proving/experiments/0002-research-slate-2026-09/experiment.json``) and never
+tuned; a test reads the registration and checks the two agree."""
+
+
+def recursive_autoregressive_surprise(
+    series: pd.Series, minimum_months_before_first_surprise: int
+) -> pd.Series:
+    """Each month's value minus what an autoregression fitted on its past forecast.
+
+    For the month at position s the forecast is ``a + b * x[s - 1]``, where the
+    intercept a and slope b are the ordinary least squares fit of ``x[j]`` on
+    ``x[j - 1]`` over every j from 1 to s - 1. Only months up to s - 1 enter the
+    fit, and ``x[s - 1]`` is the only month the forecast itself reads, so the
+    surprise at s depends on nothing later than ``x[s]``.
+
+    The fit is recomputed for every month: recursive and expanding. That is what
+    keeps it point in time. A single regression over the whole series would hand
+    every early surprise coefficients estimated partly from its own future, the
+    leak experiment 0002 names for this arm.
+
+    Positions before ``minimum_months_before_first_surprise`` come back missing,
+    and the caller drops them. At that position the fit has exactly that many
+    months behind it.
+
+    Running sums make the recursion a single pass. ``numpy.cumsum`` accumulates
+    strictly in order, so the sums behind position s are bit for bit the same
+    however many months follow it: appending months never changes an earlier
+    surprise.
+    """
+    if minimum_months_before_first_surprise < MINIMUM_MONTHS_FOR_AN_AUTOREGRESSION:
+        raise TransformError(
+            "an autoregression with an intercept needs at least "
+            f"{MINIMUM_MONTHS_FOR_AN_AUTOREGRESSION} months of history before its first "
+            f"surprise; {minimum_months_before_first_surprise} was asked for"
+        )
+    values = series.to_numpy(dtype="float64")
+    if not np.isfinite(values).all():
+        raise TransformError(
+            f"{series.name} has missing or non-finite values. A surprise needs an unbroken "
+            "run of months; drop or bridge the gap before this step, deliberately."
+        )
+
+    months = values.size
+    surprises = np.full(months, np.nan)
+    if months > minimum_months_before_first_surprise:
+        previous = values[:-1]
+        current = values[1:]
+        # Entry k of each running sum covers the regression pairs (x[j - 1], x[j])
+        # for j = 1 .. k + 1.
+        sum_previous = np.cumsum(previous)
+        sum_current = np.cumsum(current)
+        sum_previous_squared = np.cumsum(previous * previous)
+        sum_cross_products = np.cumsum(previous * current)
+
+        positions = np.arange(minimum_months_before_first_surprise, months)
+        # The fit for position s uses the first s - 1 pairs: j = 1 .. s - 1.
+        last_pair = positions - 2
+        pair_count = (positions - 1).astype("float64")
+        mean_previous = sum_previous[last_pair] / pair_count
+        mean_current = sum_current[last_pair] / pair_count
+        variation_of_previous = sum_previous_squared[last_pair] - pair_count * mean_previous**2
+        covariation = sum_cross_products[last_pair] - pair_count * mean_previous * mean_current
+
+        degenerate = variation_of_previous <= 0.0
+        if bool(degenerate.any()):
+            first = series.index[int(positions[degenerate][0])]
+            raise TransformError(
+                f"{series.name} does not vary over the months before {first}, so an "
+                "autoregression fitted on them has no slope. A constant input is a data "
+                "problem to fix upstream, not a surprise of zero."
+            )
+        slope = covariation / variation_of_previous
+        intercept = mean_current - slope * mean_previous
+        forecast = intercept + slope * values[positions - 1]
+        surprises[positions] = values[positions] - forecast
+
+    return pd.Series(surprises, index=series.index, name=series.name, dtype="float64")
+
+
 def assert_strictly_monthly(frame: pd.DataFrame) -> None:
     """Fail loudly if a panel has gaps or duplicate months.
 

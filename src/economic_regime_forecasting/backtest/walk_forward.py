@@ -48,7 +48,10 @@ from economic_regime_forecasting.data import federal_reserve_client, indicator_o
 from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
 from economic_regime_forecasting.data.panel import assemble_point_in_time_panel, load_final_series
 from economic_regime_forecasting.data.vintage import LookAheadError, VintagePolicy
-from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
+from economic_regime_forecasting.features.observation_matrix import (
+    build_observation_matrix,
+    observations_as_configured,
+)
 from economic_regime_forecasting.models import gaussian_hidden_markov_model as hidden_markov
 from economic_regime_forecasting.models import indicator_forecast
 from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
@@ -56,6 +59,10 @@ from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
 )
 from economic_regime_forecasting.models.indicator_forecast import ConditionalRates
 from economic_regime_forecasting.models.state_labelling import canonicalise
+from economic_regime_forecasting.models.surprise_quadrants import (
+    state_count_fixed_by_the_quadrant_structure,
+    surprise_quadrant_centroids,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -225,10 +232,23 @@ def fit_regime_model(
 
     Fitted models are cached to disk under a key covering the date, the number of
     states, the seed and the configuration, so a re-run costs a file read.
+
+    Under research arm A3 the state count is fixed and every restart starts at the
+    surprise-quadrant centroids of this refit's own point-in-time matrix. A caller
+    passing any other state count is refused rather than silently overridden.
     """
-    matrix = build_observation_matrix(
-        assemble_point_in_time_panel(registry, as_of, cache), registry
+    matrix = observations_as_configured(
+        build_observation_matrix(assemble_point_in_time_panel(registry, as_of, cache), registry),
+        settings,
     )
+    fixed_state_count = state_count_fixed_by_the_quadrant_structure(settings)
+    if fixed_state_count is not None and state_count != fixed_state_count:
+        raise BacktestError(
+            f"this configuration fixes the state count at {fixed_state_count} (the surprise "
+            f"quadrant structure, research arm A3), but {state_count} was asked for as of "
+            f"{as_of.isoformat()}. Pass the burn-in choice's state_count, which already "
+            "carries the fixed value."
+        )
     cache_name = (
         f"model_{as_of.isoformat()}_states{state_count}_seed{settings.random_seed}"
         f"_{settings.configuration_hash()}.json"
@@ -250,6 +270,11 @@ def fit_regime_model(
                 restarts=settings.expectation_maximisation_restarts,
                 max_iterations=settings.expectation_maximisation_max_iterations,
                 tolerance=settings.expectation_maximisation_tolerance,
+                initial_means=(
+                    None
+                    if fixed_state_count is None
+                    else surprise_quadrant_centroids(matrix.values)
+                ),
             )
         )
         if artifacts is not None:
@@ -323,8 +348,11 @@ def run_walk_forward(
                 "refit as_of=%s months=%d", forecast_date.isoformat(), fitted.months_fitted_on
             )
 
-        matrix = build_observation_matrix(
-            assemble_point_in_time_panel(registry, forecast_date, cache), registry
+        matrix = observations_as_configured(
+            build_observation_matrix(
+                assemble_point_in_time_panel(registry, forecast_date, cache), registry
+            ),
+            settings,
         )
         filtered_distribution = fitted.model.filtered_state_probabilities(matrix.values)[-1]
         regime_distribution = ",".join(f"{value:.6f}" for value in filtered_distribution)
@@ -552,8 +580,11 @@ def find_first_forecast_date(
     """
     candidate = earliest_candidate
     while candidate <= latest_candidate:
-        matrix = build_observation_matrix(
-            assemble_point_in_time_panel(registry, candidate, cache), registry
+        matrix = observations_as_configured(
+            build_observation_matrix(
+                assemble_point_in_time_panel(registry, candidate, cache), registry
+            ),
+            settings,
         )
         if len(matrix) >= settings.minimum_observations_before_first_fit:
             return candidate

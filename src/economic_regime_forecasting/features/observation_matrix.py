@@ -14,6 +14,12 @@ order and no other:
 The column order is fixed by ``ModelDimension`` -- growth, inflation, rates --
 because state labelling later reads emission means by position, and a permuted
 column order would silently rename every regime.
+
+Research arm A3 of experiment 0002 adds a fifth step, taken only when
+``RunSettings.growth_and_inflation_surprise_quadrants`` is set: the standardised
+growth and inflation columns are replaced by their surprises
+(``replace_growth_and_inflation_with_surprises``). ``observations_as_configured``
+is the one place that decides whether it is taken.
 """
 
 from __future__ import annotations
@@ -28,6 +34,7 @@ from economic_regime_forecasting.configuration.registry import (
     EconomicSeriesRegistry,
     ModelDimension,
 )
+from economic_regime_forecasting.configuration.run_settings import RunSettings
 from economic_regime_forecasting.data.panel import PointInTimePanel
 from economic_regime_forecasting.features import transforms
 
@@ -127,4 +134,73 @@ def build_observation_matrix(
         standardised=standardised[list(COLUMN_NAMES)],
         transformed=transformed.loc[standardised.index, list(COLUMN_NAMES)],
         bridged_months=tuple(sorted(set(bridged))),
+    )
+
+
+def replace_growth_and_inflation_with_surprises(
+    matrix: ObservationMatrix, minimum_months_before_first_surprise: int
+) -> ObservationMatrix:
+    """Research arm A3: the growth and inflation columns become their surprises.
+
+    Taken after the expanding standardisation, so the surprise is the last step
+    and the column the model reads is the surprise itself. Its zero is then the
+    expected value of a surprise, which is where the quadrant boundaries sit, with
+    nothing estimated to put them there. A second standardisation afterwards would
+    move that zero to an estimated running mean.
+
+    It is point in time throughout. The standardised value at month s uses months
+    up to s; the autoregression behind its surprise is fitted on standardised
+    values strictly before s (``transforms.recursive_autoregressive_surprise``).
+
+    The rates column is unchanged. The first ``minimum_months_before_first_surprise``
+    standardised months have no surprise, so they drop out of all three columns.
+    The last month never moves.
+    """
+    standardised = matrix.standardised.copy()
+    for dimension in (ModelDimension.GROWTH, ModelDimension.INFLATION):
+        standardised[dimension.value] = transforms.recursive_autoregressive_surprise(
+            standardised[dimension.value], minimum_months_before_first_surprise
+        )
+    standardised = standardised.dropna(how="any")
+    if standardised.empty:
+        raise ObservationMatrixError(
+            f"as of {matrix.as_of.isoformat()} there are {len(matrix)} standardised months, "
+            f"not more than the {minimum_months_before_first_surprise} an autoregression must "
+            "have behind it before its first surprise."
+        )
+    transforms.assert_strictly_monthly(standardised)
+    if standardised.index[-1] != matrix.standardised.index[-1]:  # pragma: no cover - by design
+        raise ObservationMatrixError(
+            "replacing growth and inflation with their surprises moved the last month from "
+            f"{matrix.standardised.index[-1]:%Y-%m} to {standardised.index[-1]:%Y-%m}; a "
+            "surprise step may only drop months from the start."
+        )
+    if not np.isfinite(standardised.to_numpy(dtype="float64")).all():  # pragma: no cover
+        raise ObservationMatrixError(
+            "the surprise columns contain non-finite values, which would make every "
+            "emission likelihood undefined"
+        )
+    return ObservationMatrix(
+        as_of=matrix.as_of,
+        standardised=standardised[list(COLUMN_NAMES)],
+        transformed=matrix.transformed.loc[standardised.index, list(COLUMN_NAMES)],
+        bridged_months=matrix.bridged_months,
+    )
+
+
+def observations_as_configured(
+    matrix: ObservationMatrix, settings: RunSettings
+) -> ObservationMatrix:
+    """The matrix the configured model reads.
+
+    Unchanged under main's configuration. With
+    ``growth_and_inflation_surprise_quadrants`` set, growth and inflation are
+    replaced by their surprises. Every caller that fits or filters a regime model
+    passes its matrix through here, so the model and its inputs cannot disagree
+    about which columns they mean.
+    """
+    if not settings.growth_and_inflation_surprise_quadrants:
+        return matrix
+    return replace_growth_and_inflation_with_surprises(
+        matrix, transforms.MINIMUM_MONTHS_BEFORE_FIRST_SURPRISE
     )

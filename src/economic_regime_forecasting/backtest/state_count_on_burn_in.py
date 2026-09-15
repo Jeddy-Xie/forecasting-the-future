@@ -36,8 +36,14 @@ from economic_regime_forecasting.configuration.registry import EconomicSeriesReg
 from economic_regime_forecasting.configuration.run_settings import RunSettings
 from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
 from economic_regime_forecasting.data.panel import assemble_point_in_time_panel
-from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
+from economic_regime_forecasting.features.observation_matrix import (
+    build_observation_matrix,
+    observations_as_configured,
+)
 from economic_regime_forecasting.models.state_selection import sweep_state_counts
+from economic_regime_forecasting.models.surprise_quadrants import (
+    state_count_fixed_by_the_quadrant_structure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +64,10 @@ class BurnInStateCountChoice:
     months_in_burn_in_panel: int
     reason: str
     sweep_rows: tuple[dict[str, object], ...]
+    state_count_recommended_by_the_sweep: int | None = None
+    """What the sweep recommended. Equal to ``state_count`` unless the
+    configuration fixes the count (research arm A3), in which case the sweep is
+    reported here and no longer chooses."""
 
     def as_manifest(self) -> dict[str, object]:
         """Everything a reader needs to see that the choice looked at no future."""
@@ -70,12 +80,14 @@ class BurnInStateCountChoice:
             "months_in_burn_in_panel": self.months_in_burn_in_panel,
             "reason": self.reason,
             "sweep": [dict(row) for row in self.sweep_rows],
+            "state_count_recommended_by_the_sweep": self.state_count_recommended_by_the_sweep,
         }
 
     @classmethod
     def from_manifest(cls, payload: dict[str, object]) -> BurnInStateCountChoice:
         """Rebuild a choice read back from its cached artifact."""
         runner_up = payload["runner_up_state_count"]
+        recommended = payload.get("state_count_recommended_by_the_sweep")
         rows = payload["sweep"]
         if not isinstance(rows, list):
             raise BurnInSelectionError(
@@ -92,6 +104,9 @@ class BurnInStateCountChoice:
             months_in_burn_in_panel=int(str(payload["months_in_burn_in_panel"])),
             reason=str(payload["reason"]),
             sweep_rows=tuple(dict(row) for row in rows),
+            state_count_recommended_by_the_sweep=(
+                None if recommended is None else int(str(recommended))
+            ),
         )
 
     def sweep_table(self) -> pd.DataFrame:
@@ -155,6 +170,11 @@ def choose_state_count_on_burn_in_window(
             "month it is about to forecast. Check the vintage policy for this date rather than "
             "relaxing the comparison."
         )
+    # Research arm A3 replaces growth and inflation with their surprises. That
+    # step only drops months from the start, so the boundary checked above holds
+    # for the matrix the sweep reads; the start and the length are re-read.
+    matrix = observations_as_configured(matrix, settings)
+    panel_start = matrix.dates[0].date()
 
     sweep = sweep_state_counts(
         matrix.values,
@@ -165,15 +185,26 @@ def choose_state_count_on_burn_in_window(
         tolerance=settings.expectation_maximisation_tolerance,
     )
 
+    fixed_state_count = state_count_fixed_by_the_quadrant_structure(settings)
+    if fixed_state_count is None:
+        state_count, reason = sweep.recommended_state_count, sweep.reason
+    else:
+        state_count = fixed_state_count
+        reason = (
+            f"{fixed_state_count} states, fixed by the surprise quadrant structure (research "
+            f"arm A3); the sweep no longer chooses, and recommended "
+            f"{sweep.recommended_state_count}: {sweep.reason}"
+        )
     choice = BurnInStateCountChoice(
-        state_count=sweep.recommended_state_count,
+        state_count=state_count,
         runner_up_state_count=sweep.runner_up_state_count,
         chosen_as_of=first_forecast_date,
         panel_start=panel_start,
         panel_end=panel_end,
         months_in_burn_in_panel=len(matrix),
-        reason=sweep.reason,
+        reason=reason,
         sweep_rows=tuple(item.as_row() for item in sweep.evaluations),
+        state_count_recommended_by_the_sweep=sweep.recommended_state_count,
     )
     logger.info("burn_in_state_count %s", choice.describe())
 

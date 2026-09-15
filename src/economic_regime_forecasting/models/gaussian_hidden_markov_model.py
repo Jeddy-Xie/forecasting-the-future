@@ -386,6 +386,7 @@ def fit(
     max_iterations: int = 500,
     tolerance: float = 1e-6,
     covariance_type: str = "full",
+    initial_means: np.ndarray | None = None,
 ) -> GaussianHiddenMarkovModel:
     """Fit by Baum-Welch from several random starts, keeping the best likelihood.
 
@@ -400,9 +401,25 @@ def fit(
     state for years. Seeding the means by the k-means++ rule spreads them over
     the observed cloud rather than clustering them by luck. The likelihood, not
     the starting point, decides what comes out.
+
+    ``initial_means``, when given, replaces the k-means++ seeding: every restart
+    begins its emission means there, shaped (states, dimensions), and keeps its
+    own random persistence level and transition jitter. Research arm A3 passes the
+    four surprise-quadrant centroids (``models.surprise_quadrants``).
     """
     observations = np.atleast_2d(np.asarray(observations, dtype="float64"))
     months, dimensions = observations.shape
+    if initial_means is not None:
+        initial_means = np.asarray(initial_means, dtype="float64")
+        if initial_means.shape != (state_count, dimensions):
+            raise HiddenMarkovModelError(
+                f"initial means are shaped {initial_means.shape}, expected "
+                f"{(state_count, dimensions)}: one row per state, one column per dimension"
+            )
+        if not np.isfinite(initial_means).all():
+            raise HiddenMarkovModelError(
+                "initial means contain non-finite values, so no restart could start from them"
+            )
     if months <= state_count:
         raise HiddenMarkovModelError(
             f"cannot fit {state_count} states to {months} months of data; there must be more "
@@ -428,7 +445,12 @@ def fit(
 
     for restart in range(restarts):
         candidate = _initial_model(
-            observations, state_count, generator, pooled_covariance, covariance_type
+            observations,
+            state_count,
+            generator,
+            pooled_covariance,
+            covariance_type,
+            initial_means,
         )
         candidate, log_likelihood, iterations, converged = _run_expectation_maximisation(
             candidate, observations, max_iterations, tolerance, pooled_covariance
@@ -475,9 +497,18 @@ def _initial_model(
     generator: np.random.Generator,
     pooled_covariance: np.ndarray,
     covariance_type: str,
+    initial_means: np.ndarray | None = None,
 ) -> GaussianHiddenMarkovModel:
-    """One starting point: spread means, a random persistence level, pooled spread."""
-    means = _seed_means_by_furthest_point(observations, state_count, generator)
+    """One starting point: spread means, a random persistence level, pooled spread.
+
+    Given ``initial_means``, the means start there instead of at k-means++ seeds;
+    the persistence level and the transition jitter are drawn as before.
+    """
+    means = (
+        _seed_means_by_furthest_point(observations, state_count, generator)
+        if initial_means is None
+        else initial_means.copy()
+    )
 
     persistence = float(generator.uniform(0.50, 0.98))
     transition_matrix = np.full(
