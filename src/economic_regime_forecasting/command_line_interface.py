@@ -67,13 +67,16 @@ from economic_regime_forecasting.data.panel import (
 from economic_regime_forecasting.evaluation import verdict as verdict_module
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
-from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
-    GaussianHiddenMarkovModel,
-)
 from economic_regime_forecasting.models.state_labelling import describe_regimes, regime_table
 from economic_regime_forecasting.models.state_selection import (
     regimes_exist_from_sweep_table,
     sweep_state_counts,
+)
+from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
+    regime_model_from_dictionary,
+)
+from economic_regime_forecasting.models.two_timescale_state_selection import (
+    sweep_state_counts_for_two_chains,
 )
 
 logger = logging.getLogger("economic_regime_forecasting")
@@ -271,6 +274,8 @@ def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.
     """Gate 2. Sweep the number of regimes, fit the winner, describe it."""
     matrix = workspace.observation_matrix_as_of(today)
     settings = workspace.settings
+    if settings.separate_chains_for_growth_and_for_inflation_with_rates:
+        return _fit_two_timescale_regimes(workspace, matrix.values, matrix.transformed.to_numpy())
     sweep = sweep_state_counts(
         matrix.values,
         settings.hidden_state_counts_to_search,
@@ -297,13 +302,50 @@ def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.
     return (0 if report.passed else 1), report
 
 
+def _fit_two_timescale_regimes(
+    workspace: Workspace, standardised: np.ndarray, natural: np.ndarray
+) -> tuple[int, pipeline_gates.GateReport]:
+    """Gate 2 for research arm A4: the sweep run on each chain's own block.
+
+    Writes the same three artifacts as the single-chain path: the joint sweep
+    table, the product of the two chosen chains as the selected model, and a
+    description of every joint regime. `forecast-now` reads the chain counts back
+    off the selected model and refits both chains on today's panel.
+    """
+    settings = workspace.settings
+    sweep = sweep_state_counts_for_two_chains(
+        standardised,
+        settings.hidden_state_counts_to_search,
+        seed=settings.random_seed,
+        restarts=settings.expectation_maximisation_restarts,
+        max_iterations=settings.expectation_maximisation_max_iterations,
+        tolerance=settings.expectation_maximisation_tolerance,
+    )
+    model = sweep.recommended_model
+    descriptions = describe_regimes(model, standardised, natural)
+
+    workspace.artifacts.write_table(ARTIFACTS.state_count_sweep, sweep.joint_table())
+    workspace.artifacts.write_json(ARTIFACTS.selected_model, model.to_dictionary())
+    workspace.artifacts.write_table(ARTIFACTS.regime_descriptions, regime_table(descriptions))
+
+    report = pipeline_gates.gate_two_regime_model_of_two_chains(
+        sweep, model.most_likely_state_path(standardised), int(standardised.shape[0])
+    )
+    print(sweep.table().to_string(index=False))
+    print()
+    print(sweep.joint_table().to_string(index=False))
+    print(f"\n{sweep.reason}\n")
+    print(regime_table(descriptions).to_string(index=False))
+    print()
+    print(report.describe())
+    return (0 if report.passed else 1), report
+
+
 def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:
     """Gate 3. The current probability grid, with its evidence attached."""
     settings = workspace.settings
     matrix = workspace.observation_matrix_as_of(today)
-    selected = GaussianHiddenMarkovModel.from_dictionary(
-        workspace.artifacts.read_json(ARTIFACTS.selected_model)
-    )
+    selected = regime_model_from_dictionary(workspace.artifacts.read_json(ARTIFACTS.selected_model))
     histories = walk_forward.prepare_indicator_history(
         workspace.indicators,
         workspace.registry,
@@ -392,10 +434,11 @@ def _state_count_for_the_backtest(
     the same evidence rather than the full-sample sweep.
     """
     if not workspace.settings.select_state_count_on_a_burn_in_window:
-        model = GaussianHiddenMarkovModel.from_dictionary(
+        model = regime_model_from_dictionary(
             workspace.artifacts.read_json(ARTIFACTS.selected_model)
         )
-        return int(model.state_count)
+        # Not int(): a two-chain model's count carries its factorisation.
+        return model.state_count
 
     choice = state_count_on_burn_in.choose_state_count_on_burn_in_window(
         workspace.registry,
@@ -606,9 +649,7 @@ def submit(workspace: Workspace, today: date) -> int:
     forecasts = workspace.artifacts.read_table(ARTIFACTS.current_forecasts)
     verdicts = workspace.artifacts.read_table(ARTIFACTS.verdicts)
     results = _read_backtest_results_or_say_what_to_run(workspace)
-    model = GaussianHiddenMarkovModel.from_dictionary(
-        workspace.artifacts.read_json(ARTIFACTS.selected_model)
-    )
+    model = regime_model_from_dictionary(workspace.artifacts.read_json(ARTIFACTS.selected_model))
 
     # Before anything is written. `authorise_shipping` returns None when there is
     # nothing to authorise -- a destination that is not the repository's own
@@ -751,10 +792,10 @@ def compare_variants(workspace: Workspace, today: date) -> int:
             chosen_as_of = choice.chosen_as_of
             sweep_table = choice.sweep_table()
         else:
-            selected = GaussianHiddenMarkovModel.from_dictionary(
+            selected = regime_model_from_dictionary(
                 cell.artifacts.read_json(ARTIFACTS.selected_model)
             )
-            state_count = int(selected.state_count)
+            state_count = selected.state_count
             # The full-sample sweep is a statement about today's panel, so the
             # date it was chosen as of is today. That is the leak, named.
             chosen_as_of = today
