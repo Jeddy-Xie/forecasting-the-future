@@ -24,7 +24,9 @@ interface rather than by discipline.
 computed over the whole sample would hand the model a benchmark that knew the
 future. The climatology here at month t averages only the outcomes that had
 resolved by month t, which is what a forecaster in month t could actually have
-quoted.
+quoted. Resolved means published: an outcome counts once the last value it rests
+on has appeared, its label plus its publication lag, by the same rule that censors
+the conditions the rates are learned from (ADR 0009).
 """
 
 from __future__ import annotations
@@ -131,13 +133,9 @@ def prepare_indicator_history(
     histories: dict[str, IndicatorHistory] = {}
     for indicator in indicators:
         source = final_series[indicator.resolution.series]
-        outcomes: dict[int, pd.Series] = {}
-        climatology: dict[int, pd.Series] = {}
-        for horizon in horizons_in_months:
-            resolved = indicator_outcomes.resolve(indicator, source, horizon).outcomes
-            outcomes[horizon] = resolved
-            climatology[horizon] = _expanding_climatology(resolved, horizon)
-
+        # One lag per indicator, for both things read off final data: the
+        # conditions the rates are learned from and the outcomes the benchmark
+        # averages. A derived series is published when its later component is.
         derived = registry.derived_by_name(indicator.resolution.series)
         lag = (
             max(
@@ -147,6 +145,13 @@ def prepare_indicator_history(
             if derived is not None
             else registry[indicator.resolution.series].publication_lag_days
         )
+
+        outcomes: dict[int, pd.Series] = {}
+        climatology: dict[int, pd.Series] = {}
+        for horizon in horizons_in_months:
+            resolved = indicator_outcomes.resolve(indicator, source, horizon).outcomes
+            outcomes[horizon] = resolved
+            climatology[horizon] = _expanding_climatology(resolved, horizon, lag)
 
         histories[indicator.name] = IndicatorHistory(
             indicator=indicator,
@@ -158,23 +163,53 @@ def prepare_indicator_history(
     return histories
 
 
-def _expanding_climatology(outcomes: pd.Series, horizon_in_months: int) -> pd.Series:
+def publication_dates(labels: pd.DatetimeIndex, publication_lag_days: int) -> pd.DatetimeIndex:
+    """The date each observation was published: its period label plus the lag.
+
+    The one publication rule the walk-forward applies to final data, whether to a
+    condition the forecaster reads or to an outcome its benchmark counts. The lag
+    counts from the period-start label, as the registry defines it and as
+    ``data.vintage.censor_by_publication_lag`` applies it to the model's inputs.
+    """
+    return pd.DatetimeIndex(labels) + pd.Timedelta(days=publication_lag_days)
+
+
+def _expanding_climatology(
+    outcomes: pd.Series, horizon_in_months: int, publication_lag_days: int
+) -> pd.Series:
     """The base rate a forecaster could have quoted at each date.
 
-    An outcome for a forecast made in month s is known in month s plus the
-    horizon. So the average available in month t covers forecast dates up to t
-    minus the horizon, and no further.
+    The outcome of a forecast made in month s at horizon h rests on observations
+    up to the one labelled s + h months: the value at the horizon, or the last
+    month of the window. That value is published ``publication_lag_days`` after
+    its label. So the average available at t covers exactly the forecast dates
+    whose deciding value had been published on or before t.
+
+    Until 2026-09-15 the average at t covered forecast dates up to t - h, which
+    counted the outcome resting on the value labelled t itself: five weeks before
+    that value was published for most series, 400 days for recession dating. The
+    look-ahead audit found it; ADR 0009 records the fix and what it moved.
     """
-    running_mean = outcomes.expanding(min_periods=1).mean()
-    available = running_mean.shift(horizon_in_months)
-    return available.rename("climatology")
+    running_mean = outcomes.expanding(min_periods=1).mean().to_numpy(dtype="float64")
+    deciding_labels = pd.DatetimeIndex(outcomes.index) + pd.DateOffset(months=horizon_in_months)
+    published = publication_dates(deciding_labels, publication_lag_days)
+    # How many forecast dates' outcomes had been published by each date. Both
+    # indexes ascend, so one binary search answers it for every date at once, and
+    # the outcomes it counts are always a prefix of the forecast dates.
+    resolved_count = np.asarray(
+        published.searchsorted(pd.DatetimeIndex(outcomes.index), side="right"), dtype=np.intp
+    )
+    available = np.full(len(outcomes), np.nan)
+    any_resolved = resolved_count > 0
+    available[any_resolved] = running_mean[resolved_count[any_resolved] - 1]
+    return pd.Series(available, index=outcomes.index, name="climatology")
 
 
 def condition_available_at(history: IndicatorHistory, as_of: date) -> pd.Series:
     """The indicator's monthly condition, censored to what had been published."""
     condition = history.monthly_condition.dropna()
-    publication_dates = condition.index + pd.Timedelta(days=history.publication_lag_days)
-    return condition[publication_dates <= pd.Timestamp(as_of)]
+    published = publication_dates(pd.DatetimeIndex(condition.index), history.publication_lag_days)
+    return condition[published <= pd.Timestamp(as_of)]
 
 
 def fit_regime_model(

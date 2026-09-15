@@ -213,5 +213,13 @@ the cutoff. Second, the audit's first run on main, on the pipeline as of 9bf13d6
 All twelve moved rows are `climatology_probability` at the cutoff itself. The
 benchmark at a forecast date t counted the outcome of the forecast made at t − h,
 which resolves on the value labelled t. That value is published weeks later, or
-400 days later for recession dating. **Main fails this audit at the commit that
-introduces it.** The look-ahead audit table in `TECHNICAL_DEBT.md` records it.
+400 days later for recession dating. **Main failed this audit at the commit that
+introduced it** (fb926ff). The look-ahead audit table in `TECHNICAL_DEBT.md`
+records it.
+
+The next commit makes an outcome wait until the value it rests on is published,
+by the rule the conditions already obeyed (ADR 0009). The audit on main then
+exits 0, in 333 seconds:
+
+    PASS: no forecast issued on or before 2000-03-01 changed when every
+    observation unavailable at 2000-03-01 was perturbed

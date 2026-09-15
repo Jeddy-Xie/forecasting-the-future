@@ -335,6 +335,33 @@ def test_a_model_fitted_on_a_panel_from_the_future_is_caught_and_exits_one(
     assert "The earliest is where the leak enters" in printed
 
 
+def test_a_pipeline_with_no_leak_passes_and_exits_zero(
+    registry: EconomicSeriesRegistry,
+    indicators: tuple[BinaryIndicator, ...],
+    source_root: Path,
+    settings: RunSettings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Nothing moves at all, the benchmark included.
+
+    Before ADR 0009 the benchmark at the cutoff counted an outcome resting on the
+    value labelled the cutoff month, so this failed on climatology_probability.
+    """
+    code, record = _run_command(
+        registry, indicators, source_root, settings, tmp_path / "models", monkeypatch
+    )
+    assert code == 0
+    assert record["passed"] is True
+    assert record["moved_rows"] == []
+    printed = capsys.readouterr().out
+    assert (
+        f"PASS: no forecast issued on or before {CUTOFF.isoformat()} changed when every "
+        f"observation unavailable at {CUTOFF.isoformat()} was perturbed"
+    ) in printed
+
+
 def test_without_an_injected_leak_no_model_output_moves(
     clean_audit: look_ahead_audit.LookAheadAudit,
 ) -> None:

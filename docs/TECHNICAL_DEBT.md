@@ -33,14 +33,14 @@ status. Re-run this audit whenever the pipeline gains a step.
 | Model parameters at each refit | **clean** — refitted from scratch on the point-in-time panel; verified that only the state count is read from the full-sample fit |
 | **Number of regimes** | **clean** — chosen once on a burn-in window ending strictly before the first forecast date; the full-sample sweep no longer reaches the backtest. ADR 0008 |
 | Conditional rates | **clean** — only conditions whose publication lag had passed |
-| Benchmark (climatology) | **look-ahead, found 2026-09-15 by the invariance audit** (last row), not by reading. Expanding, but the average at t counted the outcome of the forecast made at t − h, which resolves on the value labelled t: unpublished at t, by five weeks for most series and 400 days for recession dating. Open at the commit that adds the audit |
+| Benchmark (climatology) | **clean since 2026-09-15** — expanding, and an outcome enters the average at t only once the value it rests on (label s + h, plus the indicator's publication lag) was published by t, the same rule the conditions obey. Before that the average at t counted the outcome of the forecast made at t − h, which rests on the value labelled t: unpublished at t, by five weeks for most series and 400 days for recession dating. Found by the invariance audit (last row), not by reading. ADR 0009 |
 | Outcome resolution | **clean by design** — final data is correct for scoring; the forecaster never sees it |
 | Condition values feeding rate estimation | **approximation** — final values with timing enforced. Exact for market rates and recession dating. See D5 |
 | Every run setting (seed, restarts, burn-in, refit cadence, shrinkage, thresholds, bootstrap) | **clean** — all a priori constants, none derived from the data |
 | Acceptance thresholds | **clean** — pre-registered and committed before the first backtest |
 | Canonicalisation rule | **clean** — a fixed sort, not fitted |
 | **Indicator thresholds** | **weak** — canonical round numbers, but chosen by someone who knew the sample. See D12 |
-| **Future-perturbation invariance** (`forecast audit-look-ahead`, run on demand) | **main fails it at the commit that adds it**: 12 of 2190 rows moved at the default cutoff 2000-03-01, every one `climatology_probability` on the cutoff date. The earliest is `consumer_price_inflation_above_five_percent_within_horizon` at 12 months, 0.375 → 0.37662337662337664. *Covers* every path by which an observation labelled on or after a cutoff, or a vintage published after it, reaches a forecast issued on or before it, the benchmark included. *Does not cover* revised values of pre-cutoff observations in the current-vintage files (D5, by design), information inside a publication lag, or information between a forecast date and the cutoff. See `docs/REGRESSION_TESTING.md` |
+| **Future-perturbation invariance** (`forecast audit-look-ahead`, run on demand) | **passes on main** since the benchmark fix (ADR 0009): exit 0 at the default cutoff 2000-03-01, all 2190 rows identical. It **failed** at the commit that added it (fb926ff): 12 of 2190 rows moved, every one `climatology_probability` on the cutoff date. The earliest is `consumer_price_inflation_above_five_percent_within_horizon` at 12 months, 0.375 → 0.37662337662337664. *Covers* every path by which an observation labelled on or after a cutoff, or a vintage published after it, reaches a forecast issued on or before it, the benchmark included. *Does not cover* revised values of pre-cutoff observations in the current-vintage files (D5, by design), information inside a publication lag, or information between a forecast date and the cutoff. See `docs/REGRESSION_TESTING.md` |
 
 Two entries are still not clean, and they are the two weakest rows rather than the two
 worst: the condition values feeding rate estimation (D5, narrowed — see below) and the
@@ -50,9 +50,9 @@ the fix cost in the numbers.
 **A third was found on 2026-09-15, and by execution rather than by reading: the
 benchmark.** Every row above was judged by someone reading the code, and that row
 said "clean". The invariance audit perturbed everything unpublished at a cutoff and
-watched twelve climatology values move. That is why the audit is now a row of its
-own, and why the slate's decision rule requires it to pass on main before any arm
-runs.
+watched twelve climatology values move. It was closed the same day (ADR 0009). That
+is why the audit is now a row of its own, and why the slate's decision rule
+requires it to pass on main before any arm runs.
 
 ---
 

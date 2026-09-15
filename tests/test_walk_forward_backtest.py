@@ -261,17 +261,87 @@ def test_an_any_time_forecast_exceeds_its_point_in_time_twin_on_real_runs(
 
 
 def test_the_climatology_at_a_date_uses_only_outcomes_resolved_by_then() -> None:
-    """The benchmark must not know something the model could not."""
+    """The benchmark must not know something the model could not.
+
+    An outcome is resolved once the last observation it rests on is published:
+    the value labelled s + h months, which appears ``publication_lag_days`` after
+    its label. Until 2026-09-15 this test asserted that month one's outcome was
+    known *in* month four, the month its deciding value is labelled, which is
+    weeks before that value exists. The assertion encoded the look-ahead; the
+    invariance audit found it (ADR 0009).
+    """
     index = pd.date_range("2000-01-01", periods=10, freq="MS")
     outcomes = pd.Series([1.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0], index=index)
-    climatology = _expanding_climatology(outcomes, horizon_in_months=3)
+    climatology = _expanding_climatology(outcomes, horizon_in_months=3, publication_lag_days=36)
 
-    # In month four, the only forecasts that have resolved are month one's.
-    assert climatology.iloc[3] == pytest.approx(1.0)
-    # In month six, months one to three have resolved: two of three were positive.
-    assert climatology.iloc[5] == pytest.approx(2 / 3)
-    # Nothing has resolved in the first three months.
-    assert bool(climatology.iloc[:3].isna().all())
+    # Month one's outcome rests on month four's value, published 2000-05-07. So
+    # nothing has resolved in months one to five.
+    assert bool(climatology.iloc[:5].isna().all())
+    # In month six, month one's outcome has been published, and only it.
+    assert climatology.iloc[5] == pytest.approx(1.0)
+    # In month eight, months one to three have resolved: two of three were positive.
+    assert climatology.iloc[7] == pytest.approx(2 / 3)
+
+
+def _climatology_of_one_outcome(publication_lag_days: int) -> pd.Series:
+    """The benchmark built from forecasts starting 1999-03-01, all positive.
+
+    The first one's twelve-month outcome rests on the value labelled 2000-03-01,
+    so the benchmark is missing until that value is published and 1.0 from then.
+    """
+    index = pd.date_range("1999-03-01", "2001-12-01", freq="MS")
+    return _expanding_climatology(
+        pd.Series(1.0, index=index),
+        horizon_in_months=12,
+        publication_lag_days=publication_lag_days,
+    )
+
+
+def test_an_outcome_published_on_the_forecast_date_is_in_that_dates_benchmark() -> None:
+    """2000-03-01 plus 31 days is 2000-04-01: published on the forecast date."""
+    climatology = _climatology_of_one_outcome(31)
+    assert np.isnan(climatology[pd.Timestamp("2000-03-01")])
+    assert climatology[pd.Timestamp("2000-04-01")] == 1.0
+
+
+def test_an_outcome_published_one_day_after_the_forecast_date_is_not() -> None:
+    """2000-03-01 plus 32 days is 2000-04-02, one day too late for 2000-04-01."""
+    climatology = _climatology_of_one_outcome(32)
+    assert np.isnan(climatology[pd.Timestamp("2000-04-01")])
+    assert climatology[pd.Timestamp("2000-05-01")] == 1.0
+
+
+def test_a_recession_outcome_waits_the_full_four_hundred_days() -> None:
+    """Recession dating is announced about 400 days late. 2000-03-01 plus 400 days
+    is 2001-04-05, so the outcome is out of the benchmark through 2001-04-01 and in
+    from 2001-05-01. The old shift counted it from 2000-03-01, thirteen months early.
+    """
+    climatology = _climatology_of_one_outcome(400)
+    assert bool(climatology[:"2001-04-01"].isna().all())
+    assert climatology[pd.Timestamp("2001-05-01")] == 1.0
+
+
+def test_the_benchmark_waits_for_the_same_publication_lag_as_the_conditions(
+    synthetic_registry, synthetic_indicators, filled_cache
+) -> None:  # type: ignore[no-untyped-def]
+    """One publication rule, not two: the last outcome the benchmark counts at a
+    date rests on exactly the last condition the forecaster may read then."""
+    histories = prepare_indicator_history(
+        synthetic_indicators, synthetic_registry, filled_cache, (12,)
+    )
+    history = histories["rate_above_three_at_horizon"]
+    outcomes = history.outcomes_by_horizon[12].dropna()
+    forecast_date = pd.Timestamp("1990-01-01")
+    deciding_labels = outcomes.index + pd.DateOffset(months=12)
+    published = outcomes[
+        deciding_labels + pd.Timedelta(days=history.publication_lag_days) <= forecast_date
+    ]
+
+    assert history.climatology_by_horizon[12][forecast_date] == pytest.approx(
+        published.mean(), rel=1e-12
+    )
+    last_counted_label = published.index[-1] + pd.DateOffset(months=12)
+    assert condition_available_at(history, forecast_date.date()).index[-1] == last_counted_label
 
 
 def test_a_condition_is_only_used_once_its_publication_lag_has_passed(

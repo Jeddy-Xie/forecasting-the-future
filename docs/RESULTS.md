@@ -13,6 +13,22 @@ The tables are labelled rather than replaced, because replacing them without
 regenerating `submission/forecasts.csv` would leave the submission and the report
 describing different runs.
 
+**Correction, 2026-09-15: the benchmark counted one outcome early.** The claim
+below, that the climatology "never knows anything the model could not have known",
+was false. At each date the benchmark counted the outcome resting on that month's
+own value, weeks before the value was published, and 400 days before for recession
+dating. `forecast audit-look-ahead` found it, and it was fixed the same day. See
+ADR 0009.
+
+Recomputed on the shipped run behind these tables, it changes no verdict:
+- one-year mean skill +0.232 → +0.235;
+- five years +0.102 → +0.104;
+- ten years −0.221 → −0.219;
+- the base rates in `submission/forecasts.csv` move by at most 0.006.
+
+The tables are left as published and the submission is not regenerated. Whether
+to re-ship is Jeddy's call.
+
 ## The verdict
 
 The decision rule was committed before the first backtest ran
