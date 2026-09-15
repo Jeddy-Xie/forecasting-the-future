@@ -24,8 +24,9 @@ generalised. This module is the general answer.
                             disagree about their own format.
 
 Nothing here recomputes a number. Every value is read off
-``backtest_results.parquet``, ``verdicts.parquet``, ``evaluation_metrics.parquet``
-or ``burn_in_state_count_choice.json``. A baseline that re-derived its own
+``backtest_results.parquet``, ``verdicts.parquet``, ``evaluation_metrics.parquet``,
+``burn_in_state_count_choice.json`` or ``backtest_fallback_record.json``, each
+written by the run being summarised and never by another command. A baseline that re-derived its own
 contents would be measuring this module rather than the pipeline.
 
 **The two traps this is built around.** Both are on the record from the D2 unit
@@ -59,6 +60,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -290,34 +292,70 @@ def _rows(
     return sorted(rows, key=lambda item: tuple(item[name] for name in key_fields))
 
 
-def _forecast_dates_using_fallback(
-    artifacts: ArtifactStore, configuration_hash: str, forecast_date_count: int
-) -> int | None:
-    """How many forecast dates fed the model revised values, or ``None``.
+def fallback_record(
+    configuration_hash: str, forecast_dates: pd.DatetimeIndex, fallback_dates: Sequence[date]
+) -> dict[str, Any]:
+    """What a backtest records about its own schedule's vintage policy.
 
-    Only ``forecast compare-variants`` records this, in
-    ``variant_comparison.parquet``. It is a forty-minute one-off and deliberately
-    not part of ``run_full_pipeline.sh``, so a cache that has never run it cannot
-    answer the question and the field is ``null`` rather than a guessed zero. A
-    ``null`` on one side and a number on the other is reported as ``MOVED``, which
-    is the honest reading: a run that cannot say how many dates fell back is not
-    the same evidence as a run that says none did.
+    ``forecast backtest`` writes it beside ``backtest_results.parquet``, from the
+    fallback dates it measured over its own schedule when it ran. The schedule's
+    identity is recorded with the count so the summary can refuse a record that
+    describes some other run.
     """
-    if not artifacts.has(ARTIFACTS.variant_comparison):
+    return {
+        "configuration_hash": configuration_hash,
+        "first_forecast_date": forecast_dates[0].date().isoformat(),
+        "last_forecast_date": forecast_dates[-1].date().isoformat(),
+        "forecast_date_count": len(forecast_dates),
+        "forecast_dates_using_fallback": len(fallback_dates),
+        "fallback_dates": [item.isoformat() for item in fallback_dates],
+    }
+
+
+def _forecast_dates_using_fallback(
+    artifacts: ArtifactStore,
+    configuration_hash: str,
+    first_forecast_date: str,
+    last_forecast_date: str,
+    forecast_date_count: int,
+) -> int | None:
+    """How many forecast dates fed the model revised values, as the run measured it.
+
+    ``forecast backtest`` measures this over its own schedule, with the scan its
+    pre-flight uses, and writes ``backtest_fallback_record.json`` beside the
+    results. The summary reads that record and nothing else.
+
+    Until 2026-09-15 it borrowed the count from ``variant_comparison.parquet``,
+    ``forecast compare-variants``' artifact, looked up by configuration hash.
+    Every research arm has a hash of its own and starts from a copy of main's
+    cache, so every arm would have found nothing there. That is a ``null`` against
+    the baseline's 0, which is a categorical MOVED on run identity in every arm's
+    comparison, for a reason unrelated to its idea.
+
+    A cache whose backtest predates the record has none, and the field is
+    ``null``: explicitly unknown, never inherited from elsewhere. A ``null`` on
+    one side and a number on the other is still reported as ``MOVED``, because a
+    run that cannot say how many dates fell back is not the same evidence as one
+    that says none did. A record describing another run -- a different
+    configuration or schedule -- is refused.
+    """
+    if not artifacts.has(ARTIFACTS.backtest_fallback_record):
         return None
-    comparison = artifacts.read_table(ARTIFACTS.variant_comparison)
-    matching = comparison[comparison["configuration_hash"] == configuration_hash]
-    if matching.empty:
-        return None
-    recorded_dates = int(_the_one_value(matching, "forecast_date_count", "variant_comparison"))
-    if recorded_dates != forecast_date_count:
+    record = artifacts.read_json(ARTIFACTS.backtest_fallback_record)
+    expected: dict[str, object] = {
+        "configuration_hash": configuration_hash,
+        "first_forecast_date": first_forecast_date,
+        "last_forecast_date": last_forecast_date,
+        "forecast_date_count": forecast_date_count,
+    }
+    recorded = {key: record.get(key) for key in expected}
+    if recorded != expected:
         raise BaselineError(
-            f"{ARTIFACTS.variant_comparison} records {recorded_dates} forecast dates for "
-            f"configuration {configuration_hash} but {ARTIFACTS.backtest_results} has "
-            f"{forecast_date_count}. One of the two is stale; re-run whichever produced the "
-            "older one rather than choosing between them."
+            f"{ARTIFACTS.backtest_fallback_record} describes {recorded}, but "
+            f"{ARTIFACTS.backtest_results} is {expected}. The two come from different runs; "
+            "re-run `forecast backtest` so the cache describes one rather than choosing."
         )
-    return int(_the_one_value(matching, "forecast_dates_using_fallback", "variant_comparison"))
+    return int(str(record["forecast_dates_using_fallback"]))
 
 
 def _state_count_chosen_as_of(artifacts: ArtifactStore, state_count: int) -> str | None:
@@ -371,7 +409,11 @@ def assemble_run_summary(artifacts: ArtifactStore) -> dict[str, Any]:
         "forecast_date_count": forecast_date_count,
         "refit_count": int(pd.to_datetime(results["refit_date"]).nunique()),
         "forecast_dates_using_fallback": _forecast_dates_using_fallback(
-            artifacts, configuration_hash, forecast_date_count
+            artifacts,
+            configuration_hash,
+            forecast_dates.min().date().isoformat(),
+            forecast_dates.max().date().isoformat(),
+            forecast_date_count,
         ),
     }
     if set(run) != set(RUN_FIELDS):  # pragma: no cover - guards a future edit

@@ -27,6 +27,22 @@ skill score is computed from.
 `.cache/models/run_summary.json`, using the same function, so a fresh run and a
 baseline cannot disagree about their own format.
 
+**Every field comes from the run it describes.** `forecast_dates_using_fallback`
+counts the forecast dates whose model inputs fell back to revised values.
+`forecast backtest` measures it over its own schedule, with the scan its
+pre-flight uses, and writes it to `.cache/models/backtest_fallback_record.json`
+beside the results, together with the configuration hash and the schedule span.
+A record describing another run is refused. A cache whose backtest predates the
+record reports `null`: explicitly unknown, never inherited.
+
+Until 2026-09-15 the count was borrowed from `forecast compare-variants`'
+artifact, looked up by configuration hash. Every research arm has a new hash, so
+every arm would have reported `null` against main's 0, a categorical MOVED on run
+identity for a reason unrelated to its idea.
+
+`FORMAT_VERSION` did not change. The field kept its name, type, block and meaning,
+and main's value is 0 under either source, so the committed baseline stays valid.
+
 ## The plain comparison: did anything move?
 
 `forecast baseline compare` lines every field up against the baseline and puts

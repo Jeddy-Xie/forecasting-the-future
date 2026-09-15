@@ -133,6 +133,14 @@ def artifacts(tmp_path: Path) -> ArtifactStore:
         ARTIFACTS.burn_in_state_count_choice,
         {"state_count": 6, "chosen_as_of": "1994-03-01", "reason": "6 states wins"},
     )
+    store.write_json(
+        ARTIFACTS.backtest_fallback_record,
+        regression_baseline.fallback_record(
+            CONFIGURATION_HASH,
+            pd.DatetimeIndex(pd.to_datetime(["1994-03-01", "1994-04-01", "1995-03-01"])),
+            [],
+        ),
+    )
     return store
 
 

@@ -427,6 +427,18 @@ def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
             f"{missing[:3]}. Run `forecast fetch-data` first; it skips anything already there."
         )
 
+    # Measured over this run's own schedule by the scan the pre-flight uses, and
+    # recorded beside the results, so the run summary never borrows the count from
+    # another command's artifact. Under the honest start the pre-flight refuses
+    # anything but zero; the record holds what was measured, not that assumption.
+    fallback_dates = walk_forward.forecast_dates_using_the_publication_lag_fallback(
+        workspace.registry, workspace.cache, schedule.forecast_dates
+    )
+    print(
+        f"{len(fallback_dates)} of {len(schedule.forecast_dates)} forecast dates use the "
+        "publication-lag fallback"
+    )
+
     results = walk_forward.run_walk_forward(
         workspace.registry,
         workspace.indicators,
@@ -438,6 +450,12 @@ def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
         workspace.artifacts,
     )
     workspace.artifacts.write_table(ARTIFACTS.backtest_results, results)
+    workspace.artifacts.write_json(
+        ARTIFACTS.backtest_fallback_record,
+        regression_baseline.fallback_record(
+            settings.configuration_hash(), schedule.forecast_dates, fallback_dates
+        ),
+    )
     report = pipeline_gates.gate_four_backtest(results)
     print(report.describe())
     return (0 if report.passed else 1), report
