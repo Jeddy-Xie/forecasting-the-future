@@ -1,0 +1,147 @@
+# Bellows source watchlist — forecasting-the-future instance.
+#
+# Domain: verification of numerical and probabilistic software — regression
+# and characterisation testing, reproducibility, and forecast evaluation.
+# Every entry is a LITERAL request URL. grade: A/B/C is human-assigned.
+# expect_min = items a healthy fetch returns (thin-detection).
+#
+# fetch-verified 2026-09-15 from this machine (previous pass 2026-09-10, all 10
+# then), all 19 returning HTTP 200 — bytes/items; arXiv feeds dated Tue 15 Sep:
+#   rss.arxiv.org  cs.SE 185631b/83 · stat.AP 71219b/31 · econ.EM 33855b/16
+#                  cs.MS 12650b/6 · stat.ME 178549b/87
+#   api.github.com approvaltests 2133b · pytest-regressions 2153b · syrupy 3346b
+#                  scipy 7330b · pandas 4776b · statsforecast 2510b
+#                  statsmodels 3885b · dynamax 2653b · scoringrules 3626b
+#   journals       rss.sciencedirect.com IJF 38021b/68 · onlinelibrary.wiley.com JoF 231231b/56
+#   blogs          robjhyndman.com 452734b/60 · goodjudgment.com 90378b/10
+#                  forecastingresearch.substack.com 661835b/20
+#
+# Known-blocked from a cloud fetch; do NOT add as tier-1: reddit.com (all
+# forms), youtube.com feeds, github.com/*/releases.atom and /trending,
+# lobste.rs, export.arxiv.org API, X/Twitter.
+#
+# Also unfetchable keyless from this machine, observed 2026-09-15 — do not add
+# as tier-1 without new evidence: forecasters.org (IIF site, blog, Foresight and
+# wp-json all 403 behind a BunnyCDN shield, whatever the user agent);
+# metaculus.com API (403 "only available to authenticated users") and its
+# /rss/ and /feed/ (Cloudflare challenge); goodjudgment.com/blog/feed/ (403 —
+# the site-root /feed/ below works). forecastingresearch.org has no feed of its
+# own (/feed redirects to the home page); its Substack below is the feed.
+
+groups:
+  methods-papers:
+    - id: arxiv-rss-se
+      method: fetch-rss
+      url: "https://rss.arxiv.org/rss/cs.SE"
+      note: "software engineering — regression test selection, flaky tests, oracles"
+      cadence: weekly
+      grade: A
+      expect_min: 20
+    - id: arxiv-rss-ms
+      method: fetch-rss
+      url: "https://rss.arxiv.org/rss/cs.MS"
+      note: "mathematical software — numerical reproducibility, floating-point tolerance"
+      cadence: weekly
+      grade: A
+      expect_min: 3
+    - id: arxiv-rss-stat-ap
+      method: fetch-rss
+      url: "https://rss.arxiv.org/rss/stat.AP"
+      note: "applied statistics — forecast evaluation, calibration, scoring rules"
+      cadence: weekly
+      grade: B
+      expect_min: 10
+    - id: arxiv-rss-econ-em
+      method: fetch-rss
+      url: "https://rss.arxiv.org/rss/econ.EM"
+      note: "econometrics — regime models, structural break and forecast-comparison tests"
+      cadence: weekly
+      grade: B
+      expect_min: 5
+
+  tooling-releases:
+    - id: gh-releases
+      method: fetch-json
+      url: "https://api.github.com/repos/{repo}/releases/latest"
+      note: "unauth 60/hr shared-IP budget — keep this list lean; tolerate 429 as 'thin'"
+      cadence: weekly
+      grade: A
+      expect_min: 1
+      repos:
+        # the approval / golden-file ecosystem this repo would build on
+        - approvals/ApprovalTests.Python
+        - ESSS/pytest-regressions
+        - syrupy-project/syrupy
+        # numerical dependencies whose releases move our numbers underneath us
+        - scipy/scipy
+        - pandas-dev/pandas
+        # forecasting libraries whose evaluation conventions are worth tracking
+        - Nixtla/statsforecast
+        # PROPOSED 2026-09-15, owner to confirm: independent reference
+        # implementations to cross-check this repo's own numbers against. Each
+        # adds one request per heat — 9 in total, inside the 60/hr budget.
+        - statsmodels/statsmodels   # tsa.regime_switching MarkovRegression — the reference Hamilton filter
+        - probml/dynamax            # JAX HMMs and linear-Gaussian state-space models — oracle for filtered_state_probabilities
+        - frazane/scoringrules      # Brier score and CRPS for probabilistic forecasts — oracle for evaluation/scoring.py
+        # Considered and NOT added 2026-09-15: Metaculus/forecasting-tools (no
+        # releases and no tags — releases/latest 404s, would read as dead every
+        # week); hmmlearn/hmmlearn (releases/latest 404, tag-only); awslabs/gluonts
+        # (deep-learning forecasters, nothing in this repo to cross-check against).
+
+  # Forecasting methods — added 2026-09-15 at the owner's request: probabilistic
+  # forecasting, forecast aggregation and calibration, regime-switching and
+  # state-space macro models, and forecasting-competition practice. Every grade
+  # in this group is PROPOSED by the session that verified the URL; the owner
+  # confirms or changes it. Fixed-window feeds carry expect_min = the window, so
+  # any shortfall means the feed broke rather than a quiet week.
+  forecasting-methods:
+    - id: arxiv-rss-stat-me
+      method: fetch-rss
+      url: "https://rss.arxiv.org/rss/stat.ME"
+      note: "statistical methodology — forecast reconciliation, aggregation of predictive distributions, change detection. Measured by arXiv ID on 2026-09-15: 16 of 87 items also in stat.AP, 8 in econ.EM; 13 of its 20 forecasting-keyword hits were in neither. Daily-window feed like the other arXiv entries, so a weekly fetch sees one announcement day"
+      cadence: weekly
+      grade: B  # proposed — high volume, low precision (clinical trials, genomics), but it carries forecasting-methods papers before any journal does
+      expect_min: 20  # observed 87 (35 new, 15 cross-lists, 37 replacements)
+    - id: ijf-journal
+      method: fetch-rss
+      url: "https://rss.sciencedirect.com/publication/science/01692070"
+      note: "International Journal of Forecasting — the International Institute of Forecasters' journal, where M-competition results are published. Items carry NO pubDate: read the date from the 'Available online' or issue line in description, and key on guid (link carries a dgcid tracking parameter). Displaces the IIF blog, which is unfetchable"
+      cadence: weekly
+      grade: A  # proposed — the field's primary peer-reviewed venue; 52 of 68 titles hit a forecasting-methods keyword list, the highest precision of any candidate
+      expect_min: 40  # observed 68: 19 from the Oct-Dec 2026 issue, 24 from Jul-Sep, 25 in press
+    - id: jof-journal
+      method: fetch-rss
+      url: "https://onlinelibrary.wiley.com/feed/1099131x/most-recent"
+      note: "Journal of Forecasting (Wiley), dated items spanning 22 May-10 Sep 2026. Uniquely carries applied regime-switching, business-cycle and nowcasting papers (12 of 56 titles), but 20 of 56 are asset-price or deep-learning prediction"
+      cadence: weekly
+      grade: C  # proposed — the most on-target macro and regime titles of any feed, diluted by stock-price machine-learning papers
+      expect_min: 40  # observed 56, rolling window
+    - id: hyndman-blog
+      method: fetch-rss
+      url: "https://robjhyndman.com/index.xml"
+      note: "Rob Hyndman — former IJF editor-in-chief, author of Forecasting: Principles and Practice. Forecast-evaluation and benchmark critique, e.g. 'Evaluating time series foundation model claims' (24 Aug 2026). The only practitioner-methodologist voice on the list; about 2 posts a month, some personal"
+      cadence: weekly
+      grade: B  # proposed — authoritative on forecast evaluation and competitions; low volume, some off-topic posts
+      expect_min: 60  # fixed window of the 60 most recent posts (Feb 2024-Aug 2026)
+    - id: good-judgment-blog
+      method: fetch-rss
+      url: "https://goodjudgment.com/feed/"
+      note: "Good Judgment Inc — superforecaster aggregation practice, Brier-scored comparisons against markets (superforecasters vs CME FedWatch on FOMC decisions, 25 Aug 2026), and winner interviews from the quarterly 'Right!' said FRED challenge on GJ Open. About 1 post a month"
+      cadence: weekly
+      grade: C  # proposed — the only source on how winning human forecasters actually work, but a vendor blog close to marketing
+      expect_min: 10  # fixed window of 10 (WordPress default)
+    - id: fri-substack
+      method: fetch-rss
+      url: "https://forecastingresearch.substack.com/feed"
+      note: "Forecasting Research Institute — ForecastBench (AI vs superforecaster accuracy) and expert-elicitation tournaments. Displaces the Metaculus Substack (metaculus.substack.com/feed, 200, 8 items since Apr 2026), which covers the same AI-forecasting-benchmark ground at lower volume"
+      cadence: weekly
+      grade: C  # proposed — research-grade evidence on aggregation, but most posts forecast AI rather than improve forecasting method
+      expect_min: 20  # fixed window of 20 (Substack default)
+
+# Triage weighting. Source-native signal is z-normalised within a group, then
+# multiplied by grade weight and a freshness decay, and divided by a penalty
+# for anything already carrying a status in research/ledger/ideas.md.
+grade_weights:
+  A: 1.0
+  B: 0.7
+  C: 0.4

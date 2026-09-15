@@ -1,0 +1,95 @@
+{
+  "week": "2026-W37",
+  "no_signal": false,
+  "triaged_by": "orchestrator, inline (per the heat skill: triage is not an agent step)",
+  "input": {
+    "signals_files": 2,
+    "sources_ok": "10/10",
+    "items_in": 57,
+    "degraded": false
+  },
+  "triage_note": "The methods-papers scout kept 55 of ~57 feed items and stamped each with a category label ('numerical precision / reproducibility', 'test oracle / flaky test') rather than a reason specific to the item. On inspection most are LLM-coding-agent or causal-inference papers with no bearing on comparing two runs of a numerical pipeline. Recall was fine; precision was not. Every promoted and watched item below was re-read and its arXiv id fetched and title-matched before promotion, because a scout's citation is a lead, not evidence.",
+  "promoted": [
+    {
+      "id": "arxiv-2609.07492",
+      "title": "FPScan: An Automated Constraint-Based Analyzer for Floating-Point Anomaly Detection",
+      "url": "https://arxiv.org/abs/2609.07492",
+      "source": "arxiv-rss-se",
+      "published": "2026-09-09",
+      "verified": "title fetched from arxiv.org/abs/2609.07492 on 2026-09-10 and matched",
+      "why": "The comparator's hardest question is which numeric differences are anomalies and which are noise. This repository has a measured ~1e-13 cross-environment drift and a fit cache that can mask it, so a tolerance policy is the design's load-bearing decision. A constraint-based analyzer for floating-point anomalies is the nearest published treatment of exactly that discrimination.",
+      "bears_on": "tolerance policy; the difference between a flagged regression and a rerun",
+      "tier": "undived"
+    },
+    {
+      "id": "arxiv-2512.18088",
+      "title": "A Large-Scale Dynamic Characterization of Flaky Tests in Quantum Software: The Qiskit Terra Case Study",
+      "url": "https://arxiv.org/abs/2512.18088",
+      "source": "arxiv-rss-se",
+      "published": "2026-09-09 (feed date; earlier submission)",
+      "verified": "title fetched from arxiv.org/abs/2512.18088 on 2026-09-10 and matched",
+      "why": "Qiskit is the closest published analogue to this repository: a numerically intensive, probabilistic codebase whose test outcomes are not bit-stable. A large-scale characterisation of how flakiness actually distributes in such a suite is direct evidence on the failure mode a breadth-first comparison report invites, rather than an argument about it.",
+      "bears_on": "expected false-positive rate; whether the report gets read after month two",
+      "tier": "undived"
+    },
+    {
+      "id": "gh-syrupy-v6.0.0",
+      "title": "syrupy v6.0.0 - deterministic set/dict serialization, native dataclass serialization",
+      "url": "https://github.com/syrupy-project/syrupy/releases/tag/v6.0.0",
+      "source": "gh-releases:syrupy-project/syrupy",
+      "published": "2026-08-22",
+      "verified": "release fetched from the GitHub API by the scout; html_url recorded",
+      "why": "A snapshot library shipping a serialization change in a major version is the concrete form of a risk this design carries: when the writer's output format changes, every stored baseline silently stops meaning what it meant. It is an argument for versioning the run format itself and recording that version in the manifest, not only the values.",
+      "bears_on": "run-format versioning; what invalidates a canonical run",
+      "tier": "undived"
+    }
+  ],
+  "watchlist_adds": [
+    {
+      "id": "arxiv-2609.05879",
+      "title": "Correct Tests Are Not Enough: Measuring and Training Oracle Conversion in Specification-Based Test Generation",
+      "url": "https://arxiv.org/abs/2609.05879",
+      "tripwire": "revisit if the comparison report acquires a pass/fail gate - the gate is an oracle, and this is about how oracles are actually derived from specifications"
+    },
+    {
+      "id": "arxiv-2609.06413",
+      "title": "Shrinkage invalidates the Hosmer-Lemeshow test: goodness of fit for penalized logistic models",
+      "url": "https://arxiv.org/abs/2609.06413",
+      "tripwire": "revisit if the comparison starts making distributional claims about the 30-probability vector rather than per-row ones"
+    },
+    {
+      "id": "gh-scipy-v1.18.1",
+      "title": "SciPy 1.18.1",
+      "url": "https://github.com/scipy/scipy/releases/tag/v1.18.1",
+      "tripwire": "a numerical dependency bump is a legitimate cause of a whole-grid diff - it belongs in the provenance record, and this release is the first live test of whether it lands there"
+    }
+  ],
+  "rejected": [
+    { "id": "arxiv-2609.05563", "reason": "human-AI collaboration scaffolding for software work; nothing about comparing outputs" },
+    { "id": "arxiv-2609.05571", "reason": "agent skill synthesis from code; off-question" },
+    { "id": "arxiv-2609.06052", "reason": "agent skill correctness specification; the label 'test tolerance / manifest' does not match the content" },
+    { "id": "arxiv-2609.06229", "reason": "LLM vulnerability discovery benchmark; security, not regression comparison" },
+    { "id": "arxiv-2609.06772", "reason": "fuzzer scheduling; different problem class" },
+    { "id": "arxiv-2609.07224", "reason": "security patch multiplicity; off-question" },
+    { "id": "arxiv-2609.07360", "reason": "supply-chain defects in AI coding harnesses; off-question" },
+    { "id": "arxiv-2609.07652", "reason": "reference claim verification for manuscripts; off-question" },
+    { "id": "arxiv-2609.08301", "reason": "agent interaction timeline visualisation; off-question" },
+    { "id": "arxiv-2609.08681", "reason": "fault injection comparison; adjacent but not about output diffing" },
+    { "id": "arxiv-2609.07434", "reason": "CAD code generation; off-question" },
+    { "id": "arxiv-2609.07754", "reason": "dependency install behaviour of coding assistants; off-question" },
+    { "id": "arxiv-2609.08196", "reason": "agent benchmark result; off-question" },
+    { "id": "arxiv-2609.08472", "reason": "multi-agent authority substrate; off-question" },
+    { "id": "arxiv-2609.08861", "reason": "benchmark transfer to chat interfaces; off-question" },
+    { "id": "arxiv-2609.09133", "reason": "coding-agent test generation; off-question" },
+    { "id": "arxiv-2503.19599", "reason": "natural-language reasoning about program correctness; off-question" },
+    { "id": "arxiv-2511.12288", "reason": "hallucination reduction in generated code; off-question" },
+    { "id": "arxiv-2607.26244", "reason": "whether code models follow tests; off-question" },
+    { "id": "arxiv-2609.04218", "reason": "AI-assisted development governance; off-question" },
+    { "id": "arxiv-2609.07969", "reason": "certified computing for geometric function theory; numerics but an unrelated domain and no comparison method to borrow" },
+    { "id": "arxiv-2609.09095", "reason": "fp64 emulation for dense matmul; hardware-level precision, not output comparison" },
+    { "id": "arxiv-2609.06018", "reason": "ideal point estimation; off-question" },
+    { "id": "arxiv-2609.06134", "reason": "observable functions of ODE models; off-question" },
+    { "id": "arxiv-2502.16015", "reason": "CDF computation for a specific distribution; off-question" },
+    { "id": "stat.AP and econ.EM bulk", "reason": "24 of the 27 items from stat.AP and econ.EM are causal inference, heterogeneous treatment effects, and structural identification. They are relevant to what this repository models; they are not relevant to how two runs of it get compared, which is this week's question. Rejected as a cluster rather than individually, and this line is the record of that." }
+  ]
+}

@@ -1,0 +1,366 @@
+{
+  "week": "2026-W38",
+  "no_signal": false,
+  "triaged_by": "orchestrator, inline (per the heat skill: triage is not an agent step)",
+  "input": {
+    "signals_files": 3,
+    "sources_ok": "5/19",
+    "items_in": 73,
+    "degraded": true
+  },
+  "triage_note": "DEGRADED, but mostly by definition rather than by breakage. One source genuinely failed (the Good Judgment feed returned 403; it verified that morning, so its bot shield is intermittent). Most of the other 'thin' results come from a mismatch introduced the same day: the six new forecasting-methods sources were given expect_min values equal to the size of each WHOLE feed, while scouts count only items inside the week's window, and the GitHub releases entries count a repo with no release this week as thin. Those sources will read thin every week however healthy they are, which is the permanently-red-check failure contracts.py warns about; it is carried as an OPEN debt rather than quietly redefined. Separately, all five of W37's WATCHING items had their recorded tripwires fire during this week's work; they are listed in tripwires_fired and returned for decision, which is the only legitimate route back for a parked item. Every promoted item was re-read and verified before promotion.",
+  "promoted": [
+    {
+      "id": "arxiv-2609.14758",
+      "title": "Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return",
+      "url": "https://arxiv.org/abs/2609.14758",
+      "source": "arxiv-rss-se",
+      "published": "2026-09-13",
+      "verified": "title and abstract fetched from arxiv.org/abs/2609.14758 on 2026-09-15 and matched",
+      "why": "This week's research slate runs seven agents that each report a primary number from a tool's output. The paper measures 14.10% of responses asserting a value the tool payload could not support under a deployment-style prompt. This session already produced one instance: a council lens reported a test count it had not observed, caught only because the chair re-ran the suite. The practical consequence is that every arm's primary endpoint should be machine-extracted from paired.json, never transcribed.",
+      "tier": "undived"
+    },
+    {
+      "id": "arxiv-2609.13299",
+      "title": "From Experiments to Decisions: Reusing Evidence in Autonomous Coding Research",
+      "url": "https://arxiv.org/abs/2609.13299",
+      "source": "arxiv-rss-se",
+      "published": "2026-09-10",
+      "verified": "title and abstract fetched from arxiv.org/abs/2609.13299 on 2026-09-15 and matched",
+      "why": "Documents agents carrying forward conclusions an experiment does not justify, including a coordinator that acknowledges a novelty-only rejection and then summarises it as measured closure. That is the exact failure mode waiting for the orchestrator when it consolidates seven arm results into one report. It argues for stating each arm's evidence tier separately and never letting the summary outrank its inputs.",
+      "tier": "undived"
+    },
+    {
+      "id": "ijf-S0169207026000890",
+      "title": "Editorial: Reproducibility at the International Journal of Forecasting",
+      "url": "https://doi.org/10.1016/j.ijforecast.2026.08.004",
+      "source": "ijf-journal",
+      "published": "2026-09",
+      "verified": "existence and authorship confirmed through Crossref (DOI 10.1016/j.ijforecast.2026.08.004; Pinson, Perignon, Akmansoy, Dali, Rostami-Tabar). The publisher page returned HTTP 403, so the CONTENT HAS NOT BEEN READ and nothing here should be taken as a summary of it.",
+      "why": "The flagship forecasting journal's editorial position on reproducibility, published the week this repository gained a regression harness and a pre-registered slate. Whether the repository meets the journal's standard is a checkable question, once the text is read.",
+      "tier": "undived"
+    }
+  ],
+  "watchlist_adds": [
+    {
+      "id": "gh-syrupy-v6.1.1",
+      "title": "syrupy v6.1.1: experimental --snapshot-file-lock",
+      "url": "https://github.com/syrupy-project/syrupy/releases/tag/v6.1.1",
+      "new_evidence_delta": "Re-mention of the ADOPTED gh-syrupy-v6.0.0 with a new delta: concurrent pytest-xdist workers rewriting one snapshot file SILENTLY DROP entries. That is a different failure from the serialization change already adopted.",
+      "tripwire": "if two processes ever write to baselines/ concurrently - for example research arms capturing into main's baselines/ instead of their own worktrees. Designed out today: each arm writes only inside its own worktree."
+    },
+    {
+      "id": "arxiv-2609.13345",
+      "title": "Beyond Point Forecasts: A Survey on Probabilistic Forecasting for Time Series and Spatiotemporal Data",
+      "url": "https://arxiv.org/abs/2609.13345",
+      "tripwire": "when an arm or the combination experiment needs a calibration method beyond the fixed climatology blend; read its distribution-free calibration section before inventing one"
+    },
+    {
+      "id": "doi-10.1002/for.70213",
+      "title": "Forecasting Macroeconomic Variables With High-Frequency Predictors",
+      "url": "https://doi.org/10.1002/for.70213",
+      "tripwire": "if the mixed-frequency nowcasting extension (state-space briefing rank 5, currently deferred) is ever registered as an experiment"
+    },
+    {
+      "id": "arxiv-2609.14082",
+      "title": "Dangers of Bayesian analyses and how to address them",
+      "url": "https://arxiv.org/abs/2609.14082",
+      "tripwire": "when arm A1 (sticky Dirichlet prior) reports: its result is conditional on one registered prior (D = 30, M = 60), and a prior-sensitivity checklist is how far to trust it"
+    },
+    {
+      "id": "arxiv-2609.15122",
+      "title": "DepthBenchCAD: When Does Deeper Auditing Yield More Reliable Conclusions?",
+      "url": "https://arxiv.org/abs/2609.15122",
+      "tripwire": "if review depth per arm is ever traded against the number of arms run under a fixed budget - the paper's exact question, and a live one for a paranoid-rigor slate"
+    }
+  ],
+  "rejected": [
+    {
+      "id": "arxiv-2609.13327",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Scalable matrix computation for ensemble covariance in weather forecasting"
+    },
+    {
+      "id": "arxiv-2609.13441",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Spectral methods combining DFT with HSGP for space-time reconstruction"
+    },
+    {
+      "id": "arxiv-2609.13488",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Spiked covariance estimation for climate model attribution"
+    },
+    {
+      "id": "arxiv-2609.13553",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Model-agnostic validation of multivariate synthetic datasets"
+    },
+    {
+      "id": "arxiv-2609.13586",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Causal framework extending synthetic controls methodology"
+    },
+    {
+      "id": "arxiv-2609.13590",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Divide-and-conquer Bayesian calibration for large assessment databases"
+    },
+    {
+      "id": "arxiv-2609.13594",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Nonparametric detection of synchronized climate pattern shifts"
+    },
+    {
+      "id": "arxiv-2609.13609",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: High-dimensional time series network comparison methods"
+    },
+    {
+      "id": "arxiv-2609.13698",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Optimal experimental design for treatment-control alternation"
+    },
+    {
+      "id": "arxiv-2609.13736",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Jackknife-based covariate adjustment avoiding sample splitting"
+    },
+    {
+      "id": "arxiv-2609.13740",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Stepped-wedge trial optimization with closed cohorts"
+    },
+    {
+      "id": "arxiv-2609.13799",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Dynamic reliability for systems under non-Gaussian wind loading"
+    },
+    {
+      "id": "arxiv-2609.13848",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Time-varying correlation analysis with brain connectivity application"
+    },
+    {
+      "id": "arxiv-2609.13850",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Covariate-informed EOF for spatio-temporal environmental fields"
+    },
+    {
+      "id": "arxiv-2609.13861",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Analysis and correction of signal filtering algorithm degradation"
+    },
+    {
+      "id": "arxiv-2609.13862",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Distribution theory for restricted maximum likelihood in mixed models"
+    },
+    {
+      "id": "arxiv-2609.13976",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Practical guidance for incorporating historical data in Bayesian inference"
+    },
+    {
+      "id": "arxiv-2609.14170",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Finite-sample FDR control in distributed testing scenarios"
+    },
+    {
+      "id": "arxiv-2609.14380",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Rank-based procedures for detecting distributional shifts"
+    },
+    {
+      "id": "arxiv-2609.14483",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Closed-form density and asymptotically efficient estimators"
+    },
+    {
+      "id": "arxiv-2609.14503",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Policy positivity and identification in spatial intervention settings"
+    },
+    {
+      "id": "arxiv-2609.14506",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Online covariance matrix change detection with uncertainty quantification"
+    },
+    {
+      "id": "arxiv-2609.14774",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Efficient recursive algorithms for spatial Bayesian models"
+    },
+    {
+      "id": "arxiv-2609.14950",
+      "reason": "statistical methodology outside regime modelling, forecast evaluation and calibration: Bayesian partial identification methodology"
+    },
+    {
+      "id": "ijf-S0169207026000889",
+      "reason": "forecasting application outside macroeconomic regimes: Preference prediction for climate policy design in households"
+    },
+    {
+      "id": "ijf-S0169207026000518",
+      "reason": "forecasting application outside macroeconomic regimes: AI surveillance system forecasting bank distress from news"
+    },
+    {
+      "id": "doi-10.1002/for.70214",
+      "reason": "forecasting method for asset volatility, not macroeconomic probability forecasts: Decision-theoretic framework for loss-consistent variance forecasts"
+    },
+    {
+      "id": "automating-catastrophic-risk-forecasts",
+      "reason": "AI catastrophic-risk forecasting; off-domain for macroeconomic indicators: Automated AI Risk Outlook dashboard forecasting catastrophic event probabilities"
+    },
+    {
+      "id": "arxiv-2609.13274",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Contract extraction case study analyzing model performance on specific document segments."
+    },
+    {
+      "id": "arxiv-2609.13321",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Six principles for auditing collections of agent skills and capabilities."
+    },
+    {
+      "id": "arxiv-2609.13334",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Operating system architecture for sustained deployment of enterprise agents."
+    },
+    {
+      "id": "arxiv-2609.13450",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Usage control mechanisms for public data exchange infrastructures."
+    },
+    {
+      "id": "arxiv-2609.13461",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Conceptual framework treating software development as a self-adaptive socio-technical system."
+    },
+    {
+      "id": "arxiv-2609.13485",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Empirical study of test coverage patterns in code with self-admitted technical debt."
+    },
+    {
+      "id": "arxiv-2609.13577",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Comparative framework for evaluating enterprise generative AI application architectures."
+    },
+    {
+      "id": "arxiv-2609.13645",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Approach for building production-grade training frameworks using harness-driven AI development."
+    },
+    {
+      "id": "arxiv-2609.13728",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Method to convert software patches into typestate rules for detecting kernel bugs."
+    },
+    {
+      "id": "arxiv-2609.13973",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Stochastic model for representing brain dynamics in digital twin applications."
+    },
+    {
+      "id": "arxiv-2609.13975",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Uncertainty estimation methods for large language model code generation systems."
+    },
+    {
+      "id": "arxiv-2609.14017",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Deterministic approach for reconciling temporal identity lifecycle events with effective dates."
+    },
+    {
+      "id": "arxiv-2609.14046",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Hiring framework based on retrospective analysis of interview outcomes and engineer performance."
+    },
+    {
+      "id": "arxiv-2609.14323",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: AI techniques for optimizing and automating software workflows."
+    },
+    {
+      "id": "arxiv-2609.14475",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Fuzzing approach for smart contracts using large language model guidance."
+    },
+    {
+      "id": "arxiv-2609.14721",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Analysis of Model Context Protocol publication history and adoption patterns."
+    },
+    {
+      "id": "arxiv-2609.14784",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Automatic unit test generation for NLP libraries using large language models."
+    },
+    {
+      "id": "arxiv-2609.14818",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Design approach for calibrating user trust in conversational agents via Socratic dialogue."
+    },
+    {
+      "id": "arxiv-2609.14836",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Evidence from SAT solving supporting automated specialization of solvers to problem domains."
+    },
+    {
+      "id": "arxiv-2609.14839",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Measurement framework for LLM behavioral calibration in code optimization tasks."
+    },
+    {
+      "id": "arxiv-2609.14881",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Decision framework for carbon-aware AI deployment in enterprise supply chains."
+    },
+    {
+      "id": "arxiv-2609.14983",
+      "reason": "software-engineering paper on LLM agents, enterprise systems or developer practice; no bearing on comparing numerical runs or on forecasting: Study of multilingual package architecture and health across software ecosystems."
+    },
+    {
+      "id": "arxiv-2609.13480",
+      "reason": "numerical-optimisation or hardware paper; no bearing on forecast evaluation or run comparison: Relaxation and rounding approach for unit commitment optimization with network topology constraints."
+    },
+    {
+      "id": "arxiv-2609.13755",
+      "reason": "numerical-optimisation or hardware paper; no bearing on forecast evaluation or run comparison: Newton method variant for linear programming with row-polar parametrization and repair strategy."
+    },
+    {
+      "id": "arxiv-2609.13875",
+      "reason": "numerical-optimisation or hardware paper; no bearing on forecast evaluation or run comparison: Framework for generating custom convex optimization solvers implemented in Rust."
+    },
+    {
+      "id": "arxiv-2609.14845",
+      "reason": "numerical-optimisation or hardware paper; no bearing on forecast evaluation or run comparison: Performance models for AMD hardware matrix core operations and their computational characteristics."
+    },
+    {
+      "id": "arxiv-2609.15697",
+      "reason": "numerical-optimisation or hardware paper; no bearing on forecast evaluation or run comparison: Modular framework for quantum application research and algorithm prototyping."
+    },
+    {
+      "id": "arxiv-2609.13319",
+      "reason": "applied-statistics paper outside regime modelling, forecast evaluation and calibration: Bayesian method for evaluating localized factor influence in complex network structures."
+    },
+    {
+      "id": "arxiv-2609.14772",
+      "reason": "applied-statistics paper outside regime modelling, forecast evaluation and calibration: Interactive web application for analyzing count data with excess zeros and model comparison."
+    },
+    {
+      "id": "arxiv-2609.14951",
+      "reason": "applied-statistics paper outside regime modelling, forecast evaluation and calibration: Statistical framework combining cellular automata and network epidemiology for wildfire modeling."
+    },
+    {
+      "id": "arxiv-2609.15132",
+      "reason": "applied-statistics paper outside regime modelling, forecast evaluation and calibration: Diagnostic measure for assessing continuity at transitions in composite environmental records."
+    },
+    {
+      "id": "arxiv-2609.13263",
+      "reason": "applied-statistics paper outside regime modelling, forecast evaluation and calibration: Three-dimensional projective shape analysis using multi-view structure-from-motion reconstructions."
+    },
+    {
+      "id": "arxiv-2609.14049",
+      "reason": "econometrics outside regime-switching models and forecast comparison: Study of parameter identifiability in network formation models with homophily and transitivity."
+    },
+    {
+      "id": "arxiv-2609.14069",
+      "reason": "econometrics outside regime-switching models and forecast comparison: Analysis of identification of payoff parameters in dynamic games using policy variation."
+    },
+    {
+      "id": "arxiv-2609.14398",
+      "reason": "econometrics outside regime-switching models and forecast comparison: Structural VAR identification using external instruments and higher-order moments of non-Gaussian shocks."
+    },
+    {
+      "id": "arxiv-2609.15111",
+      "reason": "econometrics outside regime-switching models and forecast comparison: PCA-based denoising approach for optimization under model misspecification in cost functions."
+    },
+    {
+      "id": "arxiv-2609.15736",
+      "reason": "econometrics outside regime-switching models and forecast comparison: Conditional-moment-based estimator for random-coefficient demand models with inference framework."
+    }
+  ],
+  "tripwires_fired": [
+    {
+      "id": "arxiv-2609.07492",
+      "tripwire": "revisit when the comparator's epsilon is chosen",
+      "fired": "2026-09-15: the harness fixed NUMERICAL at |d| <= 1e-9, justified by measurement - a forced refit under one configuration was byte-identical, and cross-environment drift was measured at ~1e-13"
+    },
+    {
+      "id": "arxiv-2512.18088",
+      "tripwire": "revisit when the first unchanged-code rerun diff appears",
+      "fired": "2026-09-15: first two unchanged-code reruns (self-compare, forced refit) both IDENTICAL - an observed false-positive rate of 0 of 2, far too few to estimate a base rate"
+    },
+    {
+      "id": "gh-scipy-v1.18.1",
+      "tripwire": "first whole-grid diff with no code change",
+      "fired": "2026-09-15: 387 of 387 fields IDENTICAL within one environment; no provenance drift observed, and no numpy or scipy upgrade has happened yet"
+    },
+    {
+      "id": "arxiv-2609.05879",
+      "tripwire": "the comparison report acquires a pass/fail gate",
+      "fired": "2026-09-15: forecast baseline compare now exits 0 / 1 / 2, which is an oracle derived from a written tolerance specification"
+    },
+    {
+      "id": "arxiv-2609.06413",
+      "tripwire": "comparison makes distributional rather than per-row claims",
+      "fired": "2026-09-15: the paired comparison reports bootstrap intervals, a distributional claim; separately, briefing 01 found 0001's ten-bin calibration gate fails a perfectly calibrated forecaster about 91% of the time at 31 independent observations, the small-sample goodness-of-fit problem this paper is about"
+    }
+  ]
+}

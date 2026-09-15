@@ -1,0 +1,427 @@
+{
+  "group": "methods-papers",
+  "week": "2026-W37",
+  "sources": [
+    {
+      "status": "ok",
+      "http_status": 200,
+      "item_count_seen": 94,
+      "items": [
+        {
+          "id": "2609.05563",
+          "url": "https://arxiv.org/abs/2609.05563",
+          "title": "Look Before You Prompt, and After: Scaffolding Human-AI Collaboration in Software Tutorial Creation",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.05571",
+          "url": "https://arxiv.org/abs/2609.05571",
+          "title": "Grounded Skill Synthesis from Code at Scale for Agentic Intelligence",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.05879",
+          "url": "https://arxiv.org/abs/2609.05879",
+          "title": "Correct Tests Are Not Enough: Measuring and Training Oracle Conversion in Specification-Based Test Generation",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2609.06052",
+          "url": "https://arxiv.org/abs/2609.06052",
+          "title": "SkillSpec: Intent-Masked Specification Reasoning for Agent Skill Correctness",
+          "published": "2026-09-09",
+          "why_relevant": "test tolerance / manifest"
+        },
+        {
+          "id": "2609.06229",
+          "url": "https://arxiv.org/abs/2609.06229",
+          "title": "SWE-Test: Benchmarking LLM Vulnerability Discovery via Input Prediction",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2609.06772",
+          "url": "https://arxiv.org/abs/2609.06772",
+          "title": "CAROL: Context-Aware Online Learning for Fuzzer Scheduling",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2609.07224",
+          "url": "https://arxiv.org/abs/2609.07224",
+          "title": "One Is Not Enough: The Untold Story of Multiple Security Patches for One Vulnerability",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.07360",
+          "url": "https://arxiv.org/abs/2609.07360",
+          "title": "Scanning the Harness: An Empirical Study of Supply-Chain Defects in AI Coding-Agent Configurations",
+          "published": "2026-09-09",
+          "why_relevant": "test tolerance / manifest"
+        },
+        {
+          "id": "2609.07492",
+          "url": "https://arxiv.org/abs/2609.07492",
+          "title": "FPScan: An Automated Constraint-Based Analyzer for Floating-Point Anomaly Detection",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.07652",
+          "url": "https://arxiv.org/abs/2609.07652",
+          "title": "RefVerifier: Semi-Automated Reference Claim Verification for Scientific Manuscripts",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.08301",
+          "url": "https://arxiv.org/abs/2609.08301",
+          "title": "Agent ATO: Visualizing Agent Interaction Timelines from Logs",
+          "published": "2026-09-09",
+          "why_relevant": "regression test selection"
+        },
+        {
+          "id": "2609.08681",
+          "url": "https://arxiv.org/abs/2609.08681",
+          "title": "Beyond Fixed Fault Models: Comparing LLM-Based and Rule-Based Fault Injection in OpenStack",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2609.07434",
+          "url": "https://arxiv.org/abs/2609.07434",
+          "title": "CIT-CAD: Constraint Intent Tree-based CAD Code Generation and Verification",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.07754",
+          "url": "https://arxiv.org/abs/2609.07754",
+          "title": "Do AI Coding Assistants Check Before They Install? A Pre-Registered Demand-Side Audit of Trust Signals in the Research Software Supply Chain",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.08196",
+          "url": "https://arxiv.org/abs/2609.08196",
+          "title": "Qiushi Engine on AstaBench E2E-Bench-Hard",
+          "published": "2026-09-09",
+          "why_relevant": "regression test selection"
+        },
+        {
+          "id": "2609.08472",
+          "url": "https://arxiv.org/abs/2609.08472",
+          "title": "Beyond Agent Harnesses: Cross-Substrate Authority for Multi-Agent Systems",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2609.08861",
+          "url": "https://arxiv.org/abs/2609.08861",
+          "title": "API Benchmark Scores Do Not Reliably Transfer to Chatbot Interfaces",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.09133",
+          "url": "https://arxiv.org/abs/2609.09133",
+          "title": "ExecCritic: Learn to Test, Test to Improve for Coding Agents",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2503.19599",
+          "url": "https://arxiv.org/abs/2503.19599",
+          "title": "HoarePrompt: Structural Reasoning About Program Correctness in Natural Language",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2511.12288",
+          "url": "https://arxiv.org/abs/2511.12288",
+          "title": "Reducing Hallucinations in LLM-Generated Code via Semantic Triangulation",
+          "published": "2026-09-09",
+          "why_relevant": "regression test selection"
+        },
+        {
+          "id": "2512.18088",
+          "url": "https://arxiv.org/abs/2512.18088",
+          "title": "A Large-Scale Dynamic Characterization of Flaky Tests in Quantum Software: The Qiskit Terra Case Study",
+          "published": "2026-09-09",
+          "why_relevant": "test oracle / flaky test"
+        },
+        {
+          "id": "2607.26244",
+          "url": "https://arxiv.org/abs/2607.26244",
+          "title": "Do Code Language Models Follow Tests? Paired Interventions on Program Behavior",
+          "published": "2026-09-09",
+          "why_relevant": "regression test selection"
+        },
+        {
+          "id": "2609.04218",
+          "url": "https://arxiv.org/abs/2609.04218",
+          "title": "A Governance Methodology Layer for AI-Assisted Software Development: Defect Taxonomy, Controlled Ablation, and a Test of Process-Over-Capability",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        }
+      ],
+      "id": "arxiv-rss-se",
+      "fetched_at": "2026-09-10T10:12:57.208284Z"
+    },
+    {
+      "status": "ok",
+      "http_status": 200,
+      "item_count_seen": 7,
+      "items": [
+        {
+          "id": "2609.07969",
+          "url": "https://arxiv.org/abs/2609.07969",
+          "title": "Geometric Function Atlas: certified computing for geometric function theory in Python",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.09095",
+          "url": "https://arxiv.org/abs/2609.09095",
+          "title": "Ozaki 2.5: Engineering the Deconstruction Path of fp64-Emulated Dense Matrix Multiplication on FP8 Tensor Cores",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.06018",
+          "url": "https://arxiv.org/abs/2609.06018",
+          "title": "IXPLORE: Bounded Ideal Point Estimation with Grid-Based Uncertainty Quantification",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2609.06134",
+          "url": "https://arxiv.org/abs/2609.06134",
+          "title": "Observable functions of rational ODE models and how to find them",
+          "published": "2026-09-09",
+          "why_relevant": "structural identification"
+        },
+        {
+          "id": "2502.16015",
+          "url": "https://arxiv.org/abs/2502.16015",
+          "title": "On the computation of the cumulative distribution function of the Normal Inverse Gaussian distribution",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        }
+      ],
+      "id": "arxiv-rss-ms",
+      "fetched_at": "2026-09-10T10:12:57.512356Z"
+    },
+    {
+      "status": "ok",
+      "http_status": 200,
+      "item_count_seen": 47,
+      "items": [
+        {
+          "id": "2609.05784",
+          "url": "https://arxiv.org/abs/2609.05784",
+          "title": "A Network-Structured Bayesian Hierarchical Model for Sparse Mutation-Drug Response Associations: Application to Cancer Pharmacogenomics",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2609.07246",
+          "url": "https://arxiv.org/abs/2609.07246",
+          "title": "Structure-Adaptive E-Value Filter for Detecting Regional Signals in Brain Imaging",
+          "published": "2026-09-09",
+          "why_relevant": "structural identification"
+        },
+        {
+          "id": "2609.07794",
+          "url": "https://arxiv.org/abs/2609.07794",
+          "title": "Two-resolution state modelling of intermittent online gambling activity during Sweden's temporary deposit-cap period",
+          "published": "2026-09-09",
+          "why_relevant": "causal inference methods"
+        },
+        {
+          "id": "2609.08060",
+          "url": "https://arxiv.org/abs/2609.08060",
+          "title": "Pre-game paired-comparison modeling of professional League of Legends map outcomes",
+          "published": "2026-09-09",
+          "why_relevant": "forecast evaluation / calibration"
+        },
+        {
+          "id": "2609.06413",
+          "url": "https://arxiv.org/abs/2609.06413",
+          "title": "Shrinkage invalidates the Hosmer-Lemeshow test: goodness of fit for penalized logistic regression, with an application to glaucoma diagnosis",
+          "published": "2026-09-09",
+          "why_relevant": "forecast evaluation / calibration"
+        },
+        {
+          "id": "2609.06827",
+          "url": "https://arxiv.org/abs/2609.06827",
+          "title": "Beyond Aggregate VARs: A Bayesian Benchmark for HANK Models",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2609.07033",
+          "url": "https://arxiv.org/abs/2609.07033",
+          "title": "Choosing the Dictionary and Penalty for IV-LASSO",
+          "published": "2026-09-09",
+          "why_relevant": "causal inference methods"
+        },
+        {
+          "id": "2609.07512",
+          "url": "https://arxiv.org/abs/2609.07512",
+          "title": "Statistical versus machine learning-based spatial interpolation of post-processed ensemble weather forecasts",
+          "published": "2026-09-09",
+          "why_relevant": "forecast evaluation / calibration"
+        },
+        {
+          "id": "2501.06180",
+          "url": "https://arxiv.org/abs/2501.06180",
+          "title": "The role of probabilistic load and renewable prediction in enhancing day-ahead electricity price forecasts",
+          "published": "2026-09-09",
+          "why_relevant": "forecast evaluation / calibration"
+        },
+        {
+          "id": "2506.00680",
+          "url": "https://arxiv.org/abs/2506.00680",
+          "title": "Understanding the European energy crisis through structural causal models",
+          "published": "2026-09-09",
+          "why_relevant": "causal inference methods"
+        },
+        {
+          "id": "2608.21128",
+          "url": "https://arxiv.org/abs/2608.21128",
+          "title": "Structural Estimation of Marketing Mix Model Parameters from Geo-Experiments",
+          "published": "2026-09-09",
+          "why_relevant": "causal inference methods"
+        },
+        {
+          "id": "2608.21130",
+          "url": "https://arxiv.org/abs/2608.21130",
+          "title": "A Synthetic Benchmark Dataset with Endogenous Marketing Spend for Validating Marketing Mix Models",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2602.06301",
+          "url": "https://arxiv.org/abs/2602.06301",
+          "title": "Design-Conditional Prior Elicitation for Dirichlet Process Mixtures: A Unified Framework for Cluster Counts and Weight Control",
+          "published": "2026-09-09",
+          "why_relevant": "structural identification"
+        },
+        {
+          "id": "2607.27678",
+          "url": "https://arxiv.org/abs/2607.27678",
+          "title": "Generalized Bayesian Inference using the Bayesian Bootstrap for Survival Models",
+          "published": "2026-09-09",
+          "why_relevant": "structural identification"
+        }
+      ],
+      "id": "arxiv-rss-stat-ap",
+      "fetched_at": "2026-09-10T10:12:58.077572Z"
+    },
+    {
+      "status": "ok",
+      "http_status": 200,
+      "item_count_seen": 22,
+      "items": [
+        {
+          "id": "2609.06827",
+          "url": "https://arxiv.org/abs/2609.06827",
+          "title": "Beyond Aggregate VARs: A Bayesian Benchmark for HANK Models",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2609.06907",
+          "url": "https://arxiv.org/abs/2609.06907",
+          "title": "Sign Restrictions and Supply-demand Decompositions of Inflation",
+          "published": "2026-09-09",
+          "why_relevant": "structural identification"
+        },
+        {
+          "id": "2609.07033",
+          "url": "https://arxiv.org/abs/2609.07033",
+          "title": "Choosing the Dictionary and Penalty for IV-LASSO",
+          "published": "2026-09-09",
+          "why_relevant": "causal inference methods"
+        },
+        {
+          "id": "2609.07888",
+          "url": "https://arxiv.org/abs/2609.07888",
+          "title": "Median-based Splitting Rules for Causal Trees and Forests",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2609.08335",
+          "url": "https://arxiv.org/abs/2609.08335",
+          "title": "Designing Spatial Treatments",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2609.08411",
+          "url": "https://arxiv.org/abs/2609.08411",
+          "title": "Policy Gains or Household Need? The Allocation Logic of China's Dibao Program",
+          "published": "2026-09-09",
+          "why_relevant": "regression test selection"
+        },
+        {
+          "id": "2609.07944",
+          "url": "https://arxiv.org/abs/2609.07944",
+          "title": "CausalVerify: An Execution-Grounded Benchmark for LLM Causal Inference Workflows",
+          "published": "2026-09-09",
+          "why_relevant": "numerical precision / reproducibility"
+        },
+        {
+          "id": "2403.05850",
+          "url": "https://arxiv.org/abs/2403.05850",
+          "title": "Estimating Causal Effects of Discrete and Continuous Treatments with Binary Instruments",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2510.11659",
+          "url": "https://arxiv.org/abs/2510.11659",
+          "title": "Compositional difference-in-differences",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2603.07914",
+          "url": "https://arxiv.org/abs/2603.07914",
+          "title": "Event-Study Designs for Discrete Outcomes with Latent Transition Heterogeneity",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2607.08324",
+          "url": "https://arxiv.org/abs/2607.08324",
+          "title": "Shared-Donor Inference for Fixed-Set Heterogeneity in Synthetic Difference-in-Differences",
+          "published": "2026-09-09",
+          "why_relevant": "causal inference methods"
+        },
+        {
+          "id": "2607.17478",
+          "url": "https://arxiv.org/abs/2607.17478",
+          "title": "Identification and Inference with Machine-Learned Instruments",
+          "published": "2026-09-09",
+          "why_relevant": "heterogeneous treatment effects"
+        },
+        {
+          "id": "2608.23925",
+          "url": "https://arxiv.org/abs/2608.23925",
+          "title": "Repairing Locally Misspecified GMM: An Empirical Bayes Approach",
+          "published": "2026-09-09",
+          "why_relevant": "structural identification"
+        }
+      ],
+      "id": "arxiv-rss-econ-em",
+      "fetched_at": "2026-09-10T10:12:58.738805Z"
+    }
+  ]
+}

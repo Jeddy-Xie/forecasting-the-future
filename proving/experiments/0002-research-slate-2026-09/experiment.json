@@ -1,0 +1,133 @@
+{
+  "name": "research-slate-2026-09-state-space-extensions",
+  "status": "registered",
+  "registered": "2026-09-15",
+  "registered_before": "any arm was implemented or run. The commit adding this file contains no arm results, and no worktree for any arm existed when it was written. Every hyperparameter below is fixed here, with its source, and may not be changed after an arm has produced a number.",
+  "supersedes": null,
+  "relationship_to_0001": "Experiment 0001 is unchanged and still governs what ships. This experiment decides only which extensions of the state-space core are worth carrying forward. Every arm is ALSO scored by 0001's five gates, unchanged, and those verdicts are reported as a secondary endpoint, not as a route to success (see why_not_the_0001_verdict).",
+
+  "reference_run": {
+    "what": "main at the commit that adds this file: the honest default configuration, baselines/main.json and baselines/main.forecasts.parquet.",
+    "configuration_hash": "ad7fcc1affd0746a",
+    "first_forecast_date": "1994-03-01",
+    "forecast_date_count": 391,
+    "state_count": 6,
+    "note": "Main itself fails 0001 at every horizon: calibration at one year, skill at five and ten. Each arm is judged against main, not against a notional working model."
+  },
+
+  "arms": {
+    "A0-aa-control": {
+      "role": "control, not a hypothesis",
+      "change": "none. Main's code, run through scripts/research_arm.sh in its own worktree with its own cache copy.",
+      "prediction": "Paired difference exactly 0.0 with interval [0.0, 0.0] at every horizon, and zero MOVED fields in the plain comparison. Anything else means the comparison machinery, not an idea, is producing differences.",
+      "consequence_of_failure": "If A0 does not reproduce main exactly, EVERY arm in this slate is void until the machinery is fixed and all arms are re-run. This is decided now so it cannot be argued later."
+    },
+
+    "A1-sticky-dirichlet-prior": {
+      "hypothesis": "Plain Baum-Welch sets nine transition probabilities to exactly zero from roughly thirty observed regime switches (docs/TECHNICAL_DEBT.md D1). A sticky Dirichlet prior makes those transitions rare rather than impossible, shortens the over-persistent chain, and improves calibration without costing one-year skill.",
+      "change": "In the maximisation step, each transition row becomes the Dirichlet posterior MEAN given expected counts: A[k,j] = (n[k,j] + beta + kappa * 1{j = k}) / (n[k] + K * beta + kappa). Applied in every fit: the burn-in state-count sweep, every walk-forward refit, and today's fit.",
+      "hyperparameters": {
+        "prior_mean_visit_months_D": 30,
+        "prior_row_strength_M": 60,
+        "derivation": "beta = M / (D * (K - 1)); kappa = M - K * beta. At K = 5: beta = 0.5, kappa = 57.5. At K = 6: beta = 0.4, kappa = 57.6. Derived per state count, never chosen per fit.",
+        "source": "State-space briefing, rank 1: dynamax's Dir(beta*1 + kappa*e_k) parameterisation; Doz, Ferrara and Pionnier's informative priors; D = 24-30 months is the range defensible from published persistence estimates and 30 is its upper end. The posterior mean is used rather than the mode because the mode requires beta > 1 and would force a prior as heavy as the data.",
+        "forbidden": "kappa is NOT chosen to preserve the current lambda2 of about 0.98. The briefing names that specifically as the wrong way to set it."
+      },
+      "required_check": "beta = 0 and kappa = 0 reproduce the unregularised fit bit-for-bit.",
+      "prediction": "lambda2 falls and the information horizon shortens; the ten-year honesty gate fails by a wider margin; one-year skill moves by less than its interval width. Direction of the one-year effect: not predicted."
+    },
+
+    "A2-quadrant-structure-levels": {
+      "hypothesis": "All Weather's growth x inflation 2x2, imposed as a structural prior on the state space, gives more data per state and a better-calibrated model than a state count chosen by a sweep.",
+      "change": "The state count is fixed at K = 4 for every fit. The burn-in sweep still runs, and its result is reported and still feeds the regimes-exist gate, but it no longer chooses K. The initial emission means for expectation maximisation are the centroids of four quadrants: the sign of growth minus its expanding median, crossed with the sign of inflation minus its expanding median, where each month's median uses only months up to and including it. Rates enter each centroid as that quadrant's mean. Every restart begins from these centroids, with the fitter's existing per-restart perturbation.",
+      "hyperparameters": {
+        "state_count": 4,
+        "boundaries": "expanding medians, computed point in time. No threshold is written down anywhere, because docs/TECHNICAL_DEBT.md D12 records that round-number thresholds chosen by someone who knows the sample are a leak."
+      },
+      "naming_note": "This arm borrows All Weather's structure over LEVELS. research/briefings/DESIGN-NOTE-quadrants.md records that Dalio's primary sources define the quadrants over SURPRISES; A3 is the arm faithful to that.",
+      "prediction": "One-year skill lower than main, with fewer states; calibration error lower, with more data per state."
+    },
+
+    "A3-quadrant-structure-surprises": {
+      "hypothesis": "The quadrant structure as Bridgewater's primary sources actually define it, over growth and inflation surprises, carries forecasting information the level quadrants do not.",
+      "change": "As A2 (K = 4, quadrant initialisation), except that the growth and inflation observation columns are replaced by their surprises. For each month s, surprise = x[s] - forecast[s | s - 1], where the forecast comes from an AR(1) with an intercept, fitted by ordinary least squares on months up to s - 1 only. It is recursive and expanding, and 60 months must pass before the first surprise. The rates column is unchanged. The quadrant boundaries are zero, the expected value of a surprise, so none is estimated at all.",
+      "hyperparameters": {
+        "state_count": 4,
+        "expectation_model": "AR(1) with intercept, recursive ordinary least squares",
+        "minimum_months_before_first_surprise": 60
+      },
+      "leakage_note": "This is the arm where look-ahead is easiest to introduce: an expectation model fitted once on the whole panel would recreate the leak ADR 0008 closed. The audit must confirm that each surprise uses parameters estimated strictly before the month it describes.",
+      "prediction": "Lambda2 well below main's, since surprises are far less persistent than levels. One-year skill lower than A2."
+    },
+
+    "A4-two-timescale-chains": {
+      "hypothesis": "One chain cannot serve two timescales. Measured on 2026-09-15 on the point-in-time panels, growth alone runs on a chain with lambda2 of about 0.943 (half-life 12 months), while inflation and rates together run at 0.973-0.984 (half-life 25-43 months). A single chain is pulled onto the slow timescale. Giving growth its own chain improves one-year skill on the any-time-within-horizon questions, where main's one-year skill lives.",
+      "change": "Two independent Markov chains. S_g drives the growth column; S_l drives the inflation and rates columns. Conditional on both states, the two blocks are independent Gaussians: growth ~ N(mu_g[S_g], var_g[S_g]) and (inflation, rates) ~ N(mu_l[S_l], Sigma_l[S_l]). The joint state (S_g, S_l) has transition matrix kron(A_g, A_l). Inference is exact over the product space and filtered only. Expectation maximisation marginalises the expected transition counts to each chain. The object exposes the product transition matrix and the joint filtered distribution, so the existing rate estimation and forecast composition run unchanged.",
+      "hyperparameters": {
+        "state_count_per_chain": "chosen separately for each block by the existing burn-in selection rule, candidates 1 to 4, on the point-in-time panel at the first forecast date",
+        "maximum_product_states": 16
+      },
+      "precursor_evidence": "The same measurement found that covariance accounts for only 9.5-12.3% of the separation between main's regimes, so they are mean regimes, not variance regimes. That is why this arm splits by VARIABLE BLOCK and TIMESCALE rather than into a mean chain and a variance chain, which the precursor argues against.",
+      "prediction": "One-year skill on any-time-within-horizon questions rises. Lambda2 of the product chain equals the slower chain's, so the information horizon is roughly unchanged."
+    },
+
+    "A5-direct-horizon-rates": {
+      "hypothesis": "The any-time composition multiplies a monthly survival factor over up to 120 months, so a slightly biased hazard compounds geometrically. docs/TECHNICAL_DEBT.md D4 records the model saying 69% on a question that resolved yes 98.1% of the time. Estimating each horizon's outcome rate directly avoids the compounding.",
+      "change": "For every indicator and horizon h, the forecast is the filtered distribution today, dotted with per-regime rates of the h-horizon outcome itself: rate[k] = sum_s gamma_s[k] * y_s,h / sum_s gamma_s[k]. The sum runs over months s whose h-horizon outcome had resolved AND been published by the refit date (s + h, plus the resolution series' publication lag, on or before the refit date). gamma is the filtered regime distribution from the model fitted at that refit date. The same Beta shrinkage as main, strength 10, pulls each rate toward the pooled resolved rate. This replaces both compositions for every indicator and every horizon.",
+      "hyperparameters": { "shrinkage_strength": 10, "note": "Unchanged from main's conditional_rate_shrinkage_strength; not tuned." },
+      "prediction": "The ten-year any-time underestimate shrinks sharply, and so does the recession-within-ten-years miss. The one-year change is small."
+    },
+
+    "A6-fixed-climatology-blend": {
+      "hypothesis": "Combining forecasts beats picking one; that is the most replicated result of the M4, M5 and M6 competitions. A fixed, equal-weight blend of the model with climatology, with no fitted parameter, keeps most of main's one-year skill and reduces its worst errors.",
+      "change": "Pure post-processing of main's own forecasts, with the model unchanged: p = 0.5 * p_model + 0.5 * p_climatology, at every horizon and for every indicator. p_climatology is the expanding climatology already in main's results, so the blend knows nothing a forecaster at that date could not.",
+      "hyperparameters": { "model_weight": 0.5, "fitted_parameters": 0 },
+      "why_fixed_and_not_fitted": "research/briefings/01-what-wins-forecasting.md simulated recalibration on about 31 independent outcomes, the one-year sample here. Platt, beta and isotonic maps all RAISED out-of-sample Brier score, even when the model was miscalibrated in exactly the form Platt assumes; only maps pulled strongly toward no change were safe. A fitted blend weight is the same risk with one parameter. Equal weights are the M-competitions' robust default and have nothing to overfit. A fitted-weight blend and a separate recalibration arm were both drafted and are dropped here, for this reason, before anything ran.",
+      "prediction": "One-year calibration error falls; the one-year paired skill difference is small, and its sign is not predicted; the ten-year difference is positive, since pulling toward climatology helps wherever skill is negative."
+    }
+  },
+
+  "metric": {
+    "primary": "Paired difference in mean Brier skill score, arm minus main, at the ONE-YEAR horizon. It is computed by `forecast baseline compare --paired` over the intersection of resolved (indicator, forecast date, horizon) keys, using the same mean-skill statistic as 0001's verdict. The interval is a moving-block bootstrap with 12-month blocks, 10,000 resamples and seed 20260908, applying identical resample indices to both runs.",
+    "why_one_year": "One year is the only horizon where main has information: 31.5 independent observations, against 5.5 and 2.3 at five and ten years. The five- and ten-year differences are reported and used as harm guards; they are not primary.",
+    "secondary": [
+      "Paired skill differences at five and ten years",
+      "Per-indicator paired skill differences, because the mean across ten indicators is dominated by the rare and near-certain ones: the same five-point error moves it five to thirteen times more on those than on a 50/50 indicator (briefing 01)",
+      "Log loss at each horizon, which penalises confident misses on rare events far harder than the Brier score does",
+      "0001's five-gate verdict for the arm at each horizon, thresholds unchanged",
+      "Expected calibration error at each horizon, reported beside the distribution a PERFECTLY calibrated forecaster would produce at the same sample size",
+      "Lambda2 and the implied information horizon"
+    ]
+  },
+
+  "why_not_the_0001_verdict": "Draft versions of this rule let an arm succeed by flipping 0001's one-year verdict from base rate to model. That route is removed. research/briefings/01-what-wins-forecasting.md simulated a perfectly calibrated forecaster at about 31 independent outcomes using 0001's own ten-bin expected-calibration-error formula: it fails the 0.10 threshold about 91% of the time. A verdict flip at one year would therefore turn mostly on noise in a gate that even an oracle usually fails. 0001's threshold is NOT changed, since that is the single forbidden act; this experiment simply declines to use that gate as evidence of improvement, and reports it instead. Whether 0001's calibration gate is fit for purpose at this sample size is a question for the project owner, recorded separately.",
+
+  "decision_rule": {
+    "family_size": 6,
+    "family_note": "Arms A1 to A6. The control A0 is not a hypothesis and does not count. Two drafted arms (a fitted-weight blend and a recalibration map) were removed before registration on the evidence in briefing 01, so they do not count either.",
+    "PROMISING": "The one-year paired 90% interval lies entirely above zero.",
+    "CONFIRMED_IN_SAMPLE": "The one-year paired interval at the family-wise level, 1 - 0.10 / 6 = 98.33% (Bonferroni across the six arms), lies entirely above zero.",
+    "HARMFUL": "At any horizon, the arm's paired 90% interval lies entirely below -0.02. A harmful arm is disqualified from combination even if it is promising at one year.",
+    "VOID": "An arm is void unless BOTH of two independent checks pass, whose failure modes are uncorrelated. (a) The deterministic one: `forecast audit-look-ahead` exits 0 on the arm's branch. Every observation unavailable at a cutoff date is perturbed, and every forecast issued on or before the cutoff must come out byte-identical. (b) The judged one: a look-ahead review by an agent that did not write the arm finds no path by which information from after a forecast date reaches that forecast. Main must pass (a) before any arm runs; if it does not, the slate halts, because that would be a look-ahead in the reference run itself. A void result is recorded, not quietly re-run.",
+    "one_run_per_arm": "Each arm is run once, with the hyperparameters above. If a genuine bug is found after a run, the fix may not change any hyperparameter, and BOTH runs are reported, with the bug described."
+  },
+
+  "stated_in_advance": {
+    "expected_outcome": "A0 reproduces main exactly. A1 shortens the information horizon without moving one-year skill much. A5 repairs the ten-year any-time miss. A6 is the most likely to reduce the largest errors, and the least likely to be harmful. A4 is the most interesting and the least certain. A2 and A3 are expected to underperform main, and a negative result for the All Weather structure is a finding. Given 31.5 independent one-year observations, most arms are expected NOT to clear even the 90% bar; an interval that spans zero is the likeliest outcome for any single arm.",
+    "the_forking_path_this_does_not_remove": "Every arm was designed by someone who had already seen main's results: that it fails calibration at one year, that its chain is over-persistent, that the any-time composition compounds. Pre-registering hyperparameters closes the tuning path, but it does not close the idea-selection path. So CONFIRMED_IN_SAMPLE is the strongest claim this experiment can make. Out-of-sample confirmation can only come from forecasts registered forward in forecasts/register.jsonl and scored as they resolve, the first on 2027-07-01.",
+    "the_one_forbidden_act": "Changing any hyperparameter or threshold in this file after an arm has produced a number. A new idea after seeing results is a new, separately registered experiment, and its report must say it came after."
+  },
+
+  "combination": "Combining promising arms is a SEPARATE experiment (0003), registered after this slate reports. It is a post-selection experiment, and it is labelled as such in every result it produces.",
+
+  "external_references": {
+    "note": "Computed from public data in briefing 01, for scale only; not part of the decision rule.",
+    "survey_of_professional_forecasters_recession_probability": "Brier skill against climatology about +0.13 one quarter ahead (90% interval +0.00 to +0.24), and negative three and four quarters ahead (-0.03, -0.06).",
+    "real_time_yield_curve_spread_model": "about +0.06 over 1975-2025; -0.10 after 1990 and -0.41 after 2006; every interval spans zero."
+  },
+
+  "determinism": {
+    "seed": 20260908,
+    "requirement": "Two runs of one arm's configuration in the same environment produce byte-identical outputs. The configuration hash is recorded on every result row."
+  }
+}

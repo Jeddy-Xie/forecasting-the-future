@@ -64,6 +64,10 @@ filterwarnings = ["error::DeprecationWarning"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
+# research/ holds the Bellows loop's outputs and the derivation scripts behind the research
+# briefings: analysis written to be read and re-run, not package code. Linting it to package
+# standards would fail every research arm's `ruff check .` for reasons unrelated to its idea.
+extend-exclude = ["research"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "BLE", "S", "C4", "SIM", "PTH", "RUF"]

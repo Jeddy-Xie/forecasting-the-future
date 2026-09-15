@@ -1,0 +1,295 @@
+{
+  "group": "forecasting-methods",
+  "week": "2026-W38",
+  "fetched_at": "2026-09-15T00:00:00Z",
+  "sources": [
+    {
+      "id": "arxiv-rss-stat-me",
+      "status": "ok",
+      "error": null,
+      "items": [
+        {
+          "id": "2609.13327",
+          "title": "A tool for new Hybrid models: swift algorithm for left inverse of square root",
+          "url": "https://arxiv.org/abs/2609.13327",
+          "date": "2026-09-15",
+          "one_line": "Scalable matrix computation for ensemble covariance in weather forecasting",
+          "signal": null
+        },
+        {
+          "id": "2609.13441",
+          "title": "Temporal Fourier Likelihoods with Spatial Hilbert-Space Gaussian Process",
+          "url": "https://arxiv.org/abs/2609.13441",
+          "date": "2026-09-15",
+          "one_line": "Spectral methods combining DFT with HSGP for space-time reconstruction",
+          "signal": null
+        },
+        {
+          "id": "2609.13488",
+          "title": "Fingerprint Analysis for Climate Change Detection and Attribution",
+          "url": "https://arxiv.org/abs/2609.13488",
+          "date": "2026-09-15",
+          "one_line": "Spiked covariance estimation for climate model attribution",
+          "signal": null
+        },
+        {
+          "id": "2609.13553",
+          "title": "A Conditional-Distribution Framework for Validating Synthetic Data",
+          "url": "https://arxiv.org/abs/2609.13553",
+          "date": "2026-09-15",
+          "one_line": "Model-agnostic validation of multivariate synthetic datasets",
+          "signal": null
+        },
+        {
+          "id": "2609.13586",
+          "title": "Synthetic Nearest Neighbors: Matrix Completion with MNAR Data",
+          "url": "https://arxiv.org/abs/2609.13586",
+          "date": "2026-09-15",
+          "one_line": "Causal framework extending synthetic controls methodology",
+          "signal": null
+        },
+        {
+          "id": "2609.13590",
+          "title": "Bayesian Consensus Calibration of Continuously Evolving IRT Item Banks",
+          "url": "https://arxiv.org/abs/2609.13590",
+          "date": "2026-09-15",
+          "one_line": "Divide-and-conquer Bayesian calibration for large assessment databases",
+          "signal": null
+        },
+        {
+          "id": "2609.13594",
+          "title": "Distribution-Free Changepoint Inference for Rainfall Patterns",
+          "url": "https://arxiv.org/abs/2609.13594",
+          "date": "2026-09-15",
+          "one_line": "Nonparametric detection of synchronized climate pattern shifts",
+          "signal": null
+        },
+        {
+          "id": "2609.13609",
+          "title": "Assumption-Lean Inference for Spectral Differential Network Analysis",
+          "url": "https://arxiv.org/abs/2609.13609",
+          "date": "2026-09-15",
+          "one_line": "High-dimensional time series network comparison methods",
+          "signal": null
+        },
+        {
+          "id": "2609.13698",
+          "title": "Spectral Design of Random-Duration Switchbacks",
+          "url": "https://arxiv.org/abs/2609.13698",
+          "date": "2026-09-15",
+          "one_line": "Optimal experimental design for treatment-control alternation",
+          "signal": null
+        },
+        {
+          "id": "2609.13736",
+          "title": "Adjusting for Many Covariates in RCTs with GLMs: Bias Reduction",
+          "url": "https://arxiv.org/abs/2609.13736",
+          "date": "2026-09-15",
+          "one_line": "Jackknife-based covariate adjustment avoiding sample splitting",
+          "signal": null
+        },
+        {
+          "id": "2609.13740",
+          "title": "Optimal Cohort Staircase Designs",
+          "url": "https://arxiv.org/abs/2609.13740",
+          "date": "2026-09-15",
+          "one_line": "Stepped-wedge trial optimization with closed cohorts",
+          "signal": null
+        },
+        {
+          "id": "2609.13799",
+          "title": "First-passage reliability sensitivity analysis via surface decomposition",
+          "url": "https://arxiv.org/abs/2609.13799",
+          "date": "2026-09-15",
+          "one_line": "Dynamic reliability for systems under non-Gaussian wind loading",
+          "signal": null
+        },
+        {
+          "id": "2609.13848",
+          "title": "Nonparametric Correlation Estimator via Cubic Equations",
+          "url": "https://arxiv.org/abs/2609.13848",
+          "date": "2026-09-15",
+          "one_line": "Time-varying correlation analysis with brain connectivity application",
+          "signal": null
+        },
+        {
+          "id": "2609.13850",
+          "title": "Structured Covariate-Informed Empirical Orthogonal Functions",
+          "url": "https://arxiv.org/abs/2609.13850",
+          "date": "2026-09-15",
+          "one_line": "Covariate-informed EOF for spatio-temporal environmental fields",
+          "signal": null
+        },
+        {
+          "id": "2609.13861",
+          "title": "Restart Degeneration of the Swing Filter and Repair",
+          "url": "https://arxiv.org/abs/2609.13861",
+          "date": "2026-09-15",
+          "one_line": "Analysis and correction of signal filtering algorithm degradation",
+          "signal": null
+        },
+        {
+          "id": "2609.13862",
+          "title": "Asymptotic Theory for REML Estimators in GLMMs",
+          "url": "https://arxiv.org/abs/2609.13862",
+          "date": "2026-09-15",
+          "one_line": "Distribution theory for restricted maximum likelihood in mixed models",
+          "signal": null
+        },
+        {
+          "id": "2609.13976",
+          "title": "From priors to performance: Bayesian dynamic borrowing",
+          "url": "https://arxiv.org/abs/2609.13976",
+          "date": "2026-09-15",
+          "one_line": "Practical guidance for incorporating historical data in Bayesian inference",
+          "signal": null
+        },
+        {
+          "id": "2609.14082",
+          "title": "Dangers of Bayesian analyses and how to address them",
+          "url": "https://arxiv.org/abs/2609.14082",
+          "date": "2026-09-15",
+          "one_line": "Prior sensitivity assessment and safety recommendations",
+          "signal": null
+        },
+        {
+          "id": "2609.14170",
+          "title": "On Large-Scale Multiple Testing Over Networks",
+          "url": "https://arxiv.org/abs/2609.14170",
+          "date": "2026-09-15",
+          "one_line": "Finite-sample FDR control in distributed testing scenarios",
+          "signal": null
+        },
+        {
+          "id": "2609.14380",
+          "title": "Nonparametric Change-Point Detection for High-Dimensional Distributions",
+          "url": "https://arxiv.org/abs/2609.14380",
+          "date": "2026-09-15",
+          "one_line": "Rank-based procedures for detecting distributional shifts",
+          "signal": null
+        },
+        {
+          "id": "2609.14483",
+          "title": "A Mathai-type Multivariate Nakagami-m Distribution",
+          "url": "https://arxiv.org/abs/2609.14483",
+          "date": "2026-09-15",
+          "one_line": "Closed-form density and asymptotically efficient estimators",
+          "signal": null
+        },
+        {
+          "id": "2609.14503",
+          "title": "Identification of causal policy effects for spatial exposure fields",
+          "url": "https://arxiv.org/abs/2609.14503",
+          "date": "2026-09-15",
+          "one_line": "Policy positivity and identification in spatial intervention settings",
+          "signal": null
+        },
+        {
+          "id": "2609.14506",
+          "title": "Bootstrap-Calibrated Spectral Divergence Tests",
+          "url": "https://arxiv.org/abs/2609.14506",
+          "date": "2026-09-15",
+          "one_line": "Online covariance matrix change detection with uncertainty quantification",
+          "signal": null
+        },
+        {
+          "id": "2609.14774",
+          "title": "Two-stage MCMC for Fast Bayesian Inference of Large Spatio-temporal Data",
+          "url": "https://arxiv.org/abs/2609.14774",
+          "date": "2026-09-15",
+          "one_line": "Efficient recursive algorithms for spatial Bayesian models",
+          "signal": null
+        },
+        {
+          "id": "2609.14950",
+          "title": "Credible Bounds for Causal Quantities with Continuous Outcomes",
+          "url": "https://arxiv.org/abs/2609.14950",
+          "date": "2026-09-15",
+          "one_line": "Bayesian partial identification methodology",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "ijf-journal",
+      "status": "thin",
+      "error": null,
+      "items": [
+        {
+          "id": "S0169207026000890",
+          "title": "Editorial: Reproducibility at the International Journal of Forecasting",
+          "url": "https://www.sciencedirect.com/science/article/pii/S0169207026000890",
+          "date": "2026-09-11",
+          "one_line": "Editorial on reproducibility standards at IJF",
+          "signal": null
+        },
+        {
+          "id": "S0169207026000889",
+          "title": "Designing cost-effective climate policies through preference prediction: Evidence from Chinese households' low-carbon alternatives",
+          "url": "https://www.sciencedirect.com/science/article/pii/S0169207026000889",
+          "date": "2026-09-11",
+          "one_line": "Preference prediction for climate policy design in households",
+          "signal": null
+        },
+        {
+          "id": "S0169207026000518",
+          "title": "Cassandra: An automated AI-based surveillance system to forecast bank distress from financial news",
+          "url": "https://www.sciencedirect.com/science/article/pii/S0169207026000518",
+          "date": "2026-09-08",
+          "one_line": "AI surveillance system forecasting bank distress from news",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "jof-journal",
+      "status": "thin",
+      "error": null,
+      "items": [
+        {
+          "id": "10.1002/for.70213",
+          "title": "Forecasting Macroeconomic Variables With High-Frequency Predictors",
+          "url": "https://onlinelibrary.wiley.com/doi/10.1002/for.70213",
+          "date": "2026-09-10",
+          "one_line": "Mixed-frequency kernel estimator for macroeconomic forecasting",
+          "signal": null
+        },
+        {
+          "id": "10.1002/for.70214",
+          "title": "Loss-Aware Forecast Construction for Realized Variance",
+          "url": "https://onlinelibrary.wiley.com/doi/10.1002/for.70214",
+          "date": "2026-09-07",
+          "one_line": "Decision-theoretic framework for loss-consistent variance forecasts",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "hyndman-blog",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "good-judgment-blog",
+      "status": "failed",
+      "error": "HTTP 403 Forbidden",
+      "items": []
+    },
+    {
+      "id": "fri-substack",
+      "status": "thin",
+      "error": null,
+      "items": [
+        {
+          "id": "automating-catastrophic-risk-forecasts",
+          "title": "Automating Catastrophic Risk Forecasts: Introducing AIRO",
+          "url": "https://forecastingresearch.substack.com/p/automating-catastrophic-risk-forecasts",
+          "date": "2026-09-11",
+          "one_line": "Automated AI Risk Outlook dashboard forecasting catastrophic event probabilities",
+          "signal": null
+        }
+      ]
+    }
+  ]
+}

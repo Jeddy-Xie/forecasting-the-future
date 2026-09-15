@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heat Report 2026-W37 - forecasting-the-future</title>
+<style>
+  :root {
+    --ground:#E8EAEB; --surface:#F7F8F8; --ink:#16191C; --ink-2:#454C52; --ink-3:#717A80;
+    --rule:#C6CDD0; --rule-soft:#DBE0E2; --heat:#B54C08;
+    --ok:#2C6349; --warn:#8A5E06; --stop:#9C2F21;
+    --display:"Barlow Condensed","Arial Narrow",sans-serif;
+    --body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --ground:#131719; --surface:#1A1F21; --ink:#E8EDEE; --ink-2:#ADB6BB; --ink-3:#7C868C;
+    --rule:#2F3739; --rule-soft:#242B2E; --heat:#EE8940;
+    --ok:#5DAF87; --warn:#D6A32C; --stop:#DE6F5D;
+  }}
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;margin:0}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px}
+  h1{font-family:var(--display);font-size:clamp(34px,6vw,58px);font-weight:700;text-transform:uppercase;line-height:.95;margin:0 0 6px}
+  h2{font-family:var(--display);font-size:27px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;margin:38px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--ink)}
+  h3{font-family:var(--display);font-size:19px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;margin:22px 0 4px}
+  p{max-width:70ch}
+  .tape{background:var(--surface);border-left:3px solid var(--heat);padding:16px 20px;margin:22px 0}
+  .tape p{margin:0 0 8px}.tape p:last-child{margin:0}
+  .card{border:1px solid var(--rule-soft);background:var(--surface);padding:16px 18px;margin:14px 0}
+  .meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);letter-spacing:.03em;text-transform:uppercase;margin:0 0 8px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:0 14px 6px 0;border-bottom:1px solid var(--rule)}
+  td{padding:8px 14px 8px 0;border-bottom:1px solid var(--rule-soft);color:var(--ink-2);vertical-align:top}
+  td:first-child{color:var(--ink)}
+  code{font-family:var(--mono);font-size:.88em}
+  .pill{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;border:1px solid currentColor;padding:1px 6px;vertical-align:.1em}
+  .pill.undived{color:var(--warn)} .pill.ok{color:var(--ok)} .pill.none{color:var(--ink-3)}
+  .stub{color:var(--ink-3);font-size:14px;margin:4px 0}
+  footer{margin-top:52px;padding-top:14px;border-top:2px solid var(--ink);font-size:13px;color:var(--ink-2)}
+  ul{max-width:70ch}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">Bellows heat | forecasting-the-future | phase 1 (scan + triage + report)</p>
+  <h1>Heat Report<br>2026-W37</h1>
+
+  <h2>The tape</h2>
+  <div class="tape">
+    <p><b>The week in one sentence.</b> The first heat in this repository went looking for how anyone else compares two runs of a numerical forecasting pipeline, and found three things worth keeping out of fifty-seven: a floating-point anomaly analyzer, a large-scale study of flakiness in a numerically similar codebase, and a snapshot library shipping the exact format-change failure this design would be exposed to.</p>
+    <p><b>What needs a decision.</b> Three promoted items, all <span class="pill undived">undived</span> - phase 1 does not dive, so each carries its triage line and nothing deeper. The decision asked for is whether any of them should shape the comparison harness before it is built, not whether to adopt a tool.</p>
+    <p><b>Pipeline health.</b> 10 of 10 sources ok (100%), 0 thin, 0 failed. Not degraded. 57 items in, 3 promoted, 3 watched, 26 rejected. Scout model: <code>haiku</code> per the config pin. <b>One quality note that matters more than the count:</b> the methods-papers scout kept 55 of ~57 items and labelled each with a category rather than a reason - recall was fine, precision was poor, and triage carried the whole burden of saying no. If the next heat looks the same, the pin is the thing to change, not the cap.</p>
+  </div>
+
+  <h2>Decisions requested</h2>
+  <table>
+    <thead><tr><th>Claim</th><th>Likelihood</th><th>Confidence</th><th>Cost</th><th>Door</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Tolerance policy is the load-bearing decision</b>, and a constraint-based floating-point analyzer (FPScan, 2609.07492) is the nearest published treatment of telling anomaly from noise.</td>
+        <td>likely 55-80%</td><td>low - undived, abstract only</td><td>S to read, M to apply</td><td>two-way</td>
+      </tr>
+      <tr>
+        <td><b>A breadth-first report will be abandoned unless its false-positive rate is measured first.</b> The Qiskit flakiness study (2512.18088) is the closest empirical evidence from a comparable numerical codebase.</td>
+        <td>likely 55-80%</td><td>low - undived</td><td>S</td><td>two-way</td>
+      </tr>
+      <tr>
+        <td><b>The run format needs its own version recorded in the manifest</b>, because a serialization change invalidates every stored baseline silently - which is what syrupy v6.0.0 just shipped.</td>
+        <td>very likely 80-95%</td><td>moderate - the release notes are direct evidence</td><td>S</td><td>two-way</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="stub">Every item above is <span class="pill undived">undived</span> and carries <b>Proof: unproven</b>. No efficiency or performance claim is made in this report, so none is owed a proving-ground rung; the moment one is made, it needs a protocol first.</p>
+
+  <h2>Proposal cards</h2>
+
+  <div class="card">
+    <p class="meta">P1 | arxiv-2609.07492 | evidence tier: anecdote (single paper, abstract only) | proof: unproven</p>
+    <h3>FPScan - floating-point anomaly detection</h3>
+    <p><b>Claim.</b> A comparator for this pipeline stands or falls on its tolerance policy, and constraint-based anomaly analysis is a better-founded starting point than a hand-picked epsilon (likely, 55-80%).</p>
+    <p><b>Why now.</b> Dated 2026-09-09, one day before this heat, and it lands on a decision this repository has to make immediately: a ~1e-13 cross-environment drift is already on record here, and pandas' default tolerance has already once passed that drift silently.</p>
+    <p><b>What it displaces.</b> Nothing yet - it is reading, not adoption. If it displaces anything later it would be the "pick an epsilon and see" approach.</p>
+    <p><b>Rollback.</b> Free; nothing is integrated.</p>
+    <p><b>Strongest objection.</b> No red team ran (phase 1). The obvious one stands unanswered: a constraint analyzer built for detecting anomalies inside a program may have nothing to say about comparing two program outputs, and the title is being asked to carry more than it may hold.</p>
+  </div>
+
+  <div class="card">
+    <p class="meta">P2 | arxiv-2512.18088 | evidence tier: anecdote (single case study, abstract only) | proof: unproven</p>
+    <h3>Flaky tests in quantum software - the Qiskit Terra case study</h3>
+    <p><b>Claim.</b> The dominant risk to this design is a false-positive rate that erodes trust in the report, and this is the closest published measurement of that rate in a numerically intensive, probabilistic codebase (likely, 55-80%).</p>
+    <p><b>Why now.</b> Surfaced in this week's cs.SE feed. It matters now rather than later because the false-positive question should shape the design, not be discovered after the tool is in use.</p>
+    <p><b>What it displaces.</b> Nothing. It is a prior on a number this project will otherwise guess.</p>
+    <p><b>Rollback.</b> Free.</p>
+    <p><b>Strongest objection.</b> Quantum simulation flakiness may be dominated by sampling noise that this pipeline, with fixed seeds, does not have - in which case its base rate transfers poorly and would be misleading if quoted.</p>
+  </div>
+
+  <div class="card">
+    <p class="meta">P3 | gh-syrupy-v6.0.0 | evidence tier: vendor-claim (release notes) | proof: unproven</p>
+    <h3>syrupy v6.0.0 - deterministic serialization, changed output format</h3>
+    <p><b>Claim.</b> The stored run format needs an explicit version in the manifest, because a change in how values are written invalidates every baseline without changing any value (very likely, 80-95%).</p>
+    <p><b>Why now.</b> Released 2026-08-22. A mature snapshot library shipping precisely this in a major version is the failure mode made concrete rather than hypothesised.</p>
+    <p><b>What it displaces.</b> The assumption that a baseline is self-describing. Concretely it adds one field to the run manifest, which is the smallest possible surface.</p>
+    <p><b>Rollback.</b> Remove the field; nothing else depends on it.</p>
+    <p><b>Strongest objection.</b> This is a lesson from a library this project will not use, applied to a format this project has not written yet. It could be premature structure for a thirty-row CSV.</p>
+  </div>
+
+  <h2>OPEN debts</h2>
+  <p class="stub">None. First heat - no debts have had time to age. The next report shows any of the above still unanswered, with its age in weeks.</p>
+
+  <h2>Unmerged backlog</h2>
+  <p class="stub">None. This is heat 1 of the phase-1 window (weeks 1-4); nothing prior is awaiting review. Backpressure rule: at two or more unreviewed heats, the next invocation produces a catch-up digest instead of a full heat.</p>
+
+  <h2>Delta</h2>
+  <p class="stub">First heat - no prior week to differ from.</p>
+
+  <h2>Watchlist</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Tripwire</th></tr></thead>
+    <tbody>
+      <tr><td>arxiv-2609.05879 - oracle conversion from specifications</td><td>Revisit if the comparison report acquires a pass/fail gate. A gate is an oracle.</td></tr>
+      <tr><td>arxiv-2609.06413 - shrinkage invalidates Hosmer-Lemeshow</td><td>Revisit if the comparison starts making distributional claims about the 30-probability vector rather than per-row ones.</td></tr>
+      <tr><td>gh-scipy-v1.18.1</td><td>A numerical dependency bump is a legitimate cause of a whole-grid diff. First live test of whether the provenance record catches it.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Graveyard</h2>
+  <p class="stub">Nothing killed this week. 26 items were rejected as off-question rather than killed on the merits; rejection reasons are in <code>triage.json</code>, and off-question items return freely if the question changes.</p>
+
+  <h2>Forecast register</h2>
+  <table>
+    <thead><tr><th>Forecast</th><th>p</th><th>Resolves</th><th>Resolution criterion, written now</th></tr></thead>
+    <tbody>
+      <tr><td>A comparison harness built breadth-first, with no gate, is read on fewer than half of the runs it reports on, by week 8.</td><td>60%</td><td>2026-11-05</td><td>Count of comparison reports generated vs. count referenced in a commit message, PR, or journal entry.</td></tr>
+      <tr><td>The first non-trivial diff this harness reports on an unchanged-code rerun is caused by floating-point drift or cache state, not by a code change.</td><td>75%</td><td>first such diff</td><td>The diff's own provenance record shows an identical git commit and configuration hash.</td></tr>
+      <tr><td>Still matters in three months: the run-format version field.</td><td>85%</td><td>2026-12-10</td><td>The field exists in the manifest and has been incremented at least once, or a baseline was invalidated for want of it.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Scorecard</h2>
+  <p class="stub">Inert until N=10 resolved forecasts, by the pre-registered rule. Three registered above.</p>
+
+  <h2>Next heat</h2>
+  <p>2026-W38, attended and by hand - no scheduled task exists for this repository, and none should be created until a heat has actually been read. Two things to carry forward: whether the <code>haiku</code> scout pin survives a second week of category-label relevance, and whether any of the three promoted items changed the design of the comparison harness. If neither did, that is a finding about this loop, not about this week.</p>
+
+  <footer>
+    <p><b>Estimative language.</b> Likelihood and confidence are separate and never appear in the same clause. "Possible" without a band is banned.</p>
+    <table>
+      <tbody>
+        <tr><td>almost no chance</td><td>1-5%</td><td>unlikely</td><td>20-45%</td><td>likely</td><td>55-80%</td><td>almost certain</td><td>95-99%</td></tr>
+        <tr><td>very unlikely</td><td>5-20%</td><td>roughly even</td><td>45-55%</td><td>very likely</td><td>80-95%</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--ink-3);font-size:12.5px">Assets: <code>research/heats/2026-W37/</code> - signals-methods-papers.json, signals-tooling-releases.json, triage.json, report.html. Contracts: signals PASS, triage PASS, stress PASS (phase 1, not required), report PASS. Bellows proposes; it does not build - nothing under <code>src/</code>, <code>tests/</code> or <code>proving/</code> was touched by this heat.</p>
+  </footer>
+
+</div>
+</body>
+</html>

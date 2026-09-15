@@ -199,3 +199,20 @@ rm -rf .cache && poetry run forecast fetch-data && poetry run forecast check-gat
 
 Nothing outside `.cache/` and `submission/` is generated, and everything in
 `.cache/` is reproducible from the registries.
+
+## Research arms
+
+One experimental idea runs in its own git worktree and is scored against `main` with the
+regression harness (`docs/REGRESSION_TESTING.md`). The experiment each arm belongs to is
+pre-registered under `proving/experiments/`, before the arm is run.
+
+    scripts/research_arm.sh setup <arm>   # worktree on branch research/<arm>, private cache copy
+    scripts/research_arm.sh run   <arm>   # five gates, then compare and compare --paired vs main,
+                                          # then the look-ahead audit; outputs in research/arms/<arm>/
+    scripts/research_arm.sh path  <arm>   # print the worktree path
+
+One trap is worth knowing before touching a worktree by hand. The package is an editable
+install whose `.pth` points at main's `src/`, so a plain `python -m economic_regime_forecasting...`
+run inside a worktree imports **main's** code, and an arm would silently report main's results as its
+own. Set `PYTHONPATH=<worktree>/src`. The script does this, and refuses to run unless the imported
+module really lives in the worktree.

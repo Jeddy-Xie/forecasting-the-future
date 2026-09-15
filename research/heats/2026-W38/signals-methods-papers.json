@@ -1,0 +1,363 @@
+{
+  "group": "methods-papers",
+  "week": "2026-W38",
+  "fetched_at": "2026-09-15T00:00:00Z",
+  "sources": [
+    {
+      "id": "arxiv-rss-se",
+      "status": "ok",
+      "error": null,
+      "items": [
+        {
+          "id": "2609.13274",
+          "title": "Abstention Errors and Segment Support in CUAD: An Auditable Contract-Extraction Case Study",
+          "url": "https://arxiv.org/abs/2609.13274",
+          "date": "2026-09-15",
+          "one_line": "Contract extraction case study analyzing model performance on specific document segments.",
+          "signal": null
+        },
+        {
+          "id": "2609.13299",
+          "title": "From Experiments to Decisions: Reusing Evidence in Autonomous Coding Research",
+          "url": "https://arxiv.org/abs/2609.13299",
+          "date": "2026-09-15",
+          "one_line": "Framework for reusing experimental evidence in autonomous coding research decisions.",
+          "signal": null
+        },
+        {
+          "id": "2609.13321",
+          "title": "SkillSeam: Six Principles for Auditing Agent Skill Collections",
+          "url": "https://arxiv.org/abs/2609.13321",
+          "date": "2026-09-15",
+          "one_line": "Six principles for auditing collections of agent skills and capabilities.",
+          "signal": null
+        },
+        {
+          "id": "2609.13334",
+          "title": "The Agentic Company OS: Substrate Inversion for Sustained Enterprise Agent Deployment",
+          "url": "https://arxiv.org/abs/2609.13334",
+          "date": "2026-09-15",
+          "one_line": "Operating system architecture for sustained deployment of enterprise agents.",
+          "signal": null
+        },
+        {
+          "id": "2609.13450",
+          "title": "Usage Control in Public Data Exchange Infrastructures for Future Digital Governance",
+          "url": "https://arxiv.org/abs/2609.13450",
+          "date": "2026-09-15",
+          "one_line": "Usage control mechanisms for public data exchange infrastructures.",
+          "signal": null
+        },
+        {
+          "id": "2609.13461",
+          "title": "Rethinking Software Development as a Self-Adaptive Socio-Technical System",
+          "url": "https://arxiv.org/abs/2609.13461",
+          "date": "2026-09-15",
+          "one_line": "Conceptual framework treating software development as a self-adaptive socio-technical system.",
+          "signal": null
+        },
+        {
+          "id": "2609.13485",
+          "title": "Is Self-Admitted Technical Debt Tested? An Empirical Study of Coverage, Co-change, and Impact",
+          "url": "https://arxiv.org/abs/2609.13485",
+          "date": "2026-09-15",
+          "one_line": "Empirical study of test coverage patterns in code with self-admitted technical debt.",
+          "signal": null
+        },
+        {
+          "id": "2609.13577",
+          "title": "Comparative Framework Analysis for Enterprise Generative AI Applications",
+          "url": "https://arxiv.org/abs/2609.13577",
+          "date": "2026-09-15",
+          "one_line": "Comparative framework for evaluating enterprise generative AI application architectures.",
+          "signal": null
+        },
+        {
+          "id": "2609.13645",
+          "title": "ForgeTrain: Forging Production-Grade Training Frameworks via Harness-Driven AI Development",
+          "url": "https://arxiv.org/abs/2609.13645",
+          "date": "2026-09-15",
+          "one_line": "Approach for building production-grade training frameworks using harness-driven AI development.",
+          "signal": null
+        },
+        {
+          "id": "2609.13728",
+          "title": "TyPatch: Transforming Patches into Typestate Rules for Kernel Bug Detection",
+          "url": "https://arxiv.org/abs/2609.13728",
+          "date": "2026-09-15",
+          "one_line": "Method to convert software patches into typestate rules for detecting kernel bugs.",
+          "signal": null
+        },
+        {
+          "id": "2609.13973",
+          "title": "Towards a faithful stochastic model for brain digital twins",
+          "url": "https://arxiv.org/abs/2609.13973",
+          "date": "2026-09-15",
+          "one_line": "Stochastic model for representing brain dynamics in digital twin applications.",
+          "signal": null
+        },
+        {
+          "id": "2609.13975",
+          "title": "Introspective Uncertainty Estimation for LLM-Based Code Generation",
+          "url": "https://arxiv.org/abs/2609.13975",
+          "date": "2026-09-15",
+          "one_line": "Uncertainty estimation methods for large language model code generation systems.",
+          "signal": null
+        },
+        {
+          "id": "2609.14017",
+          "title": "Deterministic Temporal Reconciliation for Effective-Dated Identity Lifecycle Events",
+          "url": "https://arxiv.org/abs/2609.14017",
+          "date": "2026-09-15",
+          "one_line": "Deterministic approach for reconciling temporal identity lifecycle events with effective dates.",
+          "signal": null
+        },
+        {
+          "id": "2609.14046",
+          "title": "Yesterday's Interviews for Today's Engineers: Retrospective Perceptions and a Work-Aligned Hiring Framework",
+          "url": "https://arxiv.org/abs/2609.14046",
+          "date": "2026-09-15",
+          "one_line": "Hiring framework based on retrospective analysis of interview outcomes and engineer performance.",
+          "signal": null
+        },
+        {
+          "id": "2609.14323",
+          "title": "AI Assisted Workflow Optimization and Automation",
+          "url": "https://arxiv.org/abs/2609.14323",
+          "date": "2026-09-15",
+          "one_line": "AI techniques for optimizing and automating software workflows.",
+          "signal": null
+        },
+        {
+          "id": "2609.14475",
+          "title": "EchoFuzz: Empowering Smart Contract Fuzzing with Large Language Models",
+          "url": "https://arxiv.org/abs/2609.14475",
+          "date": "2026-09-15",
+          "one_line": "Fuzzing approach for smart contracts using large language model guidance.",
+          "signal": null
+        },
+        {
+          "id": "2609.14721",
+          "title": "A Two-Dimensional Study of the Model Context Protocol: Publication and Adoption",
+          "url": "https://arxiv.org/abs/2609.14721",
+          "date": "2026-09-15",
+          "one_line": "Analysis of Model Context Protocol publication history and adoption patterns.",
+          "signal": null
+        },
+        {
+          "id": "2609.14758",
+          "title": "Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return",
+          "url": "https://arxiv.org/abs/2609.14758",
+          "date": "2026-09-15",
+          "one_line": "Study of tool-augmented agent behavior when tools fail or return incomplete results.",
+          "signal": null
+        },
+        {
+          "id": "2609.14784",
+          "title": "Enhancing Automated Unit Test Generation for NLP Libraries Using Large Language Models",
+          "url": "https://arxiv.org/abs/2609.14784",
+          "date": "2026-09-15",
+          "one_line": "Automatic unit test generation for NLP libraries using large language models.",
+          "signal": null
+        },
+        {
+          "id": "2609.14818",
+          "title": "Trust by Design: Trust Calibration Through Non-Advisory Socratic Dialogue in Conversational Agents",
+          "url": "https://arxiv.org/abs/2609.14818",
+          "date": "2026-09-15",
+          "one_line": "Design approach for calibrating user trust in conversational agents via Socratic dialogue.",
+          "signal": null
+        },
+        {
+          "id": "2609.14836",
+          "title": "The Case for Automated Hyperspecialization: Evidence from SAT",
+          "url": "https://arxiv.org/abs/2609.14836",
+          "date": "2026-09-15",
+          "one_line": "Evidence from SAT solving supporting automated specialization of solvers to problem domains.",
+          "signal": null
+        },
+        {
+          "id": "2609.14839",
+          "title": "Efficiency Hallucination: Formalizing and Measuring Behavioral Calibration in LLM-Based Code Optimization",
+          "url": "https://arxiv.org/abs/2609.14839",
+          "date": "2026-09-15",
+          "one_line": "Measurement framework for LLM behavioral calibration in code optimization tasks.",
+          "signal": null
+        },
+        {
+          "id": "2609.14881",
+          "title": "Toward Sustainable AI Deployment: A Carbon-Aware Decision Framework for Enterprise Supply Chain Systems",
+          "url": "https://arxiv.org/abs/2609.14881",
+          "date": "2026-09-15",
+          "one_line": "Decision framework for carbon-aware AI deployment in enterprise supply chains.",
+          "signal": null
+        },
+        {
+          "id": "2609.14983",
+          "title": "Cross-Ecosystem Packages As Multilingual: Prevalence, Architecture, and Health",
+          "url": "https://arxiv.org/abs/2609.14983",
+          "date": "2026-09-15",
+          "one_line": "Study of multilingual package architecture and health across software ecosystems.",
+          "signal": null
+        },
+        {
+          "id": "2609.15122",
+          "title": "DepthBenchCAD: When Does Deeper Auditing Yield More Reliable Conclusions?",
+          "url": "https://arxiv.org/abs/2609.15122",
+          "date": "2026-09-15",
+          "one_line": "Benchmark study examining relationship between audit depth and reliability of conclusions.",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "arxiv-rss-ms",
+      "status": "ok",
+      "error": null,
+      "items": [
+        {
+          "id": "2609.13480",
+          "title": "Fast Relax-and-Round Unit Commitment with Topological Constraints",
+          "url": "https://arxiv.org/abs/2609.13480",
+          "date": "2026-09-15",
+          "one_line": "Relaxation and rounding approach for unit commitment optimization with network topology constraints.",
+          "signal": null
+        },
+        {
+          "id": "2609.13755",
+          "title": "Row-Polar LP-Newton for Linear Programming with Corral Repair",
+          "url": "https://arxiv.org/abs/2609.13755",
+          "date": "2026-09-15",
+          "one_line": "Newton method variant for linear programming with row-polar parametrization and repair strategy.",
+          "signal": null
+        },
+        {
+          "id": "2609.13875",
+          "title": "Generation of Custom Solvers in Rust for Convex Optimization",
+          "url": "https://arxiv.org/abs/2609.13875",
+          "date": "2026-09-15",
+          "one_line": "Framework for generating custom convex optimization solvers implemented in Rust.",
+          "signal": null
+        },
+        {
+          "id": "2609.14845",
+          "title": "Accurate Models of AMD Matrix Cores",
+          "url": "https://arxiv.org/abs/2609.14845",
+          "date": "2026-09-15",
+          "one_line": "Performance models for AMD hardware matrix core operations and their computational characteristics.",
+          "signal": null
+        },
+        {
+          "id": "2609.15697",
+          "title": "OpenQARP: a modular framework for quantum application research",
+          "url": "https://arxiv.org/abs/2609.15697",
+          "date": "2026-09-15",
+          "one_line": "Modular framework for quantum application research and algorithm prototyping.",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "arxiv-rss-stat-ap",
+      "status": "thin",
+      "error": null,
+      "items": [
+        {
+          "id": "2609.13319",
+          "title": "Bayesian Semiparametric Hidden Markov Random Partition Fields",
+          "url": "https://arxiv.org/abs/2609.13319",
+          "date": "2026-09-15",
+          "one_line": "Bayesian method for evaluating localized factor influence in complex network structures.",
+          "signal": null
+        },
+        {
+          "id": "2609.14772",
+          "title": "Zero-Inflated Model Lab",
+          "url": "https://arxiv.org/abs/2609.14772",
+          "date": "2026-09-15",
+          "one_line": "Interactive web application for analyzing count data with excess zeros and model comparison.",
+          "signal": null
+        },
+        {
+          "id": "2609.14951",
+          "title": "Short-term Forecasting of Wildfire Spread",
+          "url": "https://arxiv.org/abs/2609.14951",
+          "date": "2026-09-15",
+          "one_line": "Statistical framework combining cellular automata and network epidemiology for wildfire modeling.",
+          "signal": null
+        },
+        {
+          "id": "2609.15132",
+          "title": "Temporal Seam Score for Environmental Records",
+          "url": "https://arxiv.org/abs/2609.15132",
+          "date": "2026-09-15",
+          "one_line": "Diagnostic measure for assessing continuity at transitions in composite environmental records.",
+          "signal": null
+        },
+        {
+          "id": "2609.13263",
+          "title": "Multi-View Structure-from-Motion for 3D Shape Analysis",
+          "url": "https://arxiv.org/abs/2609.13263",
+          "date": "2026-09-15",
+          "one_line": "Three-dimensional projective shape analysis using multi-view structure-from-motion reconstructions.",
+          "signal": null
+        },
+        {
+          "id": "2609.13345",
+          "title": "Survey on Probabilistic Forecasting",
+          "url": "https://arxiv.org/abs/2609.13345",
+          "date": "2026-09-15",
+          "one_line": "Survey organizing probabilistic forecasting methods across temporal and spatiotemporal domains.",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "arxiv-rss-econ-em",
+      "status": "ok",
+      "error": null,
+      "items": [
+        {
+          "id": "2609.14049",
+          "title": "Homophily and transitivity in dynamic network formation",
+          "url": "https://arxiv.org/abs/2609.14049",
+          "date": "2026-09-15",
+          "one_line": "Study of parameter identifiability in network formation models with homophily and transitivity.",
+          "signal": null
+        },
+        {
+          "id": "2609.14069",
+          "title": "What Variation Identifies Payoffs in a Dynamic Game?",
+          "url": "https://arxiv.org/abs/2609.14069",
+          "date": "2026-09-15",
+          "one_line": "Analysis of identification of payoff parameters in dynamic games using policy variation.",
+          "signal": null
+        },
+        {
+          "id": "2609.14398",
+          "title": "Identification and Inference in proxy-SVARs with non-Gaussian shocks",
+          "url": "https://arxiv.org/abs/2609.14398",
+          "date": "2026-09-15",
+          "one_line": "Structural VAR identification using external instruments and higher-order moments of non-Gaussian shocks.",
+          "signal": null
+        },
+        {
+          "id": "2609.15111",
+          "title": "Eigenvalue-Decomposition Cost Denoising as an Alternative to Predict-then-Optimize",
+          "url": "https://arxiv.org/abs/2609.15111",
+          "date": "2026-09-15",
+          "one_line": "PCA-based denoising approach for optimization under model misspecification in cost functions.",
+          "signal": null
+        },
+        {
+          "id": "2609.15736",
+          "title": "Conditional-Moment Estimation and Inference in the BLP Model",
+          "url": "https://arxiv.org/abs/2609.15736",
+          "date": "2026-09-15",
+          "one_line": "Conditional-moment-based estimator for random-coefficient demand models with inference framework.",
+          "signal": null
+        }
+      ]
+    }
+  ]
+}

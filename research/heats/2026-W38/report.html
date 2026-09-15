@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry Heats · 2026-W38</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Source+Serif+4:opsz,wght@8..60,200..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root { --bg:#EFF0ED; --surface:#F7F8F5; --ink:#1B2126; --ink-2:#4F5A61; --line:#D2D7D3;
+    --accent:#35618C; --red:#B23A2E; --bronze:#9A6533; --peacock:#2F6E85; --straw:#B98F3B; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#14181B; --surface:#1B2125; --ink:#E6E9E3; --ink-2:#A6B0B5; --line:#2B3439;
+    --accent:#7FAEDB; --red:#D96A57; --bronze:#C9955B; --peacock:#6FA8BD; --straw:#D3B25F; } }
+  :root[data-theme="dark"] { --bg:#14181B; --surface:#1B2125; --ink:#E6E9E3; --ink-2:#A6B0B5;
+    --line:#2B3439; --accent:#7FAEDB; --red:#D96A57; --bronze:#C9955B; --peacock:#6FA8BD; --straw:#D3B25F; }
+  *, *::before, *::after { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:17px; line-height:1.65; }
+  .wrap { max-width:860px; margin:0 auto; padding:40px 22px 80px; }
+  h1 { font-family:Archivo,Arial,sans-serif; font-stretch:120%; font-weight:900;
+    font-size:clamp(34px,7vw,58px); text-transform:uppercase; margin:0; line-height:1; }
+  .heat-strip { height:8px; border-radius:2px; margin:12px 0 18px;
+    background:linear-gradient(90deg,var(--red),var(--bronze),var(--straw),var(--peacock)); }
+  .mono { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:12.5px; color:var(--ink-2); }
+  h2 { font-family:Archivo,Arial,sans-serif; font-stretch:112%; font-weight:800; font-size:24px; margin:2em 0 .5em; }
+  h3 { font-family:Archivo,Arial,sans-serif; font-stretch:108%; font-weight:700; font-size:19px; margin:2px 0 8px; line-height:1.3; }
+  p { margin:0 0 .75em; }
+  code { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:.8em; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px 20px; margin:14px 0; }
+  .chip { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:600; letter-spacing:.07em;
+    text-transform:uppercase; padding:2px 8px; border-radius:999px; border:1px solid var(--line); white-space:nowrap; }
+  .chip.red { color:var(--red); border-color:var(--red); }
+  .chip.peacock { color:var(--peacock); border-color:var(--peacock); }
+  .chip.bronze { color:var(--bronze); border-color:var(--bronze); }
+  .chip.straw { color:var(--straw); border-color:var(--straw); }
+  .debt { color:var(--red); } .stub { color:var(--ink-2); font-style:italic; }
+  .tablewrap { overflow-x:auto; margin:10px 0 14px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  td,th { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11px; font-weight:600; letter-spacing:.07em;
+    text-transform:uppercase; color:var(--ink-2); border-bottom-color:var(--ink-2); }
+  td.num { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:13px; white-space:nowrap; }
+
+  /* page-1 furniture */
+  .tape { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--accent);
+    border-radius:8px; padding:16px 20px; margin:12px 0 16px; }
+  .tape p:last-child { margin:0; }
+  .banner { border:1px solid var(--red); border-left-width:6px; border-radius:8px; padding:14px 20px; margin:16px 0;
+    background:var(--surface); background:color-mix(in srgb, var(--red) 7%, var(--surface)); }
+  .banner p { font-size:16px; }
+  .banner p:last-child { margin:0; }
+  .banner .head { font-family:Archivo,Arial,sans-serif; font-stretch:112%; font-weight:800; font-size:18px; margin-bottom:8px; }
+  .decision { background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:14px 20px 12px; margin:12px 0; }
+  .decision .n { font-family:Archivo,Arial,sans-serif; font-weight:900; color:var(--accent); margin-right:6px; }
+  .decision .claim { margin-bottom:6px; }
+  .fields { font-size:15.5px; }
+  .fields span + span::before { content:"\00B7"; padding:0 .45em; color:var(--ink-2); }
+  .sub { font-size:15px; color:var(--ink-2); margin-top:8px; }
+  .sub:last-child { margin-bottom:2px; }
+  .page-end { margin:34px 0 0; padding-top:10px; border-top:1px dashed var(--line); text-transform:uppercase; letter-spacing:.07em; font-size:11.5px; }
+
+  /* cards */
+  .meta { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11.5px; color:var(--ink-2);
+    letter-spacing:.04em; text-transform:uppercase; margin:0 0 6px; }
+  .card p { font-size:16px; }
+  .qa { margin:4px 0 0; padding-left:1.1em; font-size:15px; }
+  .qa li { margin:0 0 4px; }
+  .verdict { font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace; font-size:11.5px; font-weight:600; letter-spacing:.05em; }
+  .verdict.open { color:var(--red); } .verdict.pass { color:var(--peacock); }
+  ul.pulse { padding-left:1.1em; } ul.pulse li { margin:0 0 6px; }
+
+  footer { margin-top:50px; border-top:1px solid var(--line); padding-top:14px; }
+  footer p { font-size:12.5px; }
+  footer table { font-size:13px; max-width:420px; }
+  footer td { padding:4px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="mono">FOUNDRY HEATS · heat 2026-W38 · published 2026-09-15 · pipeline 5/13/1 sources · phase 1 · cost not recorded</p>
+  <h1>Heat 38</h1>
+  <div class="heat-strip"></div>
+
+  <h2>The tape</h2>
+  <div class="tape">
+    <p><b>The week.</b> The loop was pointed at forecasting methods (six new sources) while the project gained a regression harness and a pre-registered research slate, and every one of last week's five watched items had its tripwire fire.</p>
+    <p><b>Needs a decision.</b> The three requests below: what to do about 0001's calibration gate at one year, whether numbers agents report must be machine-extracted, and whether to close last week's five watch items.</p>
+    <p><b>Health.</b> 19 sources: 5 ok, 13 thin, 1 failed (26% ok), DEGRADED. 3 scouts on <code>haiku</code>. 73 items in: 3 promoted, 5 watched, 65 rejected. Cost not recorded, because <code>research/ledger/costs.jsonl</code> does not exist yet.</p>
+  </div>
+
+  <div class="banner" role="note">
+    <p class="head"><span class="chip red">Degraded</span>&nbsp; Mostly definitional. One real failure.</p>
+    <p><b>The real failure.</b> The Good Judgment feed returned HTTP 403, although it verified the same morning. Its bot shield is intermittent, and nothing from it reached this heat.</p>
+    <p><b>The rest is definitional, which is not the same as fine.</b> Most "thin" results are not broken feeds. The six new forecasting-methods sources were given <code>expect_min</code> values equal to the size of each whole feed, while scouts count only the items inside the week's window. And a GitHub repository with no release that week counts as thin. Twelve of the thirteen thin results come from these two causes: four feeds judged against whole-feed sizes (International Journal of Forecasting 3 of 40, Journal of Forecasting 2 of 40, Hyndman 0 of 60, Forecasting Research Institute 1 of 20), and eight repositories with no release this week. The thirteenth, arXiv stat.AP (6 items against an <code>expect_min</code> of 10), is not explained by either cause, and triage does not address it.</p>
+    <p><b>Why it is still a problem.</b> The mismatch was introduced on 2026-09-15. Until it is fixed, these sources read thin every week however healthy they are. A check that is always red soon stops being read. It is carried below as an OPEN debt, not quietly redefined.</p>
+  </div>
+
+  <h2>Decisions requested</h2>
+
+  <div class="decision">
+    <p class="claim"><span class="n">1</span><b>0001's calibration gate (ten-bin expected calibration error below 0.10) fails a perfectly calibrated forecaster about 91% of the time at the ~31 independent one-year observations available, so the one-year failure is not evidence of miscalibration.</b></p>
+    <p class="fields"><span>Very likely (80–95%) that the gate is uninformative at this n.</span><span>Confidence moderate, because briefing 01's simulation assumes noise scales with independent outcomes.</span><span>Cost S.</span><span>Two-way door.</span></p>
+    <p class="sub">Options: (a) keep the gate and its verdict, and report the one-year failure as uninformative beside the gate's null distribution; (b) register a new experiment with a calibration test that accounts for sample size, pre-registered before it runs; (c) leave it as it is. <b>Changing the 0.10 threshold is not one of the options.</b> Moving an acceptance threshold after seeing results is this project's single forbidden act, and all three options leave it exactly where it was committed.</p>
+    <p class="sub">Basis: seeded simulation (seed 20260915, 20,000 repetitions), with a median error of 0.153 for a calibrated forecaster at n = 31. The script is saved at <code>research/briefings/derivations/sim_calibration.py</code>. It was re-run for this report and gave P(error &lt; 0.10) = 0.09 at n = 31, matching the briefing. It carries its own caveat: twelve overlapping monthly forecasts that share one outcome window behave closer to one observation than to twelve. So the true failure rate lies between the n = 31 figure and the lower rates the simulation gives at larger n.</p>
+  </div>
+
+  <div class="decision">
+    <p class="claim"><span class="n">2</span><b>Require every number an agent reports as a result to be machine-extracted from the tool's output, never transcribed.</b> This is promoted item arxiv-2609.14758, corroborated by this session's own instance: a review lens reported a test count it had not observed.</p>
+    <p class="fields"><span>Likely (55–80%) that, while transcription continues, at least one of the slate's seven arm reports carries a number its tool did not return.</span><span>Confidence low: the figure applies the paper's 14.10% per-response rate, measured under a deployment-style prompt, to seven reports (1 − 0.859<sup>7</sup> ≈ 0.66), and whether that rate transfers here is untested.</span><span>Cost S.</span><span>Two-way door.</span></p>
+  </div>
+
+  <div class="decision">
+    <p class="claim"><span class="n">3</span><b>Close the five W37 watch items whose tripwires fired, as resolved by this week's measurements.</b></p>
+    <p class="fields"><span>Almost certain (95–99%) that each recorded tripwire condition was met.</span><span>Confidence moderate: the firings are recorded in <code>triage.json</code> and were not re-run for this report, and two of them fired on comparisons that found nothing (see the note under the table).</span><span>Cost S, five ledger lines.</span><span>Two-way door.</span></p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Item</th><th>Tripwire</th><th>What fired, 2026-09-15</th></tr></thead>
+        <tbody>
+          <tr><td><code>arxiv-2609.07492</code><br>FPScan</td><td>revisit when the comparator's epsilon is chosen</td><td>The harness fixed NUMERICAL at |d| ≤ 1e-9, justified by measurement: a forced refit under one configuration was byte-identical, and cross-environment drift was measured at ~1e-13.</td></tr>
+          <tr><td><code>arxiv-2512.18088</code><br>Qiskit flakiness</td><td>revisit when the first unchanged-code rerun diff appears</td><td>The first two unchanged-code reruns (self-compare, forced refit) were both IDENTICAL: an observed false-positive rate of 0 of 2, far too few to estimate a base rate.</td></tr>
+          <tr><td><code>gh-scipy-v1.18.1</code></td><td>first whole-grid diff with no code change</td><td>387 of 387 fields IDENTICAL within one environment. No provenance drift observed, and no numpy or scipy upgrade has happened yet.</td></tr>
+          <tr><td><code>arxiv-2609.05879</code><br>oracle conversion</td><td>the comparison report acquires a pass/fail gate</td><td><code>forecast baseline compare</code> now exits 0 / 1 / 2, which is an oracle derived from a written tolerance specification.</td></tr>
+          <tr><td><code>arxiv-2609.06413</code><br>Hosmer-Lemeshow</td><td>comparison makes distributional rather than per-row claims</td><td>The paired comparison reports bootstrap intervals, a distributional claim. Separately, briefing 01 found the calibration gate problem in decision 1, the small-sample goodness-of-fit problem this paper is about.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub">Note on the weakest two: <code>gh-scipy-v1.18.1</code> was parked to catch a numerical dependency upgrade, and none has happened. <code>arxiv-2512.18088</code> was parked for a false-positive base rate, and two reruns cannot estimate one. Closing those two retires each watch before the event it was set for.</p>
+  </div>
+
+  <h2>OPEN debts</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Debt</th><th>Age</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td class="debt">expect_min semantics mismatch (whole-feed versus in-window counting)</td><td class="num">0 wk</td><td>Fixed-window feeds were given <code>expect_min</code> equal to their window, while scouts count only in-window items. GitHub repositories with no release that week also count as thin. Introduced 2026-09-15. It accounts for 12 of this week's 13 thin readings.</td></tr>
+        <tr><td class="debt">arXiv RSS sees about one announcement day in five</td><td class="num">1 wk</td><td>The arXiv RSS feeds hold only the latest day's announcements, but the feeds run weekly, so each fetch sees about one day in five. Present since setup on 2026-09-10. Every arXiv item in this heat is dated 2026-09-15.</td></tr>
+        <tr><td class="debt">Good Judgment feed intermittently 403</td><td class="num">0 wk</td><td><code>goodjudgment.com/feed/</code> returned 200 in the 2026-09-15 verification pass and 403 during the heat.</td></tr>
+        <tr><td class="debt">Six proposed source grades awaiting human confirmation</td><td class="num">0 wk</td><td>arXiv stat.ME B, International Journal of Forecasting A, Journal of Forecasting C, Hyndman B, Good Judgment C, Forecasting Research Institute C. Grades are human-assigned by rule. These six were proposed by the session that verified the URLs, and triage weighting (A 1.0, B 0.7, C 0.4) already uses them.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="stub">None is older than three weeks, so no process-retro line is due.</p>
+
+  <h2>Unmerged backlog</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Heat</th><th>State</th><th>Age</th></tr></thead>
+      <tbody><tr><td>2026-W37 report</td><td>unreviewed</td><td class="num">1 wk</td></tr></tbody>
+    </table>
+  </div>
+  <p class="stub">Backpressure rule: at two or more unreviewed heats, the next invocation produces a one-page catch-up digest instead of a full heat. If this report also goes unreviewed, 2026-W39 is that digest.</p>
+
+  <h2>Kill criterion</h2>
+  <p>Pre-registered at activation on 2026-09-10. By week 8 (about 2026-W44), the decision log must show at least two ADOPTs marked counterfactual-NO, meaning "I would not have found this from my normal reading". Otherwise this system is killed or cut back to scan-only, by its own stated rule.</p>
+  <p><b>Status: week 2 of 8. Decisions logged: 0. Counterfactual-NO adopts: 0 of the 2 required.</b> The idea ledger marks <code>gh-syrupy-v6.0.0</code> as ADOPTED as a design constraint, but no decision-log entry backs that mark, so it does not count.</p>
+
+  <p class="mono page-end">Page 1 ends · everything below is depth for interrogation, not required reading</p>
+
+  <h2>Proposal cards</h2>
+  <p>One card per promoted item. Phase 1 does not dive, so all three are undived: each rests on its triage line and a verified title and abstract, nothing deeper. Only the first is on page 1 (decision 2). Phase 1 has no red team either, so every strongest objection below was written by the author of this report and is labelled as such.</p>
+
+  <div class="card">
+    <p class="meta">P1 · arxiv-2609.14758 · <span class="chip straw">undived</span> <span class="chip peacock">corroborated</span> · proof: unproven</p>
+    <h3>Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return</h3>
+    <p><b>Claim.</b> Every number an agent reports as a result should be extracted from the tool's output by code; without that, it is likely (55–80%) that at least one of the slate's seven arm reports carries a number its tool did not return. The confidence is low, for the reason given under decision 2.</p>
+    <p><b>Why now.</b> Published 2026-09-13; surfaced in the 2026-09-15 cs.SE feed. This week's research slate runs seven agents that each report a primary number from a tool's output. This session has already produced one instance: a council lens reported a test count it had not observed, caught only because the chair re-ran the suite.</p>
+    <p><b>Evidence tier: corroborated.</b> Two independent domains: the paper, which measures 14.10% of responses asserting a value the tool payload could not support under a deployment-style prompt, and an instance in this repository's own review. Title and abstract fetched from arxiv.org and matched on 2026-09-15; not read past the abstract.</p>
+    <p><b>Proof: unproven.</b> This is not a measured quality claim. Nothing has been run.</p>
+    <p><b>What it costs.</b> S. Each arm's primary endpoint is read from <code>paired.json</code> by code, not typed.</p>
+    <p><b>What it displaces.</b> The typed number. The agent writes around the value instead of writing the value. The only new surface is one extraction step per arm.</p>
+    <p><b>Rollback.</b> Remove the extraction step and reports return to transcription.</p>
+    <p><b>Strongest objection</b> <span class="mono">(written by the report author; no red team in phase 1)</span>. As practised, the rule will guard the primary endpoint in <code>paired.json</code>. But the instance that corroborates it was a test count inside a review verdict, not a primary endpoint. Unless "every number reported as a result" also covers review verdicts, the rule would not have caught the very case that motivates it.</p>
+    <p><b>Pre-answered Q&amp;A.</b></p>
+    <ul class="qa">
+      <li>Was the in-session instance real? <span class="verdict pass">PASS</span> It was caught when the chair re-ran the suite (<code>triage.json</code>, entry arxiv-2609.14758).</li>
+      <li>Does the 14.10% rate transfer to this harness? <span class="verdict open">OPEN</span> It was measured under a deployment-style prompt; it is untested here.</li>
+      <li>What does the paper say beyond its abstract? <span class="verdict open">OPEN</span> Not read.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <p class="meta">P2 · arxiv-2609.13299 · <span class="chip straw">undived</span> <span class="chip bronze">anecdote</span> · proof: unproven</p>
+    <h3>From Experiments to Decisions: Reusing Evidence in Autonomous Coding Research</h3>
+    <p><b>Claim.</b> When the orchestrator consolidates the seven arm results into one report, each arm's evidence tier should be stated separately and the summary never allowed to outrank its inputs; without that, it is likely (55–80%) that at least one arm is summarised more strongly than its evidence supports. The confidence is low: this rests on one study, read at abstract level, of coding research rather than forecasting.</p>
+    <p><b>Why now.</b> Published 2026-09-10; surfaced in the 2026-09-15 cs.SE feed. The consolidation it warns about is the slate's next step.</p>
+    <p><b>Evidence tier: anecdote.</b> A single study. It documents agents carrying forward conclusions an experiment does not justify, including a coordinator that acknowledges a novelty-only rejection and then summarises it as measured closure. Title and abstract fetched from arxiv.org and matched on 2026-09-15.</p>
+    <p><b>Proof: unproven.</b> This is not a measured quality claim.</p>
+    <p><b>What it costs.</b> S. One field per arm in the slate report.</p>
+    <p><b>What it displaces.</b> Nothing is deleted. The new surface is one field per arm, plus one constraint: the summary may not state a stronger tier than the arms beneath it. That is defended as the smallest change that makes a summary checkable against its inputs.</p>
+    <p><b>Rollback.</b> Remove the field.</p>
+    <p><b>Strongest objection</b> <span class="mono">(written by the report author; no red team in phase 1)</span>. A tier is only as honest as whoever assigns it. If the orchestrator that is told not to inflate the summary also assigns the per-arm tiers, the inflation moves one step earlier instead of going away. This is advice, not a check, unless each tier is computed by code from the arm's own outputs.</p>
+    <p><b>Pre-answered Q&amp;A.</b></p>
+    <ul class="qa">
+      <li>Is this a forecasting finding? <span class="verdict pass">PASS</span> No. It concerns autonomous coding research (title, arxiv.org/abs/2609.13299), and it transfers to this project only by analogy.</li>
+      <li>How often do coordinators overstate? <span class="verdict open">OPEN</span> No rate is recorded in triage, and the paper has not been read past its abstract.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <p class="meta">P3 · ijf-S0169207026000890 · <span class="chip straw">undived</span> <span class="chip red">unproven: content unread</span> · proof: unproven</p>
+    <h3>Editorial: Reproducibility at the International Journal of Forecasting</h3>
+    <p><b>Claim.</b> Whether this repository meets the journal's reproducibility standard is a checkable question, but only once the text has been read. No likelihood band is given, because any band would be a guess about text nobody here has read.</p>
+    <p><b>Why now.</b> Published September 2026 (DOI 10.1016/j.ijforecast.2026.08.004; feed item dated 2026-09-11), the same week this repository gained a regression harness and a pre-registered slate.</p>
+    <p><b>Evidence tier: unproven, content unread.</b> Existence and authorship are confirmed through Crossref (Pinson, Perignon, Akmansoy, Dali, Rostami-Tabar). The publisher page returned HTTP 403. <b>Nothing on this card summarises the editorial, and nothing here should be read as doing so.</b></p>
+    <p><b>Proof: unproven.</b></p>
+    <p><b>What it costs.</b> S to read once a copy is obtained. The check against this repository cannot be sized until the text is known.</p>
+    <p><b>What it displaces.</b> Nothing. This is reading.</p>
+    <p><b>Rollback.</b> Nothing to undo.</p>
+    <p><b>Strongest objection</b> <span class="mono">(written by the report author; no red team in phase 1)</span>. The promotion was earned by the title and the venue alone. A journal's reproducibility policy may be addressed to authors submitting to it, and this repository submits nothing, so reading it could change nothing here. On that view the item should have stayed on the watchlist until its text was obtained.</p>
+    <p><b>Pre-answered Q&amp;A.</b></p>
+    <ul class="qa">
+      <li>What does the editorial require? <span class="verdict open">OPEN</span> Unread.</li>
+      <li>Is there a route to the text other than the publisher page? <span class="verdict open">OPEN</span> None is recorded in this heat's assets.</li>
+    </ul>
+  </div>
+
+  <h2>Delta vs last heat</h2>
+  <p><b>Sources went from 10 to 19.</b> Six forecasting-methods sources were added on 2026-09-15 at the owner's request: arXiv stat.ME, the International Journal of Forecasting, the Journal of Forecasting, Rob Hyndman's blog, Good Judgment and the Forecasting Research Institute's Substack. Three GitHub repositories (statsmodels, dynamax, scoringrules) were also proposed as independent reference implementations. Health fell from 10 of 10 ok to 5 of 19 ok. The banner on page 1 explains why, and most of the fall is definitional.</p>
+  <p><b>All five W37 watch items fired, on the same day, during the week's harness work.</b> They come back as decision 3, the only legitimate route back for a parked item. Last week's report asked whether any promoted item would change the harness design. The record shows the harness has now made each decision those items were parked against: an epsilon, a gate, and a comparison that reports intervals. It does not show whether the items shaped those decisions or only preceded them.</p>
+  <p><b>syrupy returned with new evidence.</b> The ADOPTED <code>gh-syrupy-v6.0.0</code> was mentioned again through v6.1.1 (released 2026-09-13), with a new-evidence delta: concurrent pytest-xdist workers rewriting one snapshot file silently drop entries. That is a different failure from the serialization change already adopted, so it is parked on the watchlist rather than re-pitched.</p>
+  <p><b>The scout pin is unchanged.</b> Last week's other open question was whether the <code>haiku</code> pin would survive. This week, all 73 items again arrived with an empty signal field, and triage again did all the refusing (65 of 73). The pin was not changed.</p>
+
+  <h2>Watchlist</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Item</th><th>Tripwire</th></tr></thead>
+      <tbody>
+        <tr><td><code>gh-syrupy-v6.1.1</code><br>experimental <code>--snapshot-file-lock</code></td><td>Two processes ever write to <code>baselines/</code> concurrently, for example research arms capturing into main's <code>baselines/</code> instead of their own worktrees. Designed out today: each arm writes only inside its own worktree.</td></tr>
+        <tr><td><code>arxiv-2609.13345</code><br>survey on probabilistic forecasting</td><td>An arm or the combination experiment needs a calibration method beyond the fixed climatology blend. Read its distribution-free calibration section before inventing one.</td></tr>
+        <tr><td><code>doi-10.1002/for.70213</code><br>macro forecasting with high-frequency predictors</td><td>The mixed-frequency nowcasting extension (state-space briefing rank 5, currently deferred) is ever registered as an experiment.</td></tr>
+        <tr><td><code>arxiv-2609.14082</code><br>dangers of Bayesian analyses</td><td>Arm A1 (sticky Dirichlet prior) reports. Its result is conditional on one registered prior (D = 30, M = 60), and a prior-sensitivity checklist says how far to trust it.</td></tr>
+        <tr><td><code>arxiv-2609.15122</code><br>DepthBenchCAD: when does deeper auditing help</td><td>Review depth per arm is ever traded against the number of arms run under a fixed budget. That is the paper's exact question.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="stub">The five W37 items are not on this list. Their tripwires fired, and they are returned for decision 3 rather than parked.</p>
+
+  <h2>Graveyard</h2>
+  <p class="stub">Nothing killed this week. 65 items were rejected as off-question rather than killed on the merits. Rejection reasons are in <code>triage.json</code>, and off-question items return freely if the question changes.</p>
+
+  <h2>Forecast register</h2>
+  <p>New this heat. All criteria were written on 2026-09-15, before resolution.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>For</th><th>Forecast</th><th>p</th><th>Resolves</th><th>Resolution criterion</th></tr></thead>
+      <tbody>
+        <tr><td>P1</td><td>A second instance is logged in this repository of an agent reporting, as a result, a number its tool did not return.</td><td class="num">35%<br>unlikely</td><td class="num">2026-11-05</td><td>YES if a commit message, review verdict or ledger line dated after 2026-09-15 records a mismatch between an agent-reported number and the output it cites. Otherwise NO. Only logged instances count, so the result depends on how often anyone checks.</td></tr>
+        <tr><td>P1</td><td>Still matters in 3 months? Machine extraction of agent-reported numbers.</td><td class="num">70%<br>likely</td><td class="num">2026-12-15</td><td>YES if, on that date, result numbers in agent reports here come from an extraction step rather than being typed, or if a transcription error that such a step would have caught has been logged since 2026-09-15. Otherwise NO.</td></tr>
+        <tr><td>P2</td><td>The first consolidated slate report states at least one arm more strongly than that arm's own evidence tier supports.</td><td class="num">60%<br>likely</td><td class="num">first slate report</td><td>YES if any arm's summary line claims a stronger tier than the arm's recorded evidence, for example "measured" for an unmeasured result. Void if no consolidated slate report exists by 2026-12-15.</td></tr>
+        <tr><td>P2</td><td>Still matters in 3 months? Per-arm evidence tiers in consolidated reports.</td><td class="num">60%<br>likely</td><td class="num">2026-12-15</td><td>YES if, on that date, a consolidated research report here states each arm's tier separately, or if an overstatement traced to a blended summary has been logged since 2026-09-15. Otherwise NO.</td></tr>
+        <tr><td>P3</td><td>The editorial's full text is read, by a route other than the publisher page that returned 403.</td><td class="num">40%<br>unlikely</td><td class="num">2026-10-15</td><td>YES if a ledger line or briefing records the editorial as read and names the route. Otherwise NO.</td></tr>
+        <tr><td>P3</td><td>Still matters in 3 months? The IJF reproducibility editorial.</td><td class="num">45%<br>roughly even</td><td class="num">2026-12-15</td><td>YES if, by that date, it has been read and cited in a commit, in a document under <code>docs/</code> or <code>research/</code>, or in a logged decision. Otherwise NO.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Carried from 2026-W37, all still open and unchanged:</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Forecast</th><th>p</th><th>Resolves</th><th>State this week</th></tr></thead>
+      <tbody>
+        <tr><td>A comparison harness built breadth-first, with no gate, is read on fewer than half of the runs it reports on, by week 8.</td><td class="num">60%</td><td class="num">2026-11-05</td><td>Open. Its premise no longer holds, because <code>compare</code> now exits 0 / 1 / 2, which is a gate. How that affects resolution is left to resolution time and is not decided here.</td></tr>
+        <tr><td>The first non-trivial diff this harness reports on an unchanged-code rerun is caused by floating-point drift or cache state, not by a code change.</td><td class="num">75%</td><td class="num">first such diff</td><td>Open. The first two unchanged-code reruns were identical, so no such diff has appeared.</td></tr>
+        <tr><td>Still matters in three months: the run-format version field.</td><td class="num">85%</td><td class="num">2026-12-10</td><td>Open.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Scorecard</h2>
+  <p class="stub">Inert until N = 10 resolutions. 0 forecasts have resolved; 9 are registered (3 from W37 and 6 above). Adopt-rate, misses he caught first, FAQ hit-rate on his real questions, and review minutes all stay inert until then. Cost per heat is not recorded. Debt aging is the only metric with data: 4 OPEN debts, the oldest 1 week.</p>
+
+  <h2>Pulse</h2>
+  <ul class="pulse">
+    <li>The Metaculus API now requires authentication. It returns 403 "only available to authenticated users", and its RSS and feed paths sit behind a Cloudflare challenge (source check, 2026-09-15).</li>
+    <li>The International Institute of Forecasters' site, forecasters.org, is behind a bot shield. Its site, blog, Foresight and wp-json paths all return 403 whatever the user agent. The journal's feed stands in for it.</li>
+    <li>The Survey of Professional Forecasters' recession probabilities beat climatology one quarter ahead (Brier skill +0.13, n = 230) but not three or four quarters ahead (−0.03 and −0.06) (briefing 01, W7).</li>
+    <li>In the M6 competition only 23% of teams (38 of 163) beat the equal-probability benchmark, and those that did improved by less than 2.5%. The average of the top teams beat the best single team (briefing 01, W1).</li>
+    <li>A perfectly calibrated forecaster fails a ten-bin calibration-error gate of 0.10 about 91% of the time at n = 31, with a median error of 0.153 (briefing 01, W5, seeded simulation).</li>
+    <li>At about 31 outcomes, Platt, beta and isotonic recalibration make out-of-sample Brier worse on average, even for a model that really is miscalibrated. Only a strong prior toward the identity map is safe, and it gains about 0.002 (briefing 01, W5).</li>
+    <li>Superforecasters' edge is mostly discrimination, not calibration: calibration error 0.01 against 0.04 for everyone else, resolution 0.40 against 0.32 (briefing 01, W3).</li>
+  </ul>
+
+  <footer class="mono">
+    <p><b>Estimative language</b> (mandatory vocabulary).</p>
+    <div class="tablewrap">
+      <table>
+        <tbody>
+          <tr><td>almost no chance</td><td>1–5%</td></tr>
+          <tr><td>very unlikely</td><td>5–20%</td></tr>
+          <tr><td>unlikely</td><td>20–45%</td></tr>
+          <tr><td>roughly even</td><td>45–55%</td></tr>
+          <tr><td>likely</td><td>55–80%</td></tr>
+          <tr><td>very likely</td><td>80–95%</td></tr>
+          <tr><td>almost certain</td><td>95–99%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Likelihood and confidence are SEPARATE: never in the same sentence. "Possible" without a band is banned. Probabilities at 1% granularity in the forecast register; "fifty-fifty" is an abstention and is logged as one.</p>
+    <p>Kill criterion in force: ≥2 counterfactual-NO adopts by week 8 or this system dies by its own rule.</p>
+    <p>Next heat: 2026-W39, attended and by hand. No scheduled task exists for this repository.</p>
+    <p>Contracts, run 2026-09-15: signals PASS (DEGRADED at 26% ok, as the banner above says), triage PASS (3 of 3 promoted, 5 watched, 65 rejected), stress not required in phase 1, report PASS.</p>
+    <p>Sources of fact for this report: <code>research/heats/2026-W38/</code> (triage.json and the three signals files), <code>research/ledger/</code>, <code>research/sources.yaml</code>, <code>.claude/bellows.json</code>, and briefing 01 for the Pulse and decision 1.</p>
+  </footer>
+</div>
+</body>
+</html>

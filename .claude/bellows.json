@@ -1,0 +1,16 @@
+{
+  "phase": 1,
+  "promoted_cap": 3,
+  "artifact_url": "",
+  "state_branch": "main",
+  "kill_review_week": 8,
+  "started_on": "2026-09-10",
+  "review_slot": "unscheduled — attended heats only until the pilot has been read",
+  "models": { "scout": "haiku", "diver": "sonnet", "redteam": "opus" },
+  "domain": "verification of numerical and probabilistic software: regression and characterisation testing, reproducibility, forecast evaluation",
+  "notes": {
+    "state_branch": "This repository works directly on main (see CLAUDE.md), so there is no claude/bellows-state branch. Bellows' propose-never-merge rule is preserved by a different means: research/ is written by the loop, and nothing under src/, tests/ or proving/ ever is.",
+    "stakeholder_directory": "DELIBERATELY ABSENT. github.com/Jeddy-Xie/forecasting-the-future is PUBLIC (unauthenticated API probe returned 200 on 2026-09-10). research/stakeholder/ holds personal decision heuristics and must not be published. If this repo is ever made private, add it then.",
+    "substrate": "attended sessions only; no scheduled task exists"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "group": "tooling-releases",
+  "week": "2026-W38",
+  "fetched_at": "2026-09-15T00:00:00+00:00",
+  "sources": [
+    {
+      "id": "approvals/ApprovalTests.Python",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "ESSS/pytest-regressions",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "syrupy-project/syrupy",
+      "status": "ok",
+      "error": null,
+      "items": [
+        {
+          "id": "syrupy-project/syrupy@v6.1.1",
+          "title": "v6.1.1",
+          "url": "https://github.com/syrupy-project/syrupy/releases/tag/v6.1.1",
+          "date": "2026-09-13T20:25:09+00:00",
+          "one_line": "> **Note:** 6.1.0 was skipped due to a CI issue. Use **6.1.1**.\r",
+          "signal": null
+        }
+      ]
+    },
+    {
+      "id": "scipy/scipy",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "pandas-dev/pandas",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "Nixtla/statsforecast",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "statsmodels/statsmodels",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "probml/dynamax",
+      "status": "thin",
+      "error": null,
+      "items": []
+    },
+    {
+      "id": "frazane/scoringrules",
+      "status": "thin",
+      "error": null,
+      "items": []
+    }
+  ]
+}
