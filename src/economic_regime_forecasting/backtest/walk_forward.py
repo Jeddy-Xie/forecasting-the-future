@@ -2,9 +2,10 @@
 
 At each forecast date the engine rebuilds the world as it stood then: the panel
 an observer would have had, a model fitted only on that panel, per-regime rates
-estimated only from conditions already observable, and a climatological benchmark
-computed only from outcomes already resolved. It then issues forecasts at one,
-five and ten years and moves on.
+estimated only from conditions already observable (or, under
+``estimate_each_horizon_rate_directly``, from horizon outcomes already published),
+and a climatological benchmark computed only from outcomes already resolved. It
+then issues forecasts at one, five and ten years and moves on.
 
 Three things about the design are worth reading before the code.
 
@@ -33,7 +34,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 import numpy as np
@@ -54,7 +55,10 @@ from economic_regime_forecasting.models import indicator_forecast
 from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
 )
-from economic_regime_forecasting.models.indicator_forecast import ConditionalRates
+from economic_regime_forecasting.models.indicator_forecast import (
+    ConditionalRates,
+    DirectHorizonRate,
+)
 from economic_regime_forecasting.models.state_labelling import canonicalise
 
 logger = logging.getLogger(__name__)
@@ -89,6 +93,17 @@ class FittedRegimeModel:
     model: GaussianHiddenMarkovModel
     rates_by_indicator: dict[str, ConditionalRates]
     months_fitted_on: int
+    direct_rates_by_indicator: dict[str, dict[int, DirectHorizonRate]] = field(default_factory=dict)
+    """Per indicator, per horizon: the direct horizon rate. Empty when the run
+    composes through the transition matrix instead."""
+
+    def direct_horizon_rate(
+        self, indicator_name: str, horizon_in_months: int
+    ) -> DirectHorizonRate | None:
+        """The rate that replaces both compositions, or None when the run composes."""
+        if not self.direct_rates_by_indicator:
+            return None
+        return self.direct_rates_by_indicator[indicator_name][horizon_in_months]
 
 
 @dataclass(frozen=True)
@@ -97,8 +112,10 @@ class IndicatorHistory:
 
     ``monthly_condition`` is whether the condition held in each month, which the
     forecaster learns per-regime rates from. ``outcomes_by_horizon`` is what
-    actually happened over each horizon, which is used to score forecasts after
-    the fact and never as an input to one.
+    actually happened over each horizon, indexed by forecast date. It scores
+    forecasts after the fact. Under ``estimate_each_horizon_rate_directly`` it is
+    also learned from, and then only through ``outcomes_available_at``, which
+    admits an outcome once the value it rests on had been published.
     """
 
     indicator: BinaryIndicator
@@ -174,16 +191,46 @@ def publication_dates(labels: pd.DatetimeIndex, publication_lag_days: int) -> pd
     return pd.DatetimeIndex(labels) + pd.Timedelta(days=publication_lag_days)
 
 
+def count_of_outcomes_published_by(
+    forecast_dates: pd.DatetimeIndex,
+    horizon_in_months: int,
+    publication_lag_days: int,
+    as_of_dates: pd.DatetimeIndex,
+) -> np.ndarray:
+    """How many forecast dates' h-month outcomes had been published by each as-of date.
+
+    The project's single definition of "this outcome was knowable at t". The
+    outcome of a forecast made in month s at horizon h rests on observations up to
+    the one labelled s + h months: the value at the horizon, or the last month of
+    the window. That value is published ``publication_lag_days`` after its label.
+    So the outcome is knowable at t exactly when (s + h months) + lag falls on or
+    before t.
+
+    The benchmark and the direct horizon rates both ask this, and both call this
+    function, so the boundary cannot drift between them. Forecast dates must
+    ascend. The outcomes counted are then always a prefix of them, and one binary
+    search answers the question for every as-of date at once.
+    """
+    dates = pd.DatetimeIndex(forecast_dates)
+    if not dates.is_monotonic_increasing:
+        raise BacktestError(
+            "forecast dates must ascend for the published outcomes to be a prefix of them; "
+            "sort the outcomes by forecast date first"
+        )
+    deciding_labels = dates + pd.DateOffset(months=horizon_in_months)
+    published = publication_dates(deciding_labels, publication_lag_days)
+    return np.asarray(
+        published.searchsorted(pd.DatetimeIndex(as_of_dates), side="right"), dtype=np.intp
+    )
+
+
 def _expanding_climatology(
     outcomes: pd.Series, horizon_in_months: int, publication_lag_days: int
 ) -> pd.Series:
     """The base rate a forecaster could have quoted at each date.
 
-    The outcome of a forecast made in month s at horizon h rests on observations
-    up to the one labelled s + h months: the value at the horizon, or the last
-    month of the window. That value is published ``publication_lag_days`` after
-    its label. So the average available at t covers exactly the forecast dates
-    whose deciding value had been published on or before t.
+    The average available at t covers exactly the forecast dates whose outcome
+    had been published on or before t, by ``count_of_outcomes_published_by``.
 
     Until 2026-09-15 the average at t covered forecast dates up to t - h, which
     counted the outcome resting on the value labelled t itself: five weeks before
@@ -191,18 +238,37 @@ def _expanding_climatology(
     look-ahead audit found it; ADR 0009 records the fix and what it moved.
     """
     running_mean = outcomes.expanding(min_periods=1).mean().to_numpy(dtype="float64")
-    deciding_labels = pd.DatetimeIndex(outcomes.index) + pd.DateOffset(months=horizon_in_months)
-    published = publication_dates(deciding_labels, publication_lag_days)
-    # How many forecast dates' outcomes had been published by each date. Both
-    # indexes ascend, so one binary search answers it for every date at once, and
-    # the outcomes it counts are always a prefix of the forecast dates.
-    resolved_count = np.asarray(
-        published.searchsorted(pd.DatetimeIndex(outcomes.index), side="right"), dtype=np.intp
+    forecast_dates = pd.DatetimeIndex(outcomes.index)
+    resolved_count = count_of_outcomes_published_by(
+        forecast_dates, horizon_in_months, publication_lag_days, forecast_dates
     )
     available = np.full(len(outcomes), np.nan)
     any_resolved = resolved_count > 0
     available[any_resolved] = running_mean[resolved_count[any_resolved] - 1]
     return pd.Series(available, index=outcomes.index, name="climatology")
+
+
+def outcomes_available_at(
+    history: IndicatorHistory, horizon_in_months: int, as_of: date
+) -> pd.Series:
+    """The indicator's resolved h-month outcomes that had been published by ``as_of``.
+
+    Indexed by forecast date. The cut is ``count_of_outcomes_published_by``, the
+    rule the benchmark uses, so an outcome enters the direct horizon rates on
+    exactly the date it enters the benchmark and never a day earlier. An outcome
+    that never resolved, because its window has a gap, is dropped rather than
+    read as zero.
+    """
+    outcomes = history.outcomes_by_horizon[horizon_in_months]
+    published_count = int(
+        count_of_outcomes_published_by(
+            pd.DatetimeIndex(outcomes.index),
+            horizon_in_months,
+            history.publication_lag_days,
+            pd.DatetimeIndex([pd.Timestamp(as_of)]),
+        )[0]
+    )
+    return outcomes.iloc[:published_count].dropna()
 
 
 def condition_available_at(history: IndicatorHistory, as_of: date) -> pd.Series:
@@ -275,11 +341,37 @@ def fit_regime_model(
             shrinkage_strength=settings.conditional_rate_shrinkage_strength,
         )
 
+    direct_rates: dict[str, dict[int, DirectHorizonRate]] = {}
+    if settings.estimate_each_horizon_rate_directly:
+        for name, history in histories.items():
+            direct_rates[name] = {}
+            for horizon in settings.forecast_horizons_in_months:
+                published = outcomes_available_at(history, horizon, as_of)
+                aligned_outcomes, aligned_states = published.align(
+                    filtered_series, join="inner", axis=0
+                )
+                if aligned_outcomes.empty:
+                    raise BacktestError(
+                        f"indicator {name!r} has no {horizon}-month outcome that had resolved "
+                        f"and been published by {as_of.isoformat()} inside the observation "
+                        "matrix, so its direct horizon rate has nothing to learn from. Start "
+                        "the walk-forward later, or set estimate_each_horizon_rate_directly to "
+                        "False to compose from monthly rates instead."
+                    )
+                direct_rates[name][horizon] = indicator_forecast.estimate_direct_horizon_rate(
+                    history.indicator,
+                    horizon,
+                    aligned_outcomes.to_numpy(dtype="float64"),
+                    aligned_states.to_numpy(dtype="float64"),
+                    shrinkage_strength=settings.conditional_rate_shrinkage_strength,
+                )
+
     return FittedRegimeModel(
         refit_date=as_of,
         model=model,
         rates_by_indicator=rates,
         months_fitted_on=len(matrix),
+        direct_rates_by_indicator=direct_rates,
     )
 
 
@@ -344,6 +436,7 @@ def run_walk_forward(
                     fitted.rates_by_indicator[indicator.name],
                     horizon,
                     condition_holds_now,
+                    direct_horizon_rate=fitted.direct_horizon_rate(indicator.name, horizon),
                 )
                 rows.append(
                     {

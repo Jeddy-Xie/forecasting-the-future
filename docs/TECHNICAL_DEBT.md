@@ -33,6 +33,7 @@ status. Re-run this audit whenever the pipeline gains a step.
 | Model parameters at each refit | **clean** — refitted from scratch on the point-in-time panel; verified that only the state count is read from the full-sample fit |
 | **Number of regimes** | **clean** — chosen once on a burn-in window ending strictly before the first forecast date; the full-sample sweep no longer reaches the backtest. ADR 0008 |
 | Conditional rates | **clean** — only conditions whose publication lag had passed |
+| Direct horizon rates (`estimate_each_horizon_rate_directly`; research arm A5, branch `research/direct-horizon-rates` only) | **clean by construction, audited** — each horizon's per-regime rate learns only from forecast months s whose outcome had been published by the refit date: label s + h months plus the resolution series' publication lag, on or before it. The cut is `count_of_outcomes_published_by`, the one function the benchmark also calls, so the two boundaries cannot drift apart. Tests pin the day before (excluded) and the day itself (included), and show the invariance audit failing on a forgotten lag and on a horizon one month short. The regime weights are the filtered distributions of the model fitted at that refit date |
 | Benchmark (climatology) | **clean since 2026-09-15** — expanding, and an outcome enters the average at t only once the value it rests on (label s + h, plus the indicator's publication lag) was published by t, the same rule the conditions obey. Before that the average at t counted the outcome of the forecast made at t − h, which rests on the value labelled t: unpublished at t, by five weeks for most series and 400 days for recession dating. Found by the invariance audit (last row), not by reading. ADR 0009 |
 | Outcome resolution | **clean by design** — final data is correct for scoring; the forecaster never sees it |
 | Condition values feeding rate estimation | **approximation** — final values with timing enforced. Exact for market rates and recession dating. See D5 |
@@ -140,6 +141,12 @@ composition path, estimating P(outcome | regime today) directly for each horizon
 rather than factoring through the transition matrix. It is less data-efficient at
 long horizons by construction, which is why it was not chosen, but running both
 and reporting the difference would replace an argument with a measurement.
+
+**Being measured as research arm A5** of experiment 0002, on branch
+`research/direct-horizon-rates`, behind `RunSettings.estimate_each_horizon_rate_directly`.
+It replaces both compositions rather than running beside them, as the
+pre-registration specifies. Main is unchanged and this entry stays open until the
+slate reports.
 
 ---
 

@@ -338,6 +338,7 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
                 fitted.rates_by_indicator[indicator.name],
                 horizon,
                 holds_now,
+                direct_horizon_rate=fitted.direct_horizon_rate(indicator.name, horizon),
             )
             rows.append({**composed.as_row(), "question": indicator.question})
 

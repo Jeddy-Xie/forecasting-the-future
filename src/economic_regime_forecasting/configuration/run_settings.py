@@ -94,6 +94,26 @@ class RunSettings:
     conditional_rate_shrinkage_strength: float = 10.0
     """Beta prior strength pulling each per-regime rate toward the pooled rate."""
 
+    estimate_each_horizon_rate_directly: bool = True
+    """Forecast each horizon from the per-regime rate of that horizon's own outcome,
+    instead of composing it from monthly rates through the transition matrix.
+
+    True is research arm A5 of experiment 0002 (direct-horizon-rates). For every
+    indicator and horizon h, the probability is today's filtered regime
+    distribution dotted with rate[k] = sum_s gamma_s[k] * y_s,h / sum_s gamma_s[k],
+    shrunk toward the pooled resolved rate at ``conditional_rate_shrinkage_strength``.
+    The sum runs only over forecast months s whose h-month outcome had been
+    published by the refit date: label s + h months, plus the resolution series'
+    publication lag, on or before it. That is the boundary the benchmark obeys,
+    and both call one function for it
+    (``backtest.walk_forward.count_of_outcomes_published_by``). It replaces both
+    compositions, for every indicator and every horizon.
+
+    False reproduces main: a point-in-time question projects the regime
+    distribution and dots it with the monthly occupancy rate, and an any-time
+    question chains a monthly survival factor across the window, which is where a
+    small bias compounds (D4 in docs/TECHNICAL_DEBT.md)."""
+
     information_horizon_total_variation_threshold: float = 0.05
     """Below this distance to the stationary distribution, a projected regime
     distribution carries no information the unconditional base rate lacks."""
@@ -151,6 +171,10 @@ class RunSettings:
 SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, object] = {
     "select_state_count_on_a_burn_in_window": False,
     "start_walk_forward_when_every_input_is_point_in_time": False,
+    # False composes through the transition matrix, which is all the code did
+    # before this field existed; the reference run's digest ad7fcc1affd0746a
+    # (experiment 0002) is unchanged at that value.
+    "estimate_each_horizon_rate_directly": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 

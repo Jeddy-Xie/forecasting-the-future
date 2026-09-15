@@ -35,6 +35,21 @@ ignores that these conditions are sticky -- unemployment above seven percent thi
 month makes it very likely next month -- and so it counts one long episode as many
 independent chances. It overstates every any-time probability, systematically.
 Carrying the one extra parameter per regime removes most of that.
+
+A third path: direct horizon rates
+----------------------------------
+Both compositions pass through the transition matrix, and the any-time one
+multiplies a monthly survival factor over up to 120 months, so a monthly hazard
+that is slightly too low compounds geometrically (D4 in
+``docs/TECHNICAL_DEBT.md``). The direct path skips the matrix. For each horizon
+it learns, per regime, how often that horizon's outcome itself came true for
+forecasts made in that regime, and dots today's filtered regime distribution with
+it. Nothing compounds. What it gives up is data: consecutive outcomes share all
+but one month of their windows, and an outcome is usable only once its whole
+horizon has passed and been published, so at ten years it rests on few
+independent observations. ``RunSettings.estimate_each_horizon_rate_directly``
+chooses it; which outcomes it may learn from is decided by the backtest, which
+owns publication timing.
 """
 
 from __future__ import annotations
@@ -207,6 +222,116 @@ def estimate_conditional_rates(
 
 
 @dataclass(frozen=True)
+class DirectHorizonRate:
+    """How often one indicator's h-month outcome came true, per regime at the forecast date.
+
+    For forecast months s whose h-month outcome ``y_s`` had resolved and been
+    published, each weighted by the filtered probability ``gamma_s[k]`` that month
+    s was in regime k:
+
+        rate[k] = sum_s gamma_s[k] * y_s / sum_s gamma_s[k]
+
+    shrunk toward the pooled resolved rate by the same Beta prior the monthly
+    rates carry. ``months_used`` counts forecast months, which overlap in all but
+    one month of their windows, so it overstates the independent evidence behind a
+    long horizon many times over.
+    """
+
+    indicator_name: str
+    horizon_in_months: int
+    rate: np.ndarray
+    """P(the h-month outcome is yes | regime k at the forecast date), shrunk."""
+
+    sample_size: np.ndarray
+    """Filtered-probability-weighted forecast months behind each regime's rate."""
+
+    pooled_rate: float
+    """The unweighted mean of every outcome used: the rate the prior pulls toward."""
+
+    shrinkage_strength: float
+    months_used: int
+
+    @property
+    def state_count(self) -> int:
+        return int(self.rate.size)
+
+    def to_dictionary(self) -> dict[str, Any]:
+        return {
+            "indicator_name": self.indicator_name,
+            "horizon_in_months": self.horizon_in_months,
+            "rate": self.rate.tolist(),
+            "sample_size": self.sample_size.tolist(),
+            "pooled_rate": self.pooled_rate,
+            "shrinkage_strength": self.shrinkage_strength,
+            "months_used": self.months_used,
+        }
+
+
+def estimate_direct_horizon_rate(
+    indicator: BinaryIndicator,
+    horizon_in_months: int,
+    resolved_outcomes: np.ndarray,
+    state_probabilities: np.ndarray,
+    shrinkage_strength: float,
+) -> DirectHorizonRate:
+    """Learn the per-regime rate of one horizon's outcome from aligned history.
+
+    ``resolved_outcomes`` holds the h-month outcome of each forecast month, and
+    ``state_probabilities`` the filtered regime distribution in that same month,
+    in the same order. The caller must pass only outcomes that had been published
+    by the date this rate is estimated at; this function cannot see dates and
+    does not try to.
+    """
+    if horizon_in_months < 1:
+        raise ForecastCompositionError(
+            f"a direct horizon rate needs a horizon of at least one month, got {horizon_in_months}"
+        )
+    outcomes = np.asarray(resolved_outcomes, dtype="float64")
+    weights = np.asarray(state_probabilities, dtype="float64")
+    if outcomes.ndim != 1 or weights.ndim != 2:
+        raise ForecastCompositionError(
+            f"indicator {indicator.name!r}: direct horizon rates need one outcome per month and "
+            f"one row of state probabilities per month; got shapes {outcomes.shape} and "
+            f"{weights.shape}"
+        )
+    if outcomes.shape[0] != weights.shape[0]:
+        raise ForecastCompositionError(
+            f"indicator {indicator.name!r} has {outcomes.shape[0]} resolved {horizon_in_months}-"
+            f"month outcomes against {weights.shape[0]} months of state probabilities. Align "
+            "them before estimating a direct horizon rate."
+        )
+    if outcomes.size == 0:
+        raise ForecastCompositionError(
+            f"indicator {indicator.name!r} has no resolved {horizon_in_months}-month outcome to "
+            "estimate a direct horizon rate from"
+        )
+    if not np.isfinite(outcomes).all():
+        raise ForecastCompositionError(
+            f"indicator {indicator.name!r} has unresolved {horizon_in_months}-month outcomes; "
+            "drop them before estimating a direct horizon rate rather than treating them as "
+            "zeroes"
+        )
+    if not np.isin(outcomes, (0.0, 1.0)).all():
+        raise ForecastCompositionError(
+            f"indicator {indicator.name!r}: an outcome is either zero or one; found "
+            f"{sorted(set(outcomes[~np.isin(outcomes, (0.0, 1.0))].tolist()))[:5]}"
+        )
+
+    totals = weights.sum(axis=0)
+    successes = weights.T @ outcomes
+    pooled = float(outcomes.mean())
+    return DirectHorizonRate(
+        indicator_name=indicator.name,
+        horizon_in_months=horizon_in_months,
+        rate=_shrink(successes, totals, pooled, shrinkage_strength),
+        sample_size=totals,
+        pooled_rate=pooled,
+        shrinkage_strength=shrinkage_strength,
+        months_used=int(outcomes.size),
+    )
+
+
+@dataclass(frozen=True)
 class IndicatorForecast:
     """One probability, with everything a reader needs to judge how much it rests on."""
 
@@ -273,6 +398,22 @@ def compose_any_time_within_horizon(
     return float(np.clip(1.0 - probability_of_never, 0.0, 1.0))
 
 
+def compose_direct_horizon(current_distribution: np.ndarray, rate: DirectHorizonRate) -> float:
+    """Today's filtered regime distribution dotted with the horizon's own per-regime rate.
+
+    Today's distribution, not the projected one: the rate already answers "given
+    the regime at the forecast date, how often did the h-month outcome come
+    true", so projecting first would count the regime's evolution twice.
+    """
+    distribution = np.asarray(current_distribution, dtype="float64")
+    if distribution.shape != rate.rate.shape:
+        raise ForecastCompositionError(
+            f"{rate.indicator_name} at {rate.horizon_in_months} months: a distribution over "
+            f"{distribution.size} regimes cannot be dotted with rates for {rate.state_count}"
+        )
+    return float(np.clip(np.dot(distribution, rate.rate), 0.0, 1.0))
+
+
 def forecast_indicator(
     indicator: BinaryIndicator,
     model: GaussianHiddenMarkovModel,
@@ -280,14 +421,37 @@ def forecast_indicator(
     rates: ConditionalRates,
     horizon_in_months: int,
     condition_holds_now: bool,
+    direct_horizon_rate: DirectHorizonRate | None = None,
 ) -> IndicatorForecast:
-    """Produce one probability by the composition path the registry declares."""
+    """Produce one probability by the composition path the registry declares.
+
+    Given a ``direct_horizon_rate``, that rate replaces both compositions: the
+    probability is today's filtered distribution dotted with it, whatever the
+    registry declares and whether or not the condition holds now. The projected
+    distribution is still computed, for the distance to the base rate.
+    """
     projected = model.project_state_distribution(filtered_distribution, horizon_in_months)
     stationary = model.stationary_distribution()
 
-    if indicator.composition is Composition.POINT_IN_TIME:
+    if direct_horizon_rate is not None:
+        if (
+            direct_horizon_rate.indicator_name != indicator.name
+            or direct_horizon_rate.horizon_in_months != horizon_in_months
+        ):
+            raise ForecastCompositionError(
+                f"asked for {indicator.name} at {horizon_in_months} months but handed the direct "
+                f"rate for {direct_horizon_rate.indicator_name} at "
+                f"{direct_horizon_rate.horizon_in_months} months"
+            )
+        probability = compose_direct_horizon(filtered_distribution, direct_horizon_rate)
+        # The direct rate is conditioned on the regime today, so today's regimes
+        # are the ones whose evidence this forecast rests on.
+        weights = np.asarray(filtered_distribution, dtype="float64")
+        sample_sizes = direct_horizon_rate.sample_size
+    elif indicator.composition is Composition.POINT_IN_TIME:
         probability = compose_point_in_time(projected, rates)
         weights = projected
+        sample_sizes = rates.occupancy_sample_size
     else:
         probability = compose_any_time_within_horizon(
             model, filtered_distribution, rates, horizon_in_months, condition_holds_now
@@ -295,8 +459,9 @@ def forecast_indicator(
         # An any-time question draws on the regimes the path passes through, which
         # for a persistent chain is dominated by where it starts and where it ends.
         weights = 0.5 * (np.asarray(filtered_distribution, dtype="float64") + projected)
+        sample_sizes = rates.occupancy_sample_size
 
-    effective_sample_size = float(np.dot(weights, rates.occupancy_sample_size))
+    effective_sample_size = float(np.dot(weights, sample_sizes))
     distance = float(0.5 * np.abs(projected - stationary).sum())
 
     if not 0.0 <= probability <= 1.0:  # pragma: no cover - both paths clip already

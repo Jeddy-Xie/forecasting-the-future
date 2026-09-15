@@ -33,6 +33,10 @@ def test_the_shipped_configuration_hashes_to_the_recorded_digest() -> None:
     shipped = RunSettings(
         select_state_count_on_a_burn_in_window=False,
         start_walk_forward_when_every_input_is_point_in_time=False,
+        # Added with research arm A5: the shipped run composed through the
+        # transition matrix, so it names that value rather than inherit the
+        # arm's default.
+        estimate_each_horizon_rate_directly=False,
     )
     assert shipped.configuration_hash() == SHIPPED_HASH
 
@@ -113,4 +117,8 @@ def test_the_omission_map_holds_only_the_two_documented_switches() -> None:
     assert set(SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE) == {
         "select_state_count_on_a_burn_in_window",
         "start_walk_forward_when_every_input_is_point_in_time",
+        # Research arm A5 (experiment 0002). False is the composition the code
+        # ran before the field existed; test_direct_horizon_rates.py pins that
+        # it reproduces the reference run's digest.
+        "estimate_each_horizon_rate_directly",
     }
