@@ -121,6 +121,26 @@ class RunSettings:
     the model revised consumer price index values through the publication-lag
     fallback -- 41% of the walk-forward, every month from 1971-12 to 1994-02."""
 
+    fix_state_count_at_four_with_quadrant_structured_seeding: bool = True
+    """Research arm A2-quadrant-structure-levels
+    (proving/experiments/0002-research-slate-2026-09/experiment.json).
+
+    The number of regimes used for every forecasting fit -- every walk-forward
+    refit, and today's fit behind ``forecast forecast-now`` -- is fixed at 4,
+    rather than read off a state-count sweep. The initial emission means for
+    expectation maximisation are then the centroids of All Weather's growth by
+    inflation 2x2, computed with expanding, point-in-time medians, instead of the
+    furthest-point spread. The burn-in sweep in
+    ``backtest/state_count_on_burn_in.py`` and the full-sample sweep in
+    ``fit_regimes`` still run in full and their evidence is still written and
+    reported; only the state count either would otherwise have chosen is
+    overridden.
+
+    True is this branch's default, since it is this arm's behaviour. False
+    reproduces the honest default this branch was cut from: the state count is
+    read off whichever sweep ``select_state_count_on_a_burn_in_window`` names,
+    and the means are seeded by the furthest-point rule."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
     def configuration_hash(self) -> str:
@@ -151,6 +171,7 @@ class RunSettings:
 SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, object] = {
     "select_state_count_on_a_burn_in_window": False,
     "start_walk_forward_when_every_input_is_point_in_time": False,
+    "fix_state_count_at_four_with_quadrant_structured_seeding": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 

@@ -66,15 +66,25 @@ from economic_regime_forecasting.data.panel import (
 )
 from economic_regime_forecasting.evaluation import verdict as verdict_module
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
+from economic_regime_forecasting.models import gaussian_hidden_markov_model as hidden_markov
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
 from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
 )
-from economic_regime_forecasting.models.state_labelling import describe_regimes, regime_table
+from economic_regime_forecasting.models.state_labelling import (
+    canonicalise,
+    describe_regimes,
+    regime_table,
+)
 from economic_regime_forecasting.models.state_selection import (
     regimes_exist_from_sweep_table,
     sweep_state_counts,
 )
+
+QUADRANT_STRUCTURE_STATE_COUNT = 4
+"""Research arm A2-quadrant-structure-levels' fixed state count, a pre-registered
+hyperparameter (proving/experiments/0002-research-slate-2026-09/experiment.json), not tuned
+here."""
 
 logger = logging.getLogger("economic_regime_forecasting")
 
@@ -268,7 +278,14 @@ def audit_data(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.G
 
 
 def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:
-    """Gate 2. Sweep the number of regimes, fit the winner, describe it."""
+    """Gate 2. Sweep the number of regimes, fit the winner, describe it.
+
+    Under ``fix_state_count_at_four_with_quadrant_structured_seeding`` the sweep
+    still runs in full, unchanged, and its table and regimes-exist checks below
+    still read from it -- but the model this stage selects, describes and hands
+    to ``forecast forecast-now`` is a separate, quadrant-seeded four-state fit
+    rather than the sweep's own recommendation. Research arm A2.
+    """
     matrix = workspace.observation_matrix_as_of(today)
     settings = workspace.settings
     sweep = sweep_state_counts(
@@ -279,7 +296,26 @@ def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.
         max_iterations=settings.expectation_maximisation_max_iterations,
         tolerance=settings.expectation_maximisation_tolerance,
     )
-    model = sweep.recommended_model
+    if settings.fix_state_count_at_four_with_quadrant_structured_seeding:
+        model = canonicalise(
+            hidden_markov.fit(
+                matrix.values,
+                state_count=QUADRANT_STRUCTURE_STATE_COUNT,
+                seed=settings.random_seed,
+                restarts=settings.expectation_maximisation_restarts,
+                max_iterations=settings.expectation_maximisation_max_iterations,
+                tolerance=settings.expectation_maximisation_tolerance,
+                seed_means_by_quadrant_structure=True,
+            )
+        )
+        print(
+            f"quadrant-structure prior (research arm A2) selects a "
+            f"{QUADRANT_STRUCTURE_STATE_COUNT}-state model for forecasting; the full-sample "
+            f"sweep's own recommendation of {sweep.recommended_state_count} states is reported "
+            "below and not used to choose K"
+        )
+    else:
+        model = sweep.recommended_model
     descriptions = describe_regimes(model, matrix.values, matrix.transformed.to_numpy())
 
     workspace.artifacts.write_table(ARTIFACTS.state_count_sweep, sweep.table())
@@ -390,7 +426,31 @@ def _state_count_for_the_backtest(
     today. With it on the count is swept once on the panel as it stood at the
     first forecast date, and the choice is written out so the evaluation can read
     the same evidence rather than the full-sample sweep.
+
+    ``fix_state_count_at_four_with_quadrant_structured_seeding`` (research arm
+    A2) overrides whichever of those two the run would otherwise have read: the
+    burn-in sweep still runs and its choice is still written out, because the
+    evaluation gate still needs that evidence to answer "do regimes exist", but
+    the state count actually used to fit is fixed at
+    ``QUADRANT_STRUCTURE_STATE_COUNT`` regardless of what either sweep preferred.
     """
+    if workspace.settings.fix_state_count_at_four_with_quadrant_structured_seeding:
+        choice = state_count_on_burn_in.choose_state_count_on_burn_in_window(
+            workspace.registry,
+            workspace.cache,
+            workspace.settings,
+            first_forecast_date=schedule.forecast_dates[0].date(),
+            artifacts=workspace.artifacts,
+        )
+        workspace.artifacts.write_json(ARTIFACTS.burn_in_state_count_choice, choice.as_manifest())
+        print(choice.describe())
+        print(
+            f"quadrant-structure prior (research arm A2) fixes the forecasting state count at "
+            f"{QUADRANT_STRUCTURE_STATE_COUNT}; the burn-in sweep's own recommendation of "
+            f"{choice.state_count} regimes is reported above and not used to choose K"
+        )
+        return QUADRANT_STRUCTURE_STATE_COUNT
+
     if not workspace.settings.select_state_count_on_a_burn_in_window:
         model = GaussianHiddenMarkovModel.from_dictionary(
             workspace.artifacts.read_json(ARTIFACTS.selected_model)

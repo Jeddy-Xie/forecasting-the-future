@@ -240,6 +240,13 @@ def fit_regime_model(
         if model.state_count != state_count:  # pragma: no cover - key covers it
             model = None
     if model is None:
+        # Research arm A2-quadrant-structure-levels: the fixed state count is always
+        # 4 under this setting (`_state_count_for_the_backtest` and `forecast_now`'s
+        # `selected_model.json` both enforce it), so this only ever guards against a
+        # caller that passed a different count in under the same settings.
+        seed_by_quadrant = (
+            settings.fix_state_count_at_four_with_quadrant_structured_seeding and state_count == 4
+        )
         model = canonicalise(
             hidden_markov.fit(
                 matrix.values,
@@ -250,6 +257,7 @@ def fit_regime_model(
                 restarts=settings.expectation_maximisation_restarts,
                 max_iterations=settings.expectation_maximisation_max_iterations,
                 tolerance=settings.expectation_maximisation_tolerance,
+                seed_means_by_quadrant_structure=seed_by_quadrant,
             )
         )
         if artifacts is not None:

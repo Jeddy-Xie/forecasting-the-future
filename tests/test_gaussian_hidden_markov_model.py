@@ -247,3 +247,173 @@ def test_a_richer_model_always_fits_the_training_data_at_least_as_well() -> None
     two = hidden_markov.fit(sample, state_count=2, seed=4, restarts=6)
     three = hidden_markov.fit(sample, state_count=3, seed=4, restarts=6)
     assert three.log_likelihood(sample) >= two.log_likelihood(sample) - 1e-6
+
+
+# ---------------------------------------- research arm A2: quadrant seeding
+
+
+def _independent_quadrant_assignment(growth: np.ndarray, inflation: np.ndarray) -> list[int]:
+    """A second, hand-written computation of the expanding-median quadrant a
+    month falls in, so the seeding function is checked against an answer
+    computed a different way rather than against its own arithmetic.
+
+    Quadrant 0 is (growth high, inflation high), 1 is (growth high, inflation
+    low), 2 is (growth low, inflation high), 3 is (growth low, inflation low) --
+    the same order ``_seed_means_by_quadrant_centroids`` builds its centroids in.
+    "High" means at or above the median of the month itself and every month
+    before it; nothing after it is ever consulted.
+    """
+    assignments = []
+    for month in range(len(growth)):
+        growth_high = growth[month] >= np.median(growth[: month + 1])
+        inflation_high = inflation[month] >= np.median(inflation[: month + 1])
+        if growth_high and inflation_high:
+            assignments.append(0)
+        elif growth_high:
+            assignments.append(1)
+        elif inflation_high:
+            assignments.append(2)
+        else:
+            assignments.append(3)
+    return assignments
+
+
+def _quadrant_panel() -> np.ndarray:
+    """Eight months engineered so all four quadrants are populated (verified by
+    hand: 3, 3, 1 and 1 months respectively) and so the first two months'
+    quadrant would come out different under a whole-panel median than under the
+    expanding one -- the exact leak the pre-registration forbids."""
+    growth = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 0.0, -3.0, 6.0])
+    inflation = np.array([5.0, 1.0, 6.0, 2.0, 7.0, 8.0, 0.5, -1.0])
+    rates = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+    return np.column_stack([growth, inflation, rates])
+
+
+def test_quadrant_centroids_match_an_independently_computed_expanding_median_assignment() -> None:
+    panel = _quadrant_panel()
+    centroids = hidden_markov._seed_means_by_quadrant_centroids(panel, state_count=4)
+    assert centroids.shape == (4, 3)
+
+    assignment = _independent_quadrant_assignment(panel[:, 0], panel[:, 1])
+    for quadrant in range(4):
+        expected = panel[np.array(assignment) == quadrant].mean(axis=0)
+        np.testing.assert_allclose(centroids[quadrant], expected, rtol=1e-12)
+
+
+def test_quadrant_centroids_differ_from_seeding_off_a_whole_panel_median() -> None:
+    """Pins the rule directly: a single median of the whole panel would classify
+    the first two months differently (both would flip from quadrant 0 to
+    quadrant 2), which would change that quadrant's centroid. The expanding
+    version must not reproduce the whole-panel answer."""
+    panel = _quadrant_panel()
+    centroids = hidden_markov._seed_means_by_quadrant_centroids(panel, state_count=4)
+
+    whole_panel_growth_median = np.median(panel[:, 0])
+    whole_panel_inflation_median = np.median(panel[:, 1])
+    growth_high = panel[:, 0] >= whole_panel_growth_median
+    inflation_high = panel[:, 1] >= whole_panel_inflation_median
+    quadrant_zero_under_whole_panel_median = panel[growth_high & inflation_high].mean(axis=0)
+
+    assert not np.allclose(centroids[0], quadrant_zero_under_whole_panel_median)
+
+
+def test_quadrant_seeding_refuses_a_state_count_other_than_four() -> None:
+    panel = _quadrant_panel()
+    with pytest.raises(HiddenMarkovModelError, match="exactly four centroids"):
+        hidden_markov._seed_means_by_quadrant_centroids(panel, state_count=3)
+
+
+def test_quadrant_seeding_refuses_a_panel_where_a_quadrant_is_empty() -> None:
+    """Every month rising on both dimensions: three quadrants get nothing, and
+    that is reported rather than patched with a fallback centroid."""
+    months = 20
+    growth = np.arange(1, months + 1, dtype="float64")
+    inflation = np.arange(1, months + 1, dtype="float64")
+    rates = np.ones(months)
+    panel = np.column_stack([growth, inflation, rates])
+    with pytest.raises(HiddenMarkovModelError, match="no month in this"):
+        hidden_markov._seed_means_by_quadrant_centroids(panel, state_count=4)
+
+
+def test_fit_with_quadrant_seeding_starts_every_restart_from_the_same_means() -> None:
+    """The means are a structural prior, not a random draw: two restarts under
+    different generator draws must begin from identical centroids, and the
+    quadrant-seeded ``_initial_model`` output for one restart must equal the
+    means the seeding function computes directly."""
+    panel = _quadrant_panel()
+    generator = np.random.default_rng(1)
+    quadrant_means = hidden_markov._seed_means_by_quadrant_centroids(panel, state_count=4)
+    pooled_covariance = hidden_markov._regularised_covariance(
+        np.cov(panel, rowvar=False).reshape(3, 3)
+    )
+    first = hidden_markov._initial_model(
+        panel, 4, generator, pooled_covariance, "full", means_override=quadrant_means
+    )
+    second = hidden_markov._initial_model(
+        panel, 4, generator, pooled_covariance, "full", means_override=quadrant_means
+    )
+    np.testing.assert_array_equal(first.means, quadrant_means)
+    np.testing.assert_array_equal(second.means, quadrant_means)
+    # The persistence draw still differs restart to restart: the one piece of
+    # "the fitter's existing per-restart perturbation" the pre-registration says
+    # to keep.
+    assert not np.array_equal(first.transition_matrix, second.transition_matrix)
+
+
+def _simulated_four_quadrant_sample(months: int = 600, seed: int = 20260908) -> np.ndarray:
+    """A three-column sample built from four persistent regimes that actually
+    sit near the four growth/inflation quadrants, so a quadrant-seeded fit has
+    something real to recover."""
+    generator = np.random.default_rng(seed)
+    transitions = np.array(
+        [
+            [0.95, 0.02, 0.02, 0.01],
+            [0.02, 0.95, 0.01, 0.02],
+            [0.02, 0.01, 0.95, 0.02],
+            [0.01, 0.02, 0.02, 0.95],
+        ]
+    )
+    means = np.array(
+        [
+            [1.5, 1.5, 0.0],
+            [1.5, -1.5, 0.2],
+            [-1.5, 1.5, -0.2],
+            [-1.5, -1.5, 0.0],
+        ]
+    )
+    state, sample = 0, []
+    for _ in range(months):
+        state = int(generator.choice(4, p=transitions[state]))
+        sample.append(generator.normal(means[state], 0.4))
+    return np.array(sample)
+
+
+def test_a_quadrant_seeded_fit_converges_and_canonicalises_to_four_distinct_states() -> None:
+    """Note 4 in the arm's brief: canonicalise sorts by growth mean, and this
+    checks that sorting still gives four stable, non-degenerate labels for a
+    quadrant-initialised four-state model rather than collapsing states."""
+    from economic_regime_forecasting.models.state_labelling import canonicalise
+
+    sample = _simulated_four_quadrant_sample()
+    fitted = hidden_markov.fit(
+        sample, state_count=4, seed=7, restarts=4, seed_means_by_quadrant_structure=True
+    )
+    ordered = canonicalise(fitted)
+    growth_means = ordered.means[:, 0]
+    assert np.all(np.diff(growth_means) > 1e-6), growth_means
+    populations = ordered.smoothed_state_probabilities(sample).sum(axis=0)
+    assert np.all(populations > 0.05 * sample.shape[0])
+
+
+def test_beta_zero_is_reproducible_and_seeding_off_reproduces_the_furthest_point_default() -> None:
+    """``seed_means_by_quadrant_structure`` defaults to False, so an existing
+    call site that never sets it keeps the furthest-point behaviour bit for
+    bit -- the same reproduction guarantee A1's own required check states for
+    its own flag, applied here to this arm's."""
+    sample = _simulated_two_regime_sample(months=200)
+    default = hidden_markov.fit(sample, state_count=2, seed=5, restarts=4)
+    explicit_off = hidden_markov.fit(
+        sample, state_count=2, seed=5, restarts=4, seed_means_by_quadrant_structure=False
+    )
+    np.testing.assert_array_equal(default.means, explicit_off.means)
+    np.testing.assert_array_equal(default.transition_matrix, explicit_off.transition_matrix)

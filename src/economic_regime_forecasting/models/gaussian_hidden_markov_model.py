@@ -34,6 +34,7 @@ from dataclasses import dataclass
 from typing import Any, Self
 
 import numpy as np
+import pandas as pd
 from scipy.linalg import solve_triangular
 from scipy.special import logsumexp
 
@@ -386,6 +387,7 @@ def fit(
     max_iterations: int = 500,
     tolerance: float = 1e-6,
     covariance_type: str = "full",
+    seed_means_by_quadrant_structure: bool = False,
 ) -> GaussianHiddenMarkovModel:
     """Fit by Baum-Welch from several random starts, keeping the best likelihood.
 
@@ -397,9 +399,16 @@ def fit(
     Starting points are deliberately spread across persistence levels. Each
     restart draws a self-transition probability uniformly between 0.50 and 0.98,
     so the search covers chains that barely persist as well as chains that hold a
-    state for years. Seeding the means by the k-means++ rule spreads them over
-    the observed cloud rather than clustering them by luck. The likelihood, not
-    the starting point, decides what comes out.
+    state for years. By default the means are seeded by the k-means++ rule, which
+    spreads them over the observed cloud rather than clustering them by luck.
+
+    ``seed_means_by_quadrant_structure`` replaces that spread with a structural
+    prior: All Weather's growth-by-inflation 2x2, imposed as the four starting
+    means (research arm A2-quadrant-structure-levels). It requires exactly four
+    states and is computed once, deterministically, from the observations, so
+    every restart begins from the same four centroids; only the transition
+    matrix's persistence draw still differs restart to restart. Either way the
+    likelihood, not the starting point, decides what comes out.
     """
     observations = np.atleast_2d(np.asarray(observations, dtype="float64"))
     months, dimensions = observations.shape
@@ -419,6 +428,10 @@ def fit(
         np.cov(observations, rowvar=False).reshape(dimensions, dimensions)
     )
 
+    quadrant_means: np.ndarray | None = None
+    if seed_means_by_quadrant_structure:
+        quadrant_means = _seed_means_by_quadrant_centroids(observations, state_count)
+
     best_model: GaussianHiddenMarkovModel | None = None
     best_log_likelihood = -np.inf
     best_restart = -1
@@ -428,7 +441,12 @@ def fit(
 
     for restart in range(restarts):
         candidate = _initial_model(
-            observations, state_count, generator, pooled_covariance, covariance_type
+            observations,
+            state_count,
+            generator,
+            pooled_covariance,
+            covariance_type,
+            means_override=quadrant_means,
         )
         candidate, log_likelihood, iterations, converged = _run_expectation_maximisation(
             candidate, observations, max_iterations, tolerance, pooled_covariance
@@ -475,9 +493,19 @@ def _initial_model(
     generator: np.random.Generator,
     pooled_covariance: np.ndarray,
     covariance_type: str,
+    means_override: np.ndarray | None = None,
 ) -> GaussianHiddenMarkovModel:
-    """One starting point: spread means, a random persistence level, pooled spread."""
-    means = _seed_means_by_furthest_point(observations, state_count, generator)
+    """One starting point: spread means, a random persistence level, pooled spread.
+
+    ``means_override``, when given, replaces the furthest-point spread outright
+    (the quadrant-structured prior). It is the same array on every restart, so
+    the restart diversity below comes entirely from the transition matrix.
+    """
+    means = (
+        means_override.copy()
+        if means_override is not None
+        else _seed_means_by_furthest_point(observations, state_count, generator)
+    )
 
     persistence = float(generator.uniform(0.50, 0.98))
     transition_matrix = np.full(
@@ -528,6 +556,59 @@ def _seed_means_by_furthest_point(
             continue
         chosen.append(int(generator.choice(months, p=squared_distances / total)))
     return observations[chosen].copy()
+
+
+def _seed_means_by_quadrant_centroids(observations: np.ndarray, state_count: int) -> np.ndarray:
+    """All Weather's growth-by-inflation 2x2, imposed as a structural prior on
+    the four starting means (research arm A2-quadrant-structure-levels).
+
+    Column 0 is growth and column 1 is inflation (``observation_matrix``'s fixed
+    ``DIMENSION_ORDER``). Each month is assigned to one of four quadrants by the
+    sign of its growth and inflation relative to their own **expanding**
+    medians -- computed point in time, month by month, using only that month and
+    the ones before it in this panel, never a single median of the whole panel.
+    A month sits in the "high" half of a dimension when it is at or above the
+    median seen so far; otherwise it is "low". A centroid is the mean, over every
+    month assigned to its quadrant, of all three columns -- rates enter each
+    centroid as that quadrant's mean and play no part in the assignment itself.
+
+    No threshold is written down anywhere: the boundary is each dimension's own
+    expanding median, not a chosen number (docs/TECHNICAL_DEBT.md D12).
+    """
+    if state_count != 4:
+        raise HiddenMarkovModelError(
+            f"quadrant-structured seeding defines exactly four centroids, one per quadrant of "
+            f"growth by inflation, not {state_count}. Fit with state_count=4, or seed by the "
+            "furthest-point rule instead."
+        )
+    if observations.shape[1] < 2:
+        raise HiddenMarkovModelError(
+            "quadrant-structured seeding needs at least a growth and an inflation column; the "
+            f"observation matrix has {observations.shape[1]}"
+        )
+
+    growth = observations[:, 0]
+    inflation = observations[:, 1]
+    expanding_median_growth = pd.Series(growth).expanding(min_periods=1).median().to_numpy()
+    expanding_median_inflation = pd.Series(inflation).expanding(min_periods=1).median().to_numpy()
+    growth_high = growth >= expanding_median_growth
+    inflation_high = inflation >= expanding_median_inflation
+
+    quadrant_masks = (
+        growth_high & inflation_high,  # rising growth, rising inflation
+        growth_high & ~inflation_high,  # rising growth, falling inflation
+        ~growth_high & inflation_high,  # falling growth, rising inflation
+        ~growth_high & ~inflation_high,  # falling growth, falling inflation
+    )
+    empty = [index for index, mask in enumerate(quadrant_masks) if not mask.any()]
+    if empty:
+        raise HiddenMarkovModelError(
+            f"{len(empty)} of 4 growth/inflation quadrants have no month in this "
+            f"{observations.shape[0]}-month panel, so there is no centroid to seed a mean from. "
+            "That is a property of this panel, reported rather than patched with a fallback "
+            "centroid."
+        )
+    return np.stack([observations[mask].mean(axis=0) for mask in quadrant_masks])
 
 
 def _run_expectation_maximisation(
