@@ -298,6 +298,35 @@ class TestWhatABaselineHolds:
         assert run["state_count"] == 6
         assert run["state_count_chosen_as_of"] == "1971-12-01"
 
+    def test_an_artifact_without_the_new_field_still_passes_when_it_matches(
+        self, artifacts: ArtifactStore
+    ) -> None:
+        """Backward compatibility, spelled out: every artifact on main (and
+        every arm that does not override the state count) has no
+        ``state_count_used_for_forecasting`` key at all, only ``state_count``.
+        ``artifacts`` already writes exactly that shape
+        (``{"state_count": 6, "chosen_as_of": "1994-03-01", ...}``), matching
+        ``_backtest_results``'s ``state_count`` column (6), so this must pass
+        -- the fallback to ``state_count`` is what makes main's own behaviour
+        unchanged."""
+        run = regression_baseline.assemble_run_summary(artifacts)["run"]
+        assert run["state_count_chosen_as_of"] == "1994-03-01"
+
+    def test_an_artifact_without_the_new_field_still_raises_on_a_real_mismatch(
+        self, artifacts: ArtifactStore
+    ) -> None:
+        """The other half of backward compatibility: without the new field,
+        the fallback reproduces the pre-fix check exactly, so a genuine
+        mismatch -- two artifacts that really do come from different runs --
+        is still refused, not silently accepted because a field happens to
+        be absent."""
+        artifacts.write_json(
+            ARTIFACTS.burn_in_state_count_choice,
+            {"state_count": 2, "chosen_as_of": "1971-12-01"},
+        )
+        with pytest.raises(regression_baseline.BaselineError, match="different runs"):
+            regression_baseline.assemble_run_summary(artifacts)
+
     def test_the_fallback_count_is_null_when_no_artifact_records_it(self, tmp_path: Path) -> None:
         """Only ``forecast compare-variants`` writes it, and that is a forty-minute
         one-off. A cache that has never run it says so rather than guessing zero."""
