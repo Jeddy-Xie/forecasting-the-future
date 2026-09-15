@@ -143,12 +143,28 @@ def main() -> int:
         record = {"label": label, "arm": arm}
         try:
             exits = json.loads((base / "exit_codes.json").read_text())
-            paired = json.loads((base / "paired.json").read_text())
-            plain = json.loads((base / "compare.json").read_text())
-        except FileNotFoundError as missing:
-            record["status"] = f"NOT RUN ({missing.filename.split('/')[-1]} absent)"
+        except FileNotFoundError:
+            record["status"] = "NOT RUN (exit_codes.json absent)"
             rows_out.append(record)
             continue
+        loaded = {}
+        for name in ("paired.json", "compare.json"):
+            path = base / name
+            try:
+                loaded[name] = json.loads(path.read_text())
+            except FileNotFoundError:
+                loaded[name] = f"{name} absent"
+            except json.JSONDecodeError:
+                # An empty or broken file means the command that writes it FAILED, and the runner sends
+                # that command's stderr to /dev/null. The companion .txt file carries the error text.
+                size = path.stat().st_size
+                loaded[name] = f"{name} {'EMPTY' if size == 0 else 'INVALID'} ({size} bytes); the command failed, see {name[:-5]}.txt"
+        problems = [v for v in loaded.values() if isinstance(v, str)]
+        if problems:
+            record["status"] = "UNSCORED: " + "; ".join(problems)
+            rows_out.append(record)
+            continue
+        paired, plain = loaded["paired.json"], loaded["compare.json"]
         rows = horizon_rows(paired)
         moved = sum(1 for d in walk(plain) if d.get("band") == "MOVED")
         record.update(
