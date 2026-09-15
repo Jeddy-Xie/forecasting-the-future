@@ -63,7 +63,7 @@ class RunSettings:
     producing a different run, and ``configuration_hash`` will say so.
     """
 
-    random_seed: int = 20260908
+    random_seed: int = 20260909
     """Seed for every stochastic step. Recorded in each run manifest."""
 
     hidden_state_counts_to_search: tuple[int, ...] = (1, 2, 3, 4, 5, 6)
