@@ -728,3 +728,212 @@ def test_the_output_says_what_the_check_does_not_cover(
     assert "D5" in clean_audit.describe()
     assert "D5" in clean_audit.as_dictionary()["not_covered"]
     assert "realised_outcome is not compared" in clean_audit.describe()
+
+
+# ------------------------------------------ unavailable means unpublished, not unlabelled
+
+
+def _current_request(series_id: str) -> SeriesRequest:
+    return SeriesRequest(
+        source="federal_reserve_economic_data",
+        series_id=series_id,
+        transform="as_published",
+        vintage_date=None,
+    )
+
+
+@pytest.fixture(scope="module")
+def month_old_vintage_root(source_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The same data, with revised-input vintages holding the month before their date.
+
+    The main fixture's vintages stop two months back, so a rate read one month
+    early would be dropped when the three inputs are aligned, and no leak through
+    it could reach a forecast. Here it can.
+    """
+    source = look_ahead_audit.series_cache_at(source_root)
+    root = tmp_path_factory.mktemp("month_old_vintages")
+    target = look_ahead_audit.series_cache_at(root)
+    current = {
+        series_id: source.read(_current_request(series_id)).observations
+        for series_id in ("SYNOUT", "SYNCPI", "SYNRATE")
+    }
+    for series_id, series in current.items():
+        target.write(_snapshot(series, series_id))
+    for series_id in ("SYNOUT", "SYNCPI"):
+        series = current[series_id]
+        for stamp in pd.date_range("1999-01-01", "2005-12-01", freq="MS"):
+            target.write(_snapshot(series[series.index < stamp], series_id, stamp.date()))
+    return root
+
+
+def _every_lag_zero(registry: EconomicSeriesRegistry) -> dict[str, int]:
+    """The label rule alone: what the audit perturbed until it became publication-aware."""
+    return {entry.series_id: 0 for entry in registry.series}
+
+
+def test_a_one_month_leak_inside_the_publication_lag_passes_labels_and_fails_publication(
+    registry: EconomicSeriesRegistry,
+    indicators: tuple[BinaryIndicator, ...],
+    month_old_vintage_root: Path,
+    settings: RunSettings,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The gap the label rule left, and the evidence that it is closed.
+
+    The rate series is censored by label instead of by its 45-day publication lag,
+    so the forecast issued on the first of a month reads last month's rate, which
+    is not published until the middle of this one. Labelled before the cutoff, that
+    value is never perturbed under the label rule, and the audit passes: the leak is
+    invisible. Under the publication rule it is unpublished at the cutoff, and the
+    forecast issued at the cutoff moves -- that forecast and no earlier one, since a
+    month before the cutoff the value read had already been published.
+    """
+    from economic_regime_forecasting.data import vintage
+
+    def censor_by_label_alone(
+        observations: pd.Series, publication_lag_days: int, as_of: date
+    ) -> pd.Series:
+        return observations[observations.index < pd.Timestamp(as_of)]
+
+    monkeypatch.setattr(vintage, "censor_by_publication_lag", censor_by_label_alone)
+
+    def audit(directory: Path) -> look_ahead_audit.LookAheadAudit:
+        return look_ahead_audit.audit_look_ahead(
+            registry,
+            indicators,
+            look_ahead_audit.series_cache_at(month_old_vintage_root),
+            settings,
+            _configured_schedule,
+            directory,
+            cutoff=CUTOFF,
+        )
+
+    with monkeypatch.context() as label_rule:
+        label_rule.setattr(look_ahead_audit, "publication_lag_days_by_series", _every_lag_zero)
+        under_the_label_rule = audit(tmp_path / "label_rule")
+    under_the_publication_rule = audit(tmp_path / "publication_rule")
+
+    assert under_the_label_rule.exit_code == 0
+    assert under_the_label_rule.perturbation.publication_lag_days_by_series == {
+        "SYNCPI": 0,
+        "SYNOUT": 0,
+        "SYNRATE": 0,
+    }
+    assert under_the_publication_rule.exit_code == 1
+    moved = under_the_publication_rule.moved
+    assert {row.forecast_date for row in moved} == {CUTOFF}
+    assert "predicted_probability" in {move.field for row in moved for move in row.moves}
+
+
+def test_the_same_pipeline_without_the_leak_passes_the_publication_rule(
+    registry: EconomicSeriesRegistry,
+    indicators: tuple[BinaryIndicator, ...],
+    month_old_vintage_root: Path,
+    settings: RunSettings,
+    tmp_path: Path,
+) -> None:
+    """The control: on the month-old vintages, the honest censoring moves nothing."""
+    audit = look_ahead_audit.audit_look_ahead(
+        registry,
+        indicators,
+        look_ahead_audit.series_cache_at(month_old_vintage_root),
+        settings,
+        _configured_schedule,
+        tmp_path,
+        cutoff=CUTOFF,
+    )
+    assert audit.exit_code == 0
+    assert audit.perturbation.publication_lag_days_by_series == {
+        "SYNCPI": 45,
+        "SYNOUT": 45,
+        "SYNRATE": 45,
+    }
+
+
+def test_a_value_labelled_before_the_cutoff_but_published_after_it_is_perturbed() -> None:
+    """April 1 plus 44 days is May 15, published before a June 1 cutoff. May 1 plus
+    44 days is June 14, not yet published, so May is perturbed even though it is
+    labelled a month before the cutoff."""
+    snapshot = _snapshot(_monthly("2000-01-01", 12), "X")
+    changed, count = look_ahead_audit.perturbed_snapshot(snapshot, date(2000, 6, 1), 44)
+    moved = snapshot.observations.index[
+        changed.observations.to_numpy() != snapshot.observations.to_numpy()
+    ]
+    assert moved[0] == pd.Timestamp("2000-05-01")
+    assert count == len(moved) == 8
+
+
+def test_a_value_published_exactly_on_the_cutoff_was_available() -> None:
+    """May 1 plus 31 days is June 1, the cutoff: available. Plus 32 days is not."""
+    snapshot = _snapshot(_monthly("2000-01-01", 12), "X")
+    on_the_day, _ = look_ahead_audit.perturbed_snapshot(snapshot, date(2000, 6, 1), 31)
+    a_day_late, _ = look_ahead_audit.perturbed_snapshot(snapshot, date(2000, 6, 1), 32)
+    may = pd.Timestamp("2000-05-01")
+    assert on_the_day.observations[may] == snapshot.observations[may]
+    assert a_day_late.observations[may] == snapshot.observations[may] * 1.7 + 11.0
+
+
+def test_the_publication_rule_contains_the_label_rule() -> None:
+    """Whatever the lag, everything the label rule perturbs is still perturbed."""
+    snapshot = _snapshot(_monthly("2000-01-01", 24), "X")
+    cutoff = date(2000, 6, 1)
+    by_label, _ = look_ahead_audit.perturbed_snapshot(snapshot, cutoff)
+    original = snapshot.observations.to_numpy()
+    labelled_on_or_after = by_label.observations.to_numpy() != original
+    for lag in (0, 1, 32, 44, 400):
+        by_publication, _ = look_ahead_audit.perturbed_snapshot(snapshot, cutoff, lag)
+        published_after = by_publication.observations.to_numpy() != original
+        assert bool(published_after[labelled_on_or_after].all())
+
+
+def test_a_vintage_dated_on_or_before_the_cutoff_is_untouched_whatever_its_lag() -> None:
+    """Everything in it had been published by its vintage date."""
+    snapshot = _snapshot(_monthly("1999-01-01", 17), "X", vintage_date=date(2000, 6, 1))
+    changed, count = look_ahead_audit.perturbed_snapshot(snapshot, date(2000, 6, 1), 400)
+    assert count == 0
+    assert changed is snapshot
+
+
+def test_a_derived_spread_is_perturbed_where_either_leg_is_unpublished() -> None:
+    """The term spread is computed from its legs, each perturbed by its own lag, so
+    it is perturbed exactly where its label plus the larger lag falls after the
+    cutoff -- the lag prepare_indicator_history gives it."""
+    from economic_regime_forecasting.features import transforms
+
+    cutoff = date(2000, 6, 1)
+    long_leg = _monthly("2000-01-01", 12)
+    short_leg = _monthly("2000-01-01", 12) * 0.5
+    perturbed_long, _ = look_ahead_audit.perturbed_snapshot(_snapshot(long_leg, "L"), cutoff, 10)
+    perturbed_short, _ = look_ahead_audit.perturbed_snapshot(_snapshot(short_leg, "S"), cutoff, 40)
+    original = transforms.difference(long_leg, short_leg)
+    spread = transforms.difference(perturbed_long.observations, perturbed_short.observations)
+    labels = original.index
+    stamp = pd.Timestamp(cutoff)
+    expected = labels[(labels >= stamp) | (labels + pd.Timedelta(days=40) > stamp)]
+    assert list(labels[spread.to_numpy() != original.to_numpy()]) == list(expected)
+
+
+def test_a_cached_series_the_registry_does_not_know_is_refused(tmp_path: Path) -> None:
+    """No lag, no answer: guessing one would be a silent fallback."""
+    source = look_ahead_audit.series_cache_at(tmp_path / "source")
+    source.write(_snapshot(_monthly("2000-01-01", 12), "UNREGISTERED"))
+    with pytest.raises(look_ahead_audit.LookAheadAuditError, match="UNREGISTERED"):
+        look_ahead_audit.copy_series_cache(
+            source,
+            tmp_path / "copy",
+            cutoff=date(2000, 6, 1),
+            publication_lag_days_by_series={"SOMETHING_ELSE": 30},
+        )
+
+
+def test_the_audit_record_names_the_lags_it_perturbed_by(
+    clean_audit: look_ahead_audit.LookAheadAudit,
+) -> None:
+    perturbation = clean_audit.as_dictionary()["perturbation"]
+    assert perturbation["publication_lag_days_by_series"] == {
+        "SYNCPI": 45,
+        "SYNOUT": 45,
+        "SYNRATE": 45,
+    }
+    assert "publication lag" in perturbation["unavailable_means"]

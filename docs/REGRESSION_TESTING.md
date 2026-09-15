@@ -157,7 +157,12 @@ could not have seen with `value * 1.7 + 11.0`:
 
 - every value of every archival vintage dated after C, months before C included,
   because a later vintage carries revisions nobody had at C;
-- every observation labelled on or after C in every other snapshot.
+- every observation in a current-vintage file that was still unpublished at C:
+  labelled on or after C, or labelled so recently that its series' publication
+  lag, taken from the registry, runs past C. Archival vintages dated on or before
+  C are left alone, since everything in one had been published by its date. The
+  derived term spread is computed from its two legs, each perturbed by its own
+  lag, so it is perturbed exactly where the larger lag runs past C.
 
 Then run the walk-forward twice over the same schedule truncated at C, once on an
 unperturbed copy and once on the perturbed one. Each run gets an empty
@@ -187,12 +192,14 @@ check could not be made, so a stale pass is never read as today's answer. Two
 audits of one commit write byte-identical records.
 
 **What it does not cover.**
-- Revised values of observations labelled before C in the current-vintage files.
-  Per-regime rates read final revised conditions with publication timing
+- Revised values of observations already published at C, in the current-vintage
+  files. Per-regime rates read final revised conditions with publication timing
   enforced, a documented approximation (D5 in `TECHNICAL_DEBT.md`), and
   perturbing them would fail by design.
-- Information inside a publication lag.
-- For a forecast issued before C, information from between its date and C.
+- A publication lag that is itself wrong. The check takes each series' lag from
+  the registry, the figure the pipeline censors by, so a lag set too short there
+  is invisible to both.
+- For a forecast issued before C, information published between its date and C.
 
 The forecast issued at C itself is the sharpest test, which is why the default
 cutoff is a forecast date and a refit date.
@@ -220,6 +227,22 @@ records it.
 The next commit makes an outcome wait until the value it rests on is published,
 by the rule the conditions already obeyed (ADR 0009). The audit on main then
 exits 0, in 333 seconds:
+
+    PASS: no forecast issued on or before 2000-03-01 changed when every
+    observation unavailable at 2000-03-01 was perturbed
+
+**Unavailable means unpublished.** Until 2026-09-15 the second rule above went by
+labels alone. The pre-registered decision rule says every observation
+*unavailable* at the cutoff. A value labelled a month before C with a 44-day lag
+was unavailable at C, and it was left untouched. So the classic one-month
+look-ahead would have passed. The benchmark leak above was caught only because it
+touched a value labelled exactly C.
+
+A test keeps both halves on the record. A rate series censored by label instead
+of by its 45-day lag passes the label rule, exit 0: the leak is invisible. The
+same leak fails the publication rule, exit 1: the forecast issued at the cutoff
+moves, and no earlier one. The publication-aware audit on main exits 0, in 343
+seconds, having perturbed 627,617 values where the label rule perturbed 627,596:
 
     PASS: no forecast issued on or before 2000-03-01 changed when every
     observation unavailable at 2000-03-01 was perturbed

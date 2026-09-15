@@ -20,10 +20,23 @@ the identity and large enough to move every derived quantity:
 1. every value of every archival vintage dated after C, including values for
    months before C, because a vintage published after C carries revisions nobody
    had at C;
-2. in every other snapshot -- the current-vintage files, and vintages dated on or
-   before C -- every observation labelled on or after C. By the boundary invariant
-   in ``data.vintage`` no such observation can appear in a panel assembled as of
-   any date up to C.
+2. in every current-vintage file, every observation not yet published at C: its
+   label is on or after C, or its label plus that series' registered
+   ``publication_lag_days`` falls after C. Unavailable means unpublished, as the
+   pre-registered decision rule says, not merely unlabelled. A value labelled a
+   month before C with a 44-day lag was still unpublished at C, and reading it is
+   the classic one-month look-ahead. The label clause keeps the rule a superset of
+   the boundary invariant in ``data.vintage`` whatever the lag.
+
+Archival vintages dated on or before C are left alone: everything in one had been
+published by its vintage date. The derived term spread is never cached. It is
+computed from its two legs, each perturbed by its own lag, so a spread value is
+perturbed exactly when its label plus the larger of the two lags falls after C.
+That is the lag ``prepare_indicator_history`` gives it.
+
+Until the rule became publication-aware, part 2 was on labels alone, and a leak
+reading a value inside its publication lag passed. A test keeps both halves of
+that on the record.
 
 A perturbed entry's payload digest is recomputed from the values it now holds, so
 it can never be mistaken for the response the service returned.
@@ -50,9 +63,9 @@ input to a forecast.
   data with publication timing enforced, a documented approximation
   (``docs/TECHNICAL_DEBT.md``, D5). Perturbing them would fail main by design and
   prove nothing new.
-- Information from inside a publication lag. A value labelled a few weeks before C
-  was usually still unpublished at C, but the boundary invariant is stated on
-  labels, and such a value is left alone.
+- A publication lag that is itself wrong. The check takes each series' lag from
+  the registry, the figure the pipeline censors by. A lag set too short there is
+  too short here as well, and invisible to both.
 - Leaks shorter than the distance to C. For a forecast issued at t before C the
   check sees information from on or after C, not from between t and C. The
   forecast issued at C itself is the sharpest test, which is why the default
@@ -66,7 +79,7 @@ from __future__ import annotations
 
 import logging
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
@@ -124,13 +137,14 @@ NOT_COMPARED = (
 )
 
 OUT_OF_SCOPE = (
-    "revised values of observations labelled before the cutoff in the current-vintage files. "
-    "Per-regime rates are estimated from conditions read off final revised data with "
+    "revised values of observations already published at the cutoff, in the current-vintage "
+    "files. Per-regime rates are estimated from conditions read off final revised data with "
     "publication timing enforced, a documented approximation (docs/TECHNICAL_DEBT.md, D5); "
-    "perturbing them would fail main by design and prove nothing new. Nor does the check see "
-    "information from inside a publication lag, or, for a forecast issued before the cutoff, "
-    "information from between its date and the cutoff: it sees what lies on or after the "
-    "cutoff, and the forecast issued at the cutoff is its sharpest test."
+    "perturbing them would fail main by design and prove nothing new. Nor does the check see a "
+    "publication lag that is itself wrong: it takes each series' lag from the registry, the "
+    "figure the pipeline censors by. And for a forecast issued before the cutoff it sees "
+    "information unpublished at the cutoff, not information published between that "
+    "forecast's date and the cutoff; the forecast issued at the cutoff is its sharpest test."
 )
 
 
@@ -146,6 +160,11 @@ def perturb(values: np.ndarray) -> np.ndarray:
     return values * PERTURBATION_SCALE + PERTURBATION_SHIFT
 
 
+def publication_lag_days_by_series(registry: EconomicSeriesRegistry) -> dict[str, int]:
+    """Each series' publication lag, from the registry, keyed by series identifier."""
+    return {entry.series_id: entry.publication_lag_days for entry in registry.series}
+
+
 @dataclass(frozen=True)
 class PerturbationSummary:
     """What one copy of the cache did to the entries it copied."""
@@ -155,34 +174,58 @@ class PerturbationSummary:
     vintages_perturbed_entirely: int
     snapshots_perturbed_from_the_cutoff: int
     observations_perturbed: int
+    publication_lag_days_by_series: dict[str, int] | None = None
+    """The lags the current-vintage files were perturbed by; ``None`` for labels alone."""
 
     def as_dictionary(self) -> dict[str, Any]:
         return {
             "rule": PERTURBATION_RULE,
             "cutoff": None if self.cutoff is None else self.cutoff.isoformat(),
+            "unavailable_means": (
+                "in an archival vintage dated after the cutoff, every value; in a current-vintage "
+                "file, every observation labelled on or after the cutoff or whose label plus its "
+                "series' publication lag falls after it; nothing in a vintage dated on or before it"
+            ),
+            "publication_lag_days_by_series": self.publication_lag_days_by_series,
             "entries_copied": self.entries_copied,
             "archival_vintages_dated_after_the_cutoff_perturbed_entirely": (
                 self.vintages_perturbed_entirely
             ),
-            "other_snapshots_perturbed_from_the_cutoff": self.snapshots_perturbed_from_the_cutoff,
+            "current_vintage_files_with_unpublished_observations_perturbed": (
+                self.snapshots_perturbed_from_the_cutoff
+            ),
             "observations_perturbed": self.observations_perturbed,
         }
 
 
-def perturbed_snapshot(snapshot: SeriesSnapshot, cutoff: date) -> tuple[SeriesSnapshot, int]:
+def perturbed_snapshot(
+    snapshot: SeriesSnapshot, cutoff: date, publication_lag_days: int = 0
+) -> tuple[SeriesSnapshot, int]:
     """``snapshot`` with every value unavailable at ``cutoff`` perturbed, and how many.
 
     An archival vintage dated after the cutoff is perturbed whole: it carries
-    revisions to every month, including months before the cutoff. Anything else
-    is perturbed from the first observation labelled on or after the cutoff. A
-    snapshot with nothing to perturb comes back unchanged, digest and all.
+    revisions to every month, including months before the cutoff. One dated on or
+    before the cutoff had been published by then; only a label on or after the
+    cutoff, which the boundary invariant forbids, would be touched. In a
+    current-vintage file an observation is unavailable when its label is on or
+    after the cutoff or its label plus ``publication_lag_days`` falls after it. A
+    lag of zero, the default, leaves the label rule alone. A snapshot with nothing
+    to perturb comes back unchanged, digest and all.
+
+    The publication date is computed here rather than borrowed from the pipeline's
+    own rule, so that a mistake in that rule cannot agree with the check about it.
     """
     observations = snapshot.observations
     vintage_date = snapshot.request.vintage_date
+    labels = pd.DatetimeIndex(observations.index)
+    stamp = pd.Timestamp(cutoff)
     if vintage_date is not None and vintage_date > cutoff:
         unavailable = np.ones(observations.size, dtype=bool)
+    elif vintage_date is not None:
+        unavailable = np.asarray(labels >= stamp, dtype=bool)
     else:
-        unavailable = np.asarray(observations.index >= pd.Timestamp(cutoff), dtype=bool)
+        published_on = labels + pd.Timedelta(days=publication_lag_days)
+        unavailable = np.asarray((labels >= stamp) | (published_on > stamp), dtype=bool)
     count = int(unavailable.sum())
     if count == 0:
         return snapshot, 0
@@ -217,8 +260,24 @@ def series_cache_at(root: Path) -> SeriesCache:
     return SeriesCache(root / "raw", root / "vintage")
 
 
+def _lag_for(series_id: str, lags: Mapping[str, int] | None) -> int:
+    """A cached series' publication lag, or a refusal. Never a guessed default."""
+    if lags is None:
+        return 0
+    if series_id not in lags:
+        raise LookAheadAuditError(
+            f"{series_id} is in the cache but not in the registry, so when its observations "
+            "were published is unknown and what was unavailable at the cutoff cannot be said. "
+            "Add it to economic_series.yaml or delete its cache entries."
+        )
+    return int(lags[series_id])
+
+
 def copy_series_cache(
-    source: SeriesCache, destination: Path, cutoff: date | None = None
+    source: SeriesCache,
+    destination: Path,
+    cutoff: date | None = None,
+    publication_lag_days_by_series: Mapping[str, int] | None = None,
 ) -> PerturbationSummary:
     """Copy every entry of ``source`` into a new cache under ``destination``.
 
@@ -226,6 +285,9 @@ def copy_series_cache(
     ``SeriesCache.write``, so each sidecar is regenerated from the values it
     describes. ``source`` is only ever read. With a ``cutoff``, every value
     unavailable at that date is perturbed on the way across.
+    ``publication_lag_days_by_series`` gives each current-vintage file's lag. The
+    audit always passes the registry's lags. Without them every lag is zero, which
+    is the label rule alone, and a series missing from them is refused.
     """
     entries = source.entries()
     if not entries:
@@ -240,7 +302,8 @@ def copy_series_cache(
     for sidecar in entries:
         snapshot = source.read(_request_from(sidecar.get("request")))
         if cutoff is not None:
-            snapshot, count = perturbed_snapshot(snapshot, cutoff)
+            lag = _lag_for(snapshot.request.series_id, publication_lag_days_by_series)
+            snapshot, count = perturbed_snapshot(snapshot, cutoff, lag)
             if count:
                 observations += count
                 vintage_date = snapshot.request.vintage_date
@@ -255,6 +318,11 @@ def copy_series_cache(
         vintages_perturbed_entirely=vintages_whole,
         snapshots_perturbed_from_the_cutoff=from_the_cutoff,
         observations_perturbed=observations,
+        publication_lag_days_by_series=(
+            None
+            if publication_lag_days_by_series is None
+            else dict(sorted(publication_lag_days_by_series.items()))
+        ),
     )
 
 
@@ -618,8 +686,9 @@ class LookAheadAudit:
             f"{len(self.configured_schedule.forecast_dates)} forecast dates",
             f"perturbed    {PERTURBATION_RULE} on every value of "
             f"{perturbation.vintages_perturbed_entirely} archival vintages dated after {cutoff}, "
-            f"and on every observation labelled on or after {cutoff} in "
-            f"{perturbation.snapshots_perturbed_from_the_cutoff} other snapshots: "
+            f"and on every observation still unpublished at {cutoff} (labelled on or after it, "
+            "or within its series' publication lag of it) in "
+            f"{perturbation.snapshots_perturbed_from_the_cutoff} current-vintage files: "
             f"{perturbation.observations_perturbed} values across "
             f"{perturbation.entries_copied} copied entries",
             "runs         two walk-forwards, each on its own copy of the cache with an empty "
@@ -734,7 +803,12 @@ def audit_look_ahead(
 
     chosen = cutoff if cutoff is not None else default_cutoff(configured)
     audited = truncate_schedule(configured, chosen)
-    perturbation = copy_series_cache(source, perturbed_series, cutoff=chosen)
+    perturbation = copy_series_cache(
+        source,
+        perturbed_series,
+        cutoff=chosen,
+        publication_lag_days_by_series=publication_lag_days_by_series(registry),
+    )
     logger.info(
         "look_ahead_audit cutoff=%s dates=%d refits=%d",
         chosen,
