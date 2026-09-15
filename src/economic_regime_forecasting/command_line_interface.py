@@ -12,6 +12,7 @@
     forecast register        record the shipped forecasts as dated, resolvable claims
     forecast resolve         score every registered forecast whose date has passed
     forecast baseline ...    capture, compare and list the committed regression baselines
+    forecast audit-look-ahead  perturb what was unpublished at a cutoff; no forecast may move
 
 Each stage reads what the previous one wrote and writes what the next one needs,
 under ``.cache/``. Nothing here contains analysis; every command is a few lines of
@@ -25,6 +26,7 @@ import dataclasses
 import json
 import logging
 import sys
+import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -37,6 +39,7 @@ import pandas as pd
 from economic_regime_forecasting import (
     __version__,
     forecast_register,
+    look_ahead_audit,
     pipeline_gates,
     regression_baseline,
 )
@@ -1048,6 +1051,56 @@ def baseline_list(directory: Path = regression_baseline.BASELINE_DIRECTORY) -> i
     return 0
 
 
+# ------------------------------------------------------- the look-ahead audit
+
+
+def audit_look_ahead(workspace: Workspace, today: date, cutoff: date | None) -> int:
+    """Perturb everything unavailable at a cutoff and require no forecast to move.
+
+    Exit 0 when every forecast issued on or before the cutoff is byte-identical,
+    1 when one moved, which is a look-ahead, and 2 when the check could not be
+    made. Both runs work on copies of the cache in a temporary directory, each with
+    an empty fitted-model store; the project's own cache is only read, and the one
+    thing written to it is the audit record, `look_ahead_audit.json`.
+    """
+    started = time.perf_counter()
+    destination = workspace.artifacts.path(ARTIFACTS.look_ahead_audit)
+
+    def configured_schedule(cache: SeriesCache) -> schedule_module.ForecastSchedule:
+        return dataclasses.replace(workspace, cache=cache).backtest_schedule(today)
+
+    with tempfile.TemporaryDirectory(prefix="look_ahead_audit_") as scratch:
+        try:
+            audit = look_ahead_audit.audit_look_ahead(
+                workspace.registry,
+                workspace.indicators,
+                workspace.cache,
+                workspace.settings,
+                configured_schedule,
+                Path(scratch),
+                cutoff=cutoff,
+            )
+        except look_ahead_audit.LookAheadAuditError as error:
+            workspace.artifacts.write_json(
+                ARTIFACTS.look_ahead_audit, look_ahead_audit.failure_record(error, cutoff)
+            )
+            print(f"audit-look-ahead: {error}", file=sys.stderr)
+            print(
+                f"the check could not be made, which is not a pass; recorded in "
+                f"{_display_path(destination)}",
+                file=sys.stderr,
+            )
+            return 2
+
+    workspace.artifacts.write_json(ARTIFACTS.look_ahead_audit, audit.as_dictionary())
+    print(audit.describe())
+    print(
+        f"\nexit {audit.exit_code}; run time {time.perf_counter() - started:.0f} s; "
+        f"written to {_display_path(destination)}"
+    )
+    return audit.exit_code
+
+
 # ------------------------------------------------------------------ entry point
 
 
@@ -1159,6 +1212,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     baseline_actions.add_parser("list", help="every committed baseline, one row each")
+
+    audit_parser = subparsers.add_parser(
+        "audit-look-ahead",
+        help=(
+            "perturb every observation unavailable at a cutoff date and require every forecast "
+            "issued on or before it to come out byte-identical"
+        ),
+    )
+    audit_parser.add_argument(
+        "--cutoff",
+        type=date.fromisoformat,
+        default=None,
+        help=(
+            "the date whose unavailable information is perturbed, YYYY-MM-DD (default: the first "
+            f"refit at least {look_ahead_audit.DEFAULT_CUTOFF_MONTHS_AFTER_FIRST_FORECAST} months "
+            "after the first forecast date)"
+        ),
+    )
 
     for name, help_text in (
         ("audit-data", "gate 1: measure the data against the registry"),
@@ -1284,6 +1355,8 @@ def main(argv: list[str] | None = None) -> int:
         return register_forecasts(workspace, today)
     if arguments.command == "resolve":
         return resolve_forecasts(workspace, today)
+    if arguments.command == "audit-look-ahead":
+        return audit_look_ahead(workspace, today, arguments.cutoff)
     if arguments.command == "baseline":
         if arguments.baseline_command == "capture":
             return baseline_capture(

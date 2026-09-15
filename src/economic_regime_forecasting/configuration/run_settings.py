@@ -191,6 +191,7 @@ class ArtifactNames:
     burn_in_state_count_choice: str = "burn_in_state_count_choice.json"
     variant_comparison: str = "variant_comparison.parquet"
     variant_comparison_manifest: str = "variant_comparison_manifest.json"
+    look_ahead_audit: str = "look_ahead_audit.json"
 
     def backtest_results_for_variant(self, variant: str) -> str:
         """One cell of the look-ahead comparison, kept apart from the default run."""

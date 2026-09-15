@@ -140,3 +140,78 @@ Read the plain comparison first: if a verdict or the run's identity moved, that
 is the headline. The paired comparison then says whether the change in skill is
 distinguishable from noise. `forecast baseline list` shows every committed
 baseline with its format and run identity.
+
+## The look-ahead audit: could any forecast have seen the future?
+
+`forecast audit-look-ahead` asks a different question from the baseline. It does
+not ask what moved between two runs. It asks whether any forecast depended on
+something not yet published. The code is
+`src/economic_regime_forecasting/look_ahead_audit.py`. It is the deterministic
+half of the research slate's VOID rule
+(`proving/experiments/0002-research-slate-2026-09/experiment.json`): an arm is void
+unless this exits 0 on its branch, and main must pass it before any arm runs.
+
+**How it works.** Pick a cutoff date C. On a copy of the cache in a temporary
+directory, written through `data/cache.py`, replace everything a forecaster at C
+could not have seen with `value * 1.7 + 11.0`:
+
+- every value of every archival vintage dated after C, months before C included,
+  because a later vintage carries revisions nobody had at C;
+- every observation labelled on or after C in every other snapshot.
+
+Then run the walk-forward twice over the same schedule truncated at C, once on an
+unperturbed copy and once on the perturbed one. Each run gets an empty
+fitted-model store, so every fit and the burn-in state-count choice are
+recomputed rather than read back. Every row must agree **exactly** on
+`predicted_probability`, `regime_distribution`, `climatology_probability`,
+`state_count` and `refit_date`. `realised_outcome` is not compared, because it
+depends on the future by definition.
+
+**Why exact, when the baseline uses 1e-9.** The band above exists for
+comparisons across environments. Both runs here are in one process, where fits
+are byte-identical (measured 2026-09-15), so any tolerance would only be room for
+a leak to hide in.
+
+| exit | meaning |
+|---|---|
+| 0 | every compared field identical on every row |
+| 1 | at least one row moved: a look-ahead. Moved rows are listed earliest forecast date first; the earliest is where the leak enters |
+| 2 | the check could not be made: no cache, an empty truncated schedule, rows on one side only, a run that crashed. Never a pass |
+
+The default cutoff is the first refit at least 72 months after the first forecast
+date. On the default schedule that is 2000-03-01, covering 73 forecast dates and 7
+refits (the burn-in choice among them) in about six minutes. `--cutoff` picks
+another. The record, with every moved row, goes to
+`.cache/models/look_ahead_audit.json`. It replaces any earlier record even when the
+check could not be made, so a stale pass is never read as today's answer. Two
+audits of one commit write byte-identical records.
+
+**What it does not cover.**
+- Revised values of observations labelled before C in the current-vintage files.
+  Per-regime rates read final revised conditions with publication timing
+  enforced, a documented approximation (D5 in `TECHNICAL_DEBT.md`), and
+  perturbing them would fail by design.
+- Information inside a publication lag.
+- For a forecast issued before C, information from between its date and C.
+
+The forecast issued at C itself is the sharpest test, which is why the default
+cutoff is a forecast date and a refit date.
+
+**It has been seen to fail, twice.** First, a test injects a leak: every model is
+fitted on the panel as it stood two years after its refit date. The audit exits 1,
+and its earliest moved row is the first refit whose borrowed panel reaches past
+the cutoff. Second, the audit's first run on main, on the pipeline as of 9bf13d6,
+**exited 1**:
+
+    LOOK-AHEAD: 12 of 2190 forecasts issued on or before 2000-03-01 changed when
+    only information unavailable at 2000-03-01 was perturbed, on 1 forecast date(s)
+    from 2000-03-01 to 2000-03-01. The earliest is where the leak enters.
+
+    2000-03-01  consumer_price_inflation_above_five_percent_within_horizon  12
+                climatology_probability  0.375  ->  0.37662337662337664
+
+All twelve moved rows are `climatology_probability` at the cutoff itself. The
+benchmark at a forecast date t counted the outcome of the forecast made at t − h,
+which resolves on the value labelled t. That value is published weeks later, or
+400 days later for recession dating. **Main fails this audit at the commit that
+introduces it.** The look-ahead audit table in `TECHNICAL_DEBT.md` records it.
