@@ -200,3 +200,15 @@ dated correction note pointing here, and its tables are left as published.
 - **Leave the benchmark and disclose.** Rejected. The pre-registered slate voids
   every arm until main passes the audit. A known look-ahead in the reference run
   also cannot be disclosed into correctness.
+
+## Consequence for experiment 0002 (dated 2026-09-15)
+
+Experiment 0002's VOID rule required main to pass the look-ahead audit before any arm ran. It did
+not, so the slate halted as that rule said it must. After this fix, and the four pre-arm commits that
+followed it (`b5db367`, `7065266`, `dda3bf9`, each shown not to move main), the reference run was
+updated by **amendment 1**, recorded inside
+`proving/experiments/0002-research-slate-2026-09/experiment.json` under `amendments`. The frozen
+file was changed through a single-use thaw scoped to that one path. No arm had run. No arm,
+hyperparameter, threshold, endpoint, family size or decision rule moved, and the amendment says why
+this is not the forbidden act. `freeze_guard.py --check` will report that file as modified since
+registration. That is its designed signal, and this note is the reason it asks for.

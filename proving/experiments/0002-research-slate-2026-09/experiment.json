@@ -118,6 +118,39 @@
     "the_one_forbidden_act": "Changing any hyperparameter or threshold in this file after an arm has produced a number. A new idea after seeing results is a new, separately registered experiment, and its report must say it came after."
   },
 
+  "amendments": [
+    {
+      "number": 1,
+      "dated": "2026-09-15",
+      "made_before_any_arm_ran": true,
+      "what_happened": "This experiment's VOID rule requires main to pass `forecast audit-look-ahead` before any arm runs. When that check was built and first run on main, it FAILED. Main's expanding climatology benchmark shifted each outcome by exactly h months, so the benchmark at forecast date t included the outcome for t - h, which depends on the observation labelled t, published 32 to 400 days after t. The rule was followed: the slate halted, and no arm was implemented or run. The benchmark was fixed so an outcome enters only once its last observation was published, and main then passed. Full record: docs/adr/0009-the-benchmark-counted-an-outcome-before-it-was-published.md.",
+      "audit_before": "Commit fb926ff, exit=1 wall=348s: 'LOOK-AHEAD: 12 of 2190 forecasts issued on or before 2000-03-01 changed when only information unavailable at 2000-03-01 was perturbed, on 1 forecast date(s) from 2000-03-01 to 2000-03-01. The earliest is where the leak enters.' First moved row, verbatim: '2000-03-01 consumer_price_inflation_above_five_percent_within_horizon 12 climatology_probability 0.375 0.37662337662337664'.",
+      "audit_after": "Publication-lag-aware check (an observation is unavailable at the cutoff when its label, plus its series' publication lag, falls after it), on main: exit=0 wall=343s, cutoff 2000-03-01. Verdict, verbatim from the audit record: 'no forecast issued on or before 2000-03-01 changed when every observation unavailable at 2000-03-01 was perturbed'. moved_rows: []. Observations perturbed: 627617 across 1348 copied cache entries. This lag-aware version is the one every arm is judged by.",
+      "change": {
+        "reference_run": "main at commit 628a77d (the climatology fix), re-captured there as baselines/main.json and baselines/main.forecasts.parquet, replacing main at the commit that added this file.",
+        "effect_on_reference_numbers": "Old reference against fixed, from `forecast baseline compare --paired --confidence-level 0.90 --confidence-level 0.9833`, extracted by code from ADR 0009 lines 127-130: horizon  in both  baseline skill  this run skill  difference  90% interval  98.33% interval  independent obs | 12 months  3754  +0.2128  +0.2154  +0.0026  [+0.0021, +0.0028]  [+0.0019, +0.0030]  31.5 | 60 months  3274  +0.0722  +0.0728  +0.0006  [-0.0011, +0.0009]  [-0.0033, +0.0011]  5.5 | 120 months  2674  -0.3524  -0.3528  -0.0004  [-0.0014, -0.0001]  [-0.0028, +0.0000]  2.2. No verdict under 0001 changed. The leak had flattered the benchmark, so main's one-year skill rises slightly once it is removed."
+      },
+      "commits_between_the_reference_run_and_the_first_arm": [
+        {
+          "commit": "b5db367",
+          "what": "The fitting loop now calls the monotonicity allowance ADR 0007 added and never wired in; found when the lag-aware audit's injected-leak test crashed on a 0.00133 relative fall.",
+          "moved_the_reference": "no, verified by FULL RECOMPUTATION rather than cache hits: every model refitted from scratch under the wired loop into an empty model store, then compared against the committed baseline. Plain: 386 IDENTICAL, 0 NUMERICAL, 1 MOVED; the one MOVED was run.forecast_dates_using_fallback: 0 -> None, a harness artefact fixed separately (see dda3bf9). Paired: 12 months +0.0000 (0.9: [+0.0000, +0.0000], 0.9833: [+0.0000, +0.0000]); 60 months +0.0000 (0.9: [+0.0000, +0.0000], 0.9833: [+0.0000, +0.0000]); 120 months +0.0000 (0.9: [+0.0000, +0.0000], 0.9833: [+0.0000, +0.0000])."
+        },
+        {
+          "commit": "7065266",
+          "what": "The look-ahead audit perturbs by publication date as well as by label, closing the gap its own output named: information inside a publication lag.",
+          "moved_the_reference": "no: it changes only the audit, not the forecasting pipeline"
+        },
+        {
+          "commit": "dda3bf9",
+          "what": "A run records its own count of forecast dates using the publication-lag fallback, instead of borrowing it from `compare-variants` output looked up by configuration hash, which would have shown every hypothesis arm a spurious categorical MOVED on run identity.",
+          "moved_the_reference": "no: on the real cache after commit dda3bf9, `forecast baseline compare --against main` gives 387 IDENTICAL, 0 NUMERICAL, 0 MOVED (exit 0); `--paired` at 90% and 98.33% gives a difference of exactly 0 with all 6 intervals exactly [0, 0] across 3 horizons (exit 0). Recorded by the orchestrator's own run, not the committing agent's."
+        }
+      ],
+      "unchanged": "No arm, hyperparameter, threshold, endpoint, family size or decision rule has changed. The configuration hash is also unchanged, ad7fcc1affd0746a: the fixes are to code, not settings, so commits identify the corrected reference run, and this amendment records them.",
+      "why_this_is_not_the_forbidden_act": "The forbidden act is changing a hyperparameter or threshold after an arm has produced a number. No arm existed. The change corrects the reference run's benchmark so it meets this experiment's own stated metric (a climatology a forecaster could have quoted at the time), and moves no criterion any arm will be judged by."
+    }
+  ],
   "combination": "Combining promising arms is a SEPARATE experiment (0003), registered after this slate reports. It is a post-selection experiment, and it is labelled as such in every result it produces.",
 
   "external_references": {
