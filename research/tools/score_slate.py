@@ -58,7 +58,9 @@ def combination(records: list[dict]) -> dict:
     if not eligible:
         plan = "NO COMBINATION: nothing is eligible, so the systematic method is main as it stands"
     elif structure != "main" and not layers:
-        plan = f"NO COMBINATION TO RUN: the only eligible arm is the structure {structure} alone, which 0002 already ran"
+        rivals = [label for label in structures if label != structure]
+        chosen = f"of the eligible structures {structures} the rule takes {structure}" if rivals else f"the only eligible arm is the structure {structure}"
+        plan = f"NO COMBINATION TO RUN: no layer is eligible, and {chosen}, which 0002 already ran alone"
     elif structure == "main" and len(layers) == 1:
         plan = f"NO COMBINATION TO RUN: the only eligible arm is the layer {layers[0]} alone, which 0002 already ran"
     else:
