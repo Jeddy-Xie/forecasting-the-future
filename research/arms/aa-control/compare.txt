@@ -1,0 +1,7 @@
+baseline 'main' (ad7fcc1affd0746a, 391 forecast dates from 1994-03-01) against this run (ad7fcc1affd0746a, 391 from 1994-03-01)
+387 IDENTICAL  0 NUMERICAL  0 MOVED  0 REMOVED  0 ADDED
+a difference is NUMERICAL up to 1e-09 in absolute value and MOVED above it; every categorical difference is MOVED
+
+387 further field(s) not shown: 387 IDENTICAL. Pass --tolerance-band all to see them.
+
+nothing moved.

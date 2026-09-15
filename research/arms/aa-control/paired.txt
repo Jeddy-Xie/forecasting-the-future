@@ -1,0 +1,26 @@
+paired comparison against baseline 'main' (ad7fcc1affd0746a, 391 forecast dates from 1994-03-01) and this run (ad7fcc1affd0746a, 391 from 1994-03-01)
+statistic: the pre-registered verdict's mean Brier skill score over its fixed set of scoreable indicators, this run minus the baseline, on the resolved forecasts both runs made
+interval: 90% and 98.33% moving-block bootstrap of forecast dates, blocks as long as the horizon in months, every indicator on a date kept together, one draw of dates per resample applied to both runs and read at every level; 10000 resamples, seed 20260908
+
+resolved forecasts (indicator, forecast date, horizon): 9702 in both, 0 only in the baseline, 0 only in this run
+the two runs resolved the same forecasts, so each side's skill below is exactly what its own verdict reports
+
+horizon     in both  only baseline  only this run  baseline skill  this run skill  difference  90% interval        98.33% interval     independent obs  resamples
+----------  -------  -------------  -------------  --------------  --------------  ----------  ------------------  ------------------  ---------------  ---------
+12 months   3754     0              0              +0.2154         +0.2154         +0.0000     [+0.0000, +0.0000]  [+0.0000, +0.0000]  31.5             9953
+60 months   3274     0              0              +0.0728         +0.0728         +0.0000     [+0.0000, +0.0000]  [+0.0000, +0.0000]  5.5              7495
+120 months  2674     0              0              -0.3528         -0.3528         +0.0000     [+0.0000, +0.0000]  [+0.0000, +0.0000]  2.2              5443
+
+brier skill score by indicator, this run minus the baseline (point estimates; the interval belongs to the mean above):
+indicator                                                   12 months  60 months  120 months
+----------------------------------------------------------  ---------  ---------  ----------
+consumer_price_inflation_above_five_percent_within_horizon  +0.0000    +0.0000    +0.0000
+consumer_price_inflation_above_three_percent_at_horizon     +0.0000    +0.0000    +0.0000
+economy_in_recession_at_horizon_date                        +0.0000    +0.0000    +0.0000
+economy_in_recession_within_horizon                         +0.0000    +0.0000    +0.0000
+federal_funds_rate_above_four_percent_at_horizon            +0.0000    +0.0000    +0.0000
+federal_funds_rate_below_one_percent_within_horizon         +0.0000    +0.0000    +0.0000
+industrial_production_growth_above_two_percent_at_horizon   +0.0000    +0.0000    +0.0000
+treasury_yield_curve_inverted_within_horizon                +0.0000    +0.0000    +0.0000
+unemployment_rate_above_five_percent_at_horizon             +0.0000    +0.0000    +0.0000
+unemployment_rate_above_seven_percent_within_horizon        +0.0000    +0.0000    +0.0000
