@@ -63,6 +63,10 @@ def _results(
                         "refit_date": stamp,
                         "configuration_hash": "abc123",
                         "seed": 1,
+                        # Research arm A6 (fixed-climatology-blend).
+                        "model_probability": float(predicted[position]),
+                        "climatology_probability_used_in_blend": base_rate,
+                        "climatology_carried_forward": False,
                     }
                 )
     return pd.DataFrame(rows)

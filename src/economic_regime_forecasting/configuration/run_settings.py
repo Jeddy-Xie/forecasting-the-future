@@ -121,7 +121,31 @@ class RunSettings:
     the model revised consumer price index values through the publication-lag
     fallback -- 41% of the walk-forward, every month from 1971-12 to 1994-02."""
 
+    climatology_blend_model_weight: float = 0.5
+    """Research arm A6 (fixed-climatology-blend): every issued probability becomes
+    ``weight * model_probability + (1 - weight) * climatology_probability``, a
+    fixed, unfitted blend with the model's own expanding climatology benchmark.
+    0.5 is the pre-registered weight
+    (`proving/experiments/0002-research-slate-2026-09/experiment.json`, arm
+    A6-fixed-climatology-blend) and is not tuned. 1.0 reproduces the shipped
+    behaviour: the issued probability is the model's alone.
+
+    Applied as pure post-processing in `backtest.walk_forward.run_walk_forward`
+    and `command_line_interface.forecast_now`; the model itself is unchanged.
+    The unblended model probability is kept in its own column throughout, and a
+    climatology value carried forward from an earlier date (because the
+    benchmark's source data ends before the forecast schedule does) is recorded
+    as such rather than silently blended in -- see
+    `backtest.walk_forward.climatology_probability_for_blend`."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.climatology_blend_model_weight <= 1.0:
+            raise ValueError(
+                "climatology_blend_model_weight must lie in [0.0, 1.0]; got "
+                f"{self.climatology_blend_model_weight!r}"
+            )
 
     def configuration_hash(self) -> str:
         """Short stable digest of every setting that changes a result.
@@ -151,6 +175,7 @@ class RunSettings:
 SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, object] = {
     "select_state_count_on_a_burn_in_window": False,
     "start_walk_forward_when_every_input_is_point_in_time": False,
+    "climatology_blend_model_weight": 1.0,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 
@@ -193,6 +218,12 @@ class ArtifactNames:
     variant_comparison_manifest: str = "variant_comparison_manifest.json"
     look_ahead_audit: str = "look_ahead_audit.json"
     backtest_fallback_record: str = "backtest_fallback_record.json"
+    climatology_carry_forward_backtest_record: str = (
+        "climatology_carry_forward_backtest_record.json"
+    )
+    climatology_carry_forward_forecast_record: str = (
+        "climatology_carry_forward_forecast_record.json"
+    )
 
     def backtest_results_for_variant(self, variant: str) -> str:
         """One cell of the look-ahead comparison, kept apart from the default run."""

@@ -35,6 +35,7 @@ import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -74,7 +75,24 @@ RESULT_COLUMNS: tuple[str, ...] = (
     "refit_date",
     "configuration_hash",
     "seed",
+    "model_probability",
+    "climatology_probability_used_in_blend",
+    "climatology_carried_forward",
 )
+"""The last three columns are research arm A6 (fixed-climatology-blend). Every
+other column is the shipped schema, unchanged. ``predicted_probability`` on this
+branch is the blend -- ``settings.climatology_blend_model_weight`` of the model
+plus the rest of climatology -- so that evaluation, which reads
+``predicted_probability``, scores the arm's forecast. ``model_probability`` keeps
+the unblended model number so the two can always be told apart.
+``climatology_probability`` is untouched: the exact-date lookup, still `NaN`
+exactly where it always was, because `evaluation.verdict` drops a row from
+scoring on that `NaN` and this arm must not change which rows that is.
+``climatology_probability_used_in_blend`` is what actually went into the blend,
+via ``climatology_probability_for_blend`` below; it agrees with
+``climatology_probability`` unless ``climatology_carried_forward`` is True, in
+which case it is the most recent earlier value, carried forward because the
+benchmark's own source data had not yet reached this forecast date."""
 
 
 class BacktestError(RuntimeError):
@@ -345,15 +363,22 @@ def run_walk_forward(
                     horizon,
                     condition_holds_now,
                 )
+                climatology_exact = _lookup(history.climatology_by_horizon[horizon], stamp)
+                climatology_for_blend, carried_forward = climatology_probability_for_blend(
+                    history.climatology_by_horizon[horizon], stamp
+                )
+                blended_probability = blend_model_and_climatology_probability(
+                    composed.probability,
+                    climatology_for_blend,
+                    settings.climatology_blend_model_weight,
+                )
                 rows.append(
                     {
                         "indicator": indicator.name,
                         "forecast_date": stamp,
                         "horizon_months": horizon,
-                        "predicted_probability": composed.probability,
-                        "climatology_probability": _lookup(
-                            history.climatology_by_horizon[horizon], stamp
-                        ),
+                        "predicted_probability": blended_probability,
+                        "climatology_probability": climatology_exact,
                         "realised_outcome": _lookup(history.outcomes_by_horizon[horizon], stamp),
                         "composition": indicator.composition.value,
                         "effective_sample_size": composed.effective_sample_size,
@@ -363,6 +388,9 @@ def run_walk_forward(
                         "refit_date": pd.Timestamp(fitted.refit_date),
                         "configuration_hash": configuration_hash,
                         "seed": settings.random_seed,
+                        "model_probability": composed.probability,
+                        "climatology_probability_used_in_blend": climatology_for_blend,
+                        "climatology_carried_forward": carried_forward,
                     }
                 )
 
@@ -377,6 +405,118 @@ def run_walk_forward(
 def _lookup(series: pd.Series, stamp: pd.Timestamp) -> float:
     value = series.get(stamp, np.nan)
     return float(value) if pd.notna(value) else float("nan")
+
+
+def climatology_probability_for_blend(
+    climatology: pd.Series, stamp: pd.Timestamp
+) -> tuple[float, bool]:
+    """The climatology value to blend with at ``stamp``, and whether it was carried
+    forward from an earlier date.
+
+    Research arm A6 (fixed-climatology-blend). ``climatology`` is indexed by the
+    resolution series' own months
+    (`prepare_indicator_history` / `_expanding_climatology`), and that index can
+    end before the forecast schedule does: the newest one or two forecast dates
+    routinely have no entry of their own yet, because no *earlier* forecast
+    date's own outcome has both resolved and been published as of them (see
+    `_expanding_climatology`'s docstring) -- not a look-ahead defect, an honest
+    absence.
+
+    A blend needs a number at every date a probability is issued, so when the
+    exact date is missing this carries the most recent value **strictly on or
+    before** ``stamp`` forward (``pandas.Series.asof``, which finds the last
+    non-NaN entry at an index <= its argument and never looks past it). That
+    uses slightly less information than a forecaster at ``stamp`` actually had,
+    never more, so it cannot introduce a look-ahead. It is a deliberate
+    fallback, so the caller must record ``carried_forward`` rather than let it
+    pass silently, per the project rule ("No silent fallbacks").
+
+    Returns ``(nan, False)`` only if no value has ever been defined on or before
+    ``stamp`` -- which does not occur anywhere at or after 1994-03, the first
+    forecast date this project's default schedule uses, because every
+    indicator's resolution series has decades of history before then. A NaN
+    reaching `blend_model_and_climatology_probability` from here raises rather
+    than blending blind.
+    """
+    exact = _lookup(climatology, stamp)
+    if not np.isnan(exact):
+        return exact, False
+    carried: Any = climatology.asof(stamp)
+    carried_is_defined = bool(pd.notna(carried))
+    carried_value = float(carried) if carried_is_defined else float("nan")
+    return carried_value, carried_is_defined
+
+
+def blend_model_and_climatology_probability(
+    model_probability: float, climatology_probability: float, model_weight: float
+) -> float:
+    """The fixed, unfitted blend research arm A6 (fixed-climatology-blend) tests:
+    ``model_weight`` on the model, the rest on climatology.
+
+    Both inputs must already be finite probabilities; a non-finite
+    ``climatology_probability`` here is the caller's bug, not something to paper
+    over. ``climatology_probability_for_blend`` is what the walk-forward and
+    `forecast_now` use to make sure of that before calling this.
+    """
+    if not np.isfinite(model_probability):
+        raise BacktestError(f"cannot blend a non-finite model probability ({model_probability!r})")
+    if not np.isfinite(climatology_probability):
+        raise BacktestError(
+            "cannot blend with a non-finite climatology probability "
+            f"({climatology_probability!r}); the caller must resolve or carry one forward "
+            "before blending, never blend blind"
+        )
+    blended = model_weight * model_probability + (1.0 - model_weight) * climatology_probability
+    return float(np.clip(blended, 0.0, 1.0))
+
+
+def climatology_carry_forward_record(
+    configuration_hash: str,
+    indicator: pd.Series,
+    horizon_months: pd.Series,
+    forecast_date: pd.Series,
+    carried_forward: pd.Series,
+) -> dict[str, object]:
+    """What a run recorded about the deliberate climatology carry-forward fallback.
+
+    Research arm A6 (fixed-climatology-blend). "No silent fallbacks" requires a
+    fallback taken deliberately to be recorded, not left to be inferred; this is
+    that record, written beside the results it describes -- by
+    `command_line_interface.run_backtest` for every walk-forward row and by
+    `command_line_interface.forecast_now` for today's forecast -- so a row that
+    took the fallback is never invisible. The four arguments are columns (or a
+    constant broadcast to one, for `forecast_now`'s single forecast date) of the
+    same length, aligned by position.
+    """
+    carried = pd.DataFrame(
+        {
+            "indicator": indicator.to_numpy(),
+            "horizon_months": horizon_months.to_numpy(),
+            "forecast_date": pd.DatetimeIndex(forecast_date),
+            "carried_forward": carried_forward.to_numpy(),
+        }
+    )
+    carried_rows = carried[carried["carried_forward"]].sort_values(
+        ["forecast_date", "indicator", "horizon_months"]
+    )
+    return {
+        "configuration_hash": configuration_hash,
+        "row_count": int(len(carried)),
+        "carried_forward_row_count": int(len(carried_rows)),
+        "carried_forward_rows": [
+            {
+                "indicator": str(indicator_value),
+                "forecast_date": forecast_date_value.date().isoformat(),
+                "horizon_months": int(horizon_value),
+            }
+            for indicator_value, forecast_date_value, horizon_value in zip(
+                carried_rows["indicator"],
+                carried_rows["forecast_date"],
+                carried_rows["horizon_months"],
+                strict=True,
+            )
+        ],
+    }
 
 
 def validate_results(results: pd.DataFrame) -> None:

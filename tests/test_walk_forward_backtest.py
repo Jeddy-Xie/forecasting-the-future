@@ -9,6 +9,7 @@ real data is.
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Callable
 from datetime import UTC, date, datetime
 
@@ -21,6 +22,9 @@ from economic_regime_forecasting.backtest.walk_forward import (
     RESULT_COLUMNS,
     BacktestError,
     _expanding_climatology,
+    blend_model_and_climatology_probability,
+    climatology_carry_forward_record,
+    climatology_probability_for_blend,
     condition_available_at,
     prepare_indicator_history,
     run_walk_forward,
@@ -387,6 +391,10 @@ def _valid_results() -> pd.DataFrame:
             "refit_date": pd.to_datetime(["2000-01-01", "2000-01-01"]),
             "configuration_hash": ["abc", "abc"],
             "seed": [1, 1],
+            # Research arm A6 (fixed-climatology-blend).
+            "model_probability": [0.3, 0.7],
+            "climatology_probability_used_in_blend": [0.5, 0.5],
+            "climatology_carried_forward": [False, False],
         }
     )
 
@@ -433,3 +441,228 @@ def test_the_snapshot_factory_produces_what_the_cache_expects(
     )
     assert isinstance(snapshot.request, SeriesRequest)
     assert snapshot.retrieved_at == datetime(2026, 9, 8, tzinfo=UTC)
+
+
+# ------------------------------------ A6: the fixed climatology blend (backtest)
+#
+# Research arm A6 (fixed-climatology-blend). The corrected diagnosis this arm was
+# built from: `climatology_probability` is NaN at the live edge not because
+# nothing has resolved, but because the benchmark's own index -- the resolution
+# series' own months -- ends before the forecast schedule does. The tests below
+# pin that mechanism directly (`climatology_probability_for_blend`), the blend
+# arithmetic (`blend_model_and_climatology_probability`), and the two properties
+# the corrected design guarantees end to end: no look-ahead in the carry-forward,
+# and no row evaluation would score ever takes it.
+
+
+def test_climatology_for_blend_uses_the_exact_date_when_it_exists() -> None:
+    climatology = pd.Series(
+        [0.2, 0.3, 0.4], index=pd.date_range("2000-01-01", periods=3, freq="MS")
+    )
+    value, carried_forward = climatology_probability_for_blend(
+        climatology, pd.Timestamp("2000-02-01")
+    )
+    assert value == pytest.approx(0.3)
+    assert carried_forward is False
+
+
+def test_climatology_for_blend_carries_forward_across_a_gap() -> None:
+    """The benchmark's index simply has no 2000-04-01 entry -- main's live edge,
+    reproduced directly rather than through the whole pipeline."""
+    climatology = pd.Series(
+        [0.2, 0.3, 0.4], index=pd.to_datetime(["2000-01-01", "2000-02-01", "2000-03-01"])
+    )
+    value, carried_forward = climatology_probability_for_blend(
+        climatology, pd.Timestamp("2000-04-01")
+    )
+    assert value == pytest.approx(0.4)
+    assert carried_forward is True
+
+
+def test_climatology_for_blend_never_reads_past_the_forecast_date() -> None:
+    """Requirement 1: the boundary test. A value exists strictly AFTER the
+    forecast date and nothing on or before it; the carry-forward must not find
+    it, because using it would be exactly the look-ahead this project forbids.
+    """
+    climatology = pd.Series([np.nan, 0.9], index=pd.to_datetime(["2000-01-01", "2000-03-01"]))
+    value, carried_forward = climatology_probability_for_blend(
+        climatology, pd.Timestamp("2000-02-01")
+    )
+    assert np.isnan(value)
+    assert carried_forward is False
+
+
+def test_climatology_for_blend_carries_forward_exactly_to_the_date_on_or_before() -> None:
+    """The other half of the boundary: a value defined exactly ON the forecast
+    date must be preferred over an earlier one, and a value the day after must
+    never be used."""
+    climatology = pd.Series([0.1, 0.5], index=pd.to_datetime(["2000-01-01", "2000-02-01"]))
+    on_date, _ = climatology_probability_for_blend(climatology, pd.Timestamp("2000-02-01"))
+    assert on_date == pytest.approx(0.5)
+
+    day_before = climatology.copy()
+    day_before.index = pd.to_datetime(["2000-01-01", "2000-02-02"])  # one day after 2000-02-01
+    value, carried_forward = climatology_probability_for_blend(
+        day_before, pd.Timestamp("2000-02-01")
+    )
+    assert value == pytest.approx(0.1)  # the 02-02 entry must not be used
+    assert carried_forward is True
+
+
+def test_climatology_for_blend_skips_an_internal_nan_when_carrying_forward() -> None:
+    """`_expanding_climatology` can itself hold an internal NaN (nothing had
+    resolved yet at that date); the carry-forward must reach past it to the last
+    real value, exactly what `Series.asof` guarantees."""
+    climatology = pd.Series(
+        [0.25, np.nan, np.nan],
+        index=pd.to_datetime(["2000-01-01", "2000-02-01", "2000-03-01"]),
+    )
+    value, carried_forward = climatology_probability_for_blend(
+        climatology, pd.Timestamp("2000-04-01")
+    )
+    assert value == pytest.approx(0.25)
+    assert carried_forward is True
+
+
+def test_climatology_for_blend_reports_nan_when_nothing_precedes_the_date() -> None:
+    climatology = pd.Series([np.nan, 0.6], index=pd.to_datetime(["2000-01-01", "2000-03-01"]))
+    value, carried_forward = climatology_probability_for_blend(
+        climatology, pd.Timestamp("2000-02-01")
+    )
+    assert np.isnan(value)
+    assert carried_forward is False
+
+
+def test_blend_averages_model_and_climatology_at_the_configured_weight() -> None:
+    assert blend_model_and_climatology_probability(0.8, 0.2, model_weight=0.5) == pytest.approx(0.5)
+    assert blend_model_and_climatology_probability(0.8, 0.2, model_weight=1.0) == pytest.approx(0.8)
+    assert blend_model_and_climatology_probability(0.8, 0.2, model_weight=0.0) == pytest.approx(0.2)
+
+
+def test_blend_raises_rather_than_produce_nan_from_a_nan_climatology() -> None:
+    """No silent fallback: a caller that reaches this function with a raw,
+    uncarried-forward NaN gets a loud error, never a quietly propagated NaN."""
+    with pytest.raises(BacktestError, match="non-finite climatology"):
+        blend_model_and_climatology_probability(0.8, float("nan"), model_weight=0.5)
+
+
+def test_blend_raises_on_a_non_finite_model_probability() -> None:
+    with pytest.raises(BacktestError, match="non-finite model probability"):
+        blend_model_and_climatology_probability(float("nan"), 0.2, model_weight=0.5)
+
+
+def test_the_carry_forward_record_counts_and_names_the_rows_that_used_it() -> None:
+    record = climatology_carry_forward_record(
+        configuration_hash="abc",
+        indicator=pd.Series(["x", "x", "y"]),
+        horizon_months=pd.Series([12, 12, 12]),
+        forecast_date=pd.Series(pd.to_datetime(["2026-08-01", "2026-09-01", "2026-09-01"])),
+        carried_forward=pd.Series([True, True, False]),
+    )
+    assert record["row_count"] == 3
+    assert record["carried_forward_row_count"] == 2
+    assert record["carried_forward_rows"] == [
+        {"indicator": "x", "forecast_date": "2026-08-01", "horizon_months": 12},
+        {"indicator": "x", "forecast_date": "2026-09-01", "horizon_months": 12},
+    ]
+
+
+def test_climatology_is_carried_forward_at_the_live_edge_and_never_on_a_scored_row(
+    synthetic_registry, filled_cache, settings, snapshot_factory
+) -> None:  # type: ignore[no-untyped-def]
+    """The mechanism this arm was corrected to handle, exercised end to end
+    through `run_walk_forward`. `synthetic_rate`'s own model-input cache runs
+    the fixture's full 480 months, to 2009-12; a resolution-only series (not a
+    model input, so the model keeps fitting fine) is given a shorter cache
+    ending twelve months earlier, at 2008-12 -- main's live edge, reproduced on
+    purpose. Forecast dates past that boundary must carry the benchmark forward,
+    record having done so, never look ahead to do it, and never do it on a row
+    that has both a realised outcome and an exact-date benchmark -- the two
+    things `evaluation.verdict` requires before it will score a row.
+    """
+    live_edge_series = _series_entry("synthetic_live_edge", "SYNLIVE", None, Transform.LEVEL, False)
+    registry = dataclasses.replace(
+        synthetic_registry, series=(*synthetic_registry.series, live_edge_series)
+    )
+    live_edge_indicator = BinaryIndicator(
+        name="live_edge_above_fifty_at_horizon",
+        question="is the live-edge series above fifty at the horizon",
+        resolution=IndicatorResolution(
+            series="synthetic_live_edge",
+            rule=ResolutionRule.LEVEL_ABOVE_THRESHOLD_AT_HORIZON,
+            transform=Transform.LEVEL,
+            threshold=50.0,
+        ),
+        composition=Composition.POINT_IN_TIME,
+        horizons_in_years=(1, 5),
+    )
+
+    short_index = pd.date_range(START, periods=MONTHS - 12, freq="MS", name="observation_date")
+    filled_cache.write(snapshot_factory(pd.Series(60.0, index=short_index), series_id="SYNLIVE"))
+
+    schedule = schedule_module.build_schedule(
+        date(2008, 6, 1), date(2009, 3, 1), settings.refit_every_n_months
+    )
+    results = run_walk_forward(
+        registry,
+        (live_edge_indicator,),
+        filled_cache,
+        settings,
+        2,
+        schedule.forecast_dates,
+        schedule.refit_dates,
+        artifacts=None,
+        progress_every=0,
+    )
+
+    carried = results[results["climatology_carried_forward"]]
+    assert not carried.empty, "the test did not exercise the carry-forward path"
+
+    # Requirement 1: no look-ahead. Every carried-forward row's forecast date is
+    # on or after the boundary where the benchmark's own index runs out.
+    assert (carried["forecast_date"] >= pd.Timestamp("2008-12-01")).all()
+
+    # The exact-date benchmark stays NaN on exactly these rows -- unchanged from
+    # what it always was, which is what keeps evaluation's dropna excluding them.
+    assert carried["climatology_probability"].isna().all()
+
+    # Requirement 2: a carried-forward row is never a scored one.
+    scored = results.dropna(subset=["realised_outcome", "climatology_probability"])
+    assert not scored["climatology_carried_forward"].any()
+
+    # The blend still produced a finite probability everywhere -- no NaN leaked
+    # into gate three or gate four.
+    assert results["predicted_probability"].notna().all()
+    assert results["predicted_probability"].between(0.0, 1.0).all()
+
+
+def test_the_blended_probability_matches_the_recorded_weight_and_inputs(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    """`predicted_probability` must be exactly the configured blend of the two
+    columns kept for that purpose -- an algebraic tie between what is recorded
+    and what evaluation reads."""
+    assert settings.climatology_blend_model_weight == 0.5  # the arm's default
+    results = _run(synthetic_registry, synthetic_indicators, filled_cache, settings, months=12)
+    expected = (
+        settings.climatology_blend_model_weight * results["model_probability"]
+        + (1.0 - settings.climatology_blend_model_weight)
+        * results["climatology_probability_used_in_blend"]
+    )
+    pd.testing.assert_series_equal(results["predicted_probability"], expected, check_names=False)
+
+
+def test_a_weight_of_one_reproduces_the_unblended_model_probability(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    """1.0 is the value the omission map treats as "no blend"; this is the
+    behavioural claim that value encodes, checked directly."""
+    shipped_settings = dataclasses.replace(settings, climatology_blend_model_weight=1.0)
+    results = _run(
+        synthetic_registry, synthetic_indicators, filled_cache, shipped_settings, months=12
+    )
+    pd.testing.assert_series_equal(
+        results["predicted_probability"],
+        results["model_probability"],
+        check_names=False,
+    )

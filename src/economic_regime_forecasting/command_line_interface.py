@@ -326,6 +326,7 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     )
     filtered = fitted.model.filtered_state_probabilities(matrix.values)
 
+    today_stamp = pd.Timestamp(today)
     rows = []
     for indicator in workspace.indicators:
         condition = walk_forward.condition_available_at(histories[indicator.name], today)
@@ -339,7 +340,23 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
                 horizon,
                 holds_now,
             )
-            rows.append({**composed.as_row(), "question": indicator.question})
+            # Research arm A6 (fixed-climatology-blend): the issued probability is
+            # the blend, not the model alone; the model's own number is kept
+            # under its own key. See RunSettings.climatology_blend_model_weight
+            # and walk_forward.climatology_probability_for_blend for why the
+            # climatology value here can be carried forward from an earlier date.
+            climatology_for_blend, carried_forward = walk_forward.climatology_probability_for_blend(
+                histories[indicator.name].climatology_by_horizon[horizon], today_stamp
+            )
+            blended_probability = walk_forward.blend_model_and_climatology_probability(
+                composed.probability, climatology_for_blend, settings.climatology_blend_model_weight
+            )
+            row = {**composed.as_row(), "question": indicator.question}
+            row["model_probability"] = composed.probability
+            row["probability"] = blended_probability
+            row["climatology_probability_used_in_blend"] = climatology_for_blend
+            row["climatology_carried_forward"] = carried_forward
+            rows.append(row)
 
     forecasts = pd.DataFrame(rows)
     mixing = regime_forecast.measure_mixing(
@@ -350,6 +367,22 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     )
     workspace.artifacts.write_table(ARTIFACTS.current_forecasts, forecasts)
     workspace.artifacts.write_table(ARTIFACTS.mixing_diagnostics, mixing.table())
+
+    carry_forward_record = walk_forward.climatology_carry_forward_record(
+        settings.configuration_hash(),
+        forecasts["indicator"],
+        forecasts["horizon_months"],
+        pd.Series([today_stamp] * len(forecasts)),
+        forecasts["climatology_carried_forward"],
+    )
+    workspace.artifacts.write_json(
+        ARTIFACTS.climatology_carry_forward_forecast_record, carry_forward_record
+    )
+    print(
+        f"climatology carried forward on {carry_forward_record['carried_forward_row_count']} "
+        f"of {carry_forward_record['row_count']} of today's forecasts "
+        f"(see {ARTIFACTS.climatology_carry_forward_forecast_record})"
+    )
 
     report = pipeline_gates.gate_three_forecasts(
         forecasts, list(workspace.indicators), settings.forecast_horizons_in_months, mixing
@@ -455,6 +488,24 @@ def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
         regression_baseline.fallback_record(
             settings.configuration_hash(), schedule.forecast_dates, fallback_dates
         ),
+    )
+    # Research arm A6 (fixed-climatology-blend): a deliberate fallback recorded,
+    # not silent. See RunSettings.climatology_blend_model_weight and
+    # walk_forward.climatology_probability_for_blend.
+    carry_forward_record = walk_forward.climatology_carry_forward_record(
+        settings.configuration_hash(),
+        results["indicator"],
+        results["horizon_months"],
+        results["forecast_date"],
+        results["climatology_carried_forward"],
+    )
+    workspace.artifacts.write_json(
+        ARTIFACTS.climatology_carry_forward_backtest_record, carry_forward_record
+    )
+    print(
+        f"climatology carried forward on {carry_forward_record['carried_forward_row_count']} "
+        f"of {carry_forward_record['row_count']} backtest rows "
+        f"(see {ARTIFACTS.climatology_carry_forward_backtest_record})"
     )
     report = pipeline_gates.gate_four_backtest(results)
     print(report.describe())
