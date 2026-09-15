@@ -118,13 +118,20 @@ def review_sections(text: str) -> dict[str, str]:
 
 def review_verdict(reviews_dir: Path, arm: str) -> str:
     """CLEAN / LEAK FOUND / VOID from the judged review's VERDICT: line; PENDING if no review names the arm;
-    UNREADABLE if the arm's section has no well-formed VERDICT: line. Prose is never parsed."""
+    UNREADABLE if no section naming the arm has a well-formed VERDICT: line. Prose is never parsed.
+    Every section whose heading names the arm is read, not only the first: a review's title line names the
+    arm too, and stopping at it read the first real CLEAN review as UNREADABLE. Where sections disagree, the
+    most severe verdict wins."""
+    severity = {"CLEAN": 0, "LEAK FOUND": 1, "VOID": 2}
+    named, verdicts = False, []
     for path in sorted(reviews_dir.glob("lookahead-review-*.md")):
         for heading, body in review_sections(path.read_text()).items():
             if heading == arm or re.search(rf"(?<![a-z0-9-]){re.escape(arm)}(?![a-z0-9-])", heading):
-                line = re.search(r"^\s*VERDICT:\s*(CLEAN|LEAK FOUND|VOID)\s*$", body, flags=re.M | re.I)
-                return line.group(1).upper() if line else "UNREADABLE"
-    return "PENDING"
+                named = True
+                verdicts += [v.upper() for v in re.findall(r"^\s*VERDICT:\s*(CLEAN|LEAK FOUND|VOID)\s*$", body, flags=re.M | re.I)]
+    if not named:
+        return "PENDING"
+    return max(verdicts, key=severity.__getitem__) if verdicts else "UNREADABLE"
 
 
 def main() -> int:
