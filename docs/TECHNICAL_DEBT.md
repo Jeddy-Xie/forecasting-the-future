@@ -40,7 +40,7 @@ status. Re-run this audit whenever the pipeline gains a step.
 | Acceptance thresholds | **clean** — pre-registered and committed before the first backtest |
 | Canonicalisation rule | **clean** — a fixed sort, not fitted |
 | **Indicator thresholds** | **weak** — canonical round numbers, but chosen by someone who knew the sample. See D12 |
-| **Future-perturbation invariance** (`forecast audit-look-ahead`, run on demand) | **passes on main** since the benchmark fix (ADR 0009): exit 0 at the default cutoff 2000-03-01, all 2190 rows identical. It **failed** at the commit that added it (fb926ff): 12 of 2190 rows moved, every one `climatology_probability` on the cutoff date. The earliest is `consumer_price_inflation_above_five_percent_within_horizon` at 12 months, 0.375 → 0.37662337662337664. *Covers* every path by which an observation unpublished at a cutoff (label on or after it, or label plus its series' registered publication lag past it), or a vintage published after it, reaches a forecast issued on or before it, the benchmark included. Publication-aware since 2026-09-15 rather than label-only, and still exit 0 on main. *Does not cover* revised values of observations already published at the cutoff, in the current-vintage files (D5, by design); a registry publication lag that is itself wrong (D14 is one); or information published between a forecast date and the cutoff. See `docs/REGRESSION_TESTING.md` |
+| **Future-perturbation invariance** (`forecast audit-look-ahead`, run on demand) | **passes on main** since the benchmark fix (ADR 0009): exit 0 at the default cutoff 2000-03-01, all 2190 rows identical. It **failed** at the commit that added it (fb926ff): 12 of 2190 rows moved, every one `climatology_probability` on the cutoff date. The earliest is `consumer_price_inflation_above_five_percent_within_horizon` at 12 months, 0.375 → 0.37662337662337664. *Covers* every path by which an observation unpublished at a cutoff (label on or after it, or label plus its series' registered publication lag past it), or a vintage published after it, reaches a forecast issued on or before it, the benchmark included. Publication-aware since 2026-09-15 rather than label-only, and still exit 0 on main. *Does not cover* revised values of observations already published at the cutoff, in the current-vintage files (D5, by design); a registry publication lag that is itself wrong (D14 is one); a state count decided anywhere but the burn-in sweep function, which the audit calls directly (D15); or information published between a forecast date and the cutoff. See `docs/REGRESSION_TESTING.md` |
 
 Two entries are still not clean, and they are the two weakest rows rather than the two
 worst: the condition values feeding rate estimation (D5, narrowed — see below) and the
@@ -360,3 +360,32 @@ favour one side of a paired comparison, but it can move both.
 Whichever it is, it should be its own change, measured against main with
 `forecast baseline compare`. It should come after experiment 0002 closes, because
 changing main now would move the reference run under every arm mid-slate.
+
+---
+
+## D15 · The look-ahead audit chooses the state count its own way
+**evidential** · found 2026-09-15 by the author of research arm A2; verified in the code the same day
+
+`look_ahead_audit.py`'s `_run_from_scratch` picks the number of regimes by calling
+`choose_state_count_on_burn_in_window` directly, then fits with that choice. The
+backtest decides the count one layer up, in
+`command_line_interface._state_count_for_the_backtest`. For main the two always
+agree. But a change that decides the count in the second place and not the first
+gets its audit run with main's count, not its own.
+
+Research arm A2 is the case. It fixes four states in that upper function, and turns
+on quadrant seeding only when there are four. Its audit reported "6 regimes chosen on
+the burn-in window" and never ran the seeding code. It was the only arm affected:
+- A3 and A4 changed the sweep itself, and their audits report 4 and 16 regimes.
+- A1, A5 and A6 leave the count alone.
+
+A2's leak defence therefore rests on its independent review.
+
+**What it would change.** Nothing on main. What it costs is the meaning of "the audit
+passed" for any change to how the count is chosen, and it costs it silently, which
+is the failure the audit exists to prevent.
+
+**Shape of the fix.** One function in the backtest layer decides the backtest's state
+count, and both the command-line interface and the audit call it. A test builds a
+configuration whose count differs from the sweep's, and asserts that the audit fits
+with the backtest's count.
