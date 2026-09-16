@@ -283,7 +283,7 @@ WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCS
 look-ahead audit: future-perturbation invariance
 cutoff       2000-03-01, the first refit at least 72 months after the first forecast date 1994-03-01
 covered      73 forecast dates from 1994-03 to 2000-03 and 7 refits (1994-03, 1995-03, 1996-03, 1997-03, 1998-03, 1999-03, 2000-03), of the configured 391 forecast dates
-perturbed    value * 1.7 + 11.0 on every value of 650 archival vintages dated after 2000-03-01, and on every observation still unpublished at 2000-03-01 (labelled on or after it, or within its series' publication lag of it) in 9 current-vintage files: 627617 values across 1348 copied entries
+perturbed    value * 1.7 + 11.0 on every value of 652 archival vintages dated after 2000-03-01, and on every observation still unpublished at 2000-03-01 (labelled on or after it, or within its series' publication lag of it) in 9 current-vintage files: 629864 values across 1350 copied entries
 runs         two walk-forwards, each on its own copy of the cache with an empty fitted-model store
                original   16 regimes chosen on the burn-in window, 7 fits computed from scratch, 2190 rows
                perturbed  16 regimes chosen on the burn-in window, 7 fits computed from scratch, 2190 rows
@@ -292,4 +292,4 @@ not covered  revised values of observations already published at the cutoff, in 
 
 PASS: no forecast issued on or before 2000-03-01 changed when every observation unavailable at 2000-03-01 was perturbed
 
-exit 0; run time 378 s; written to .cache/models/look_ahead_audit.json
+exit 0; run time 369 s; written to .cache/models/look_ahead_audit.json
