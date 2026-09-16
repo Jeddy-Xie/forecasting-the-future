@@ -56,13 +56,13 @@ from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
     HiddenMarkovModelError,
 )
+from economic_regime_forecasting.models.model_loading import regime_model_from_dictionary
 from economic_regime_forecasting.models.state_labelling import canonical_order, canonicalise
 from economic_regime_forecasting.models.state_selection import regimes_exist_from_sweep_table
 from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
     LEVELS_CHAIN_SEED_OFFSET,
     TwoChainStateCount,
     TwoTimescaleHiddenMarkovModel,
-    regime_model_from_dictionary,
 )
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     candidate_state_counts_per_chain,

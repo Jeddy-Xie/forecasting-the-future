@@ -56,10 +56,10 @@ from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
 )
 from economic_regime_forecasting.models.indicator_forecast import ConditionalRates
+from economic_regime_forecasting.models.model_loading import regime_model_from_dictionary
 from economic_regime_forecasting.models.state_labelling import canonicalise
 from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
     TwoChainStateCount,
-    regime_model_from_dictionary,
 )
 
 logger = logging.getLogger(__name__)

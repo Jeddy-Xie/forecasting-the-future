@@ -78,7 +78,6 @@ from economic_regime_forecasting.configuration.registry import ModelDimension
 from economic_regime_forecasting.features.observation_matrix import DIMENSION_ORDER
 from economic_regime_forecasting.models import gaussian_hidden_markov_model as hidden_markov
 from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
-    MINIMUM_STATE_RESPONSIBILITY,
     FitReport,
     GaussianHiddenMarkovModel,
     HiddenMarkovModelError,
@@ -268,19 +267,6 @@ class TwoTimescaleHiddenMarkovModel(GaussianHiddenMarkovModel):
             levels_chain=GaussianHiddenMarkovModel.from_dictionary(payload["levels_chain"]),
             fit_report=_fit_report_from_dictionary(payload.get("fit_report")),
         )
-
-
-def regime_model_from_dictionary(payload: dict[str, Any]) -> GaussianHiddenMarkovModel:
-    """Read back either kind of fitted model, by what the payload says it is."""
-    model_class = payload.get("model_class")
-    if model_class == MODEL_CLASS:
-        return TwoTimescaleHiddenMarkovModel.from_dictionary(payload)
-    if model_class is not None:
-        raise HiddenMarkovModelError(
-            f"unknown model_class {model_class!r} in a fitted-model payload. Delete the cached "
-            "file and refit rather than guessing what it holds."
-        )
-    return GaussianHiddenMarkovModel.from_dictionary(payload)
 
 
 def _fit_report_to_dictionary(report: FitReport | None) -> dict[str, Any] | None:
@@ -528,68 +514,18 @@ def _maximisation_step(
     responsibilities = joint_responsibilities.reshape(months, growth_states, levels_states)
 
     return TwoTimescaleHiddenMarkovModel(
-        growth_chain=_chain_from_marginals(
+        growth_chain=hidden_markov.chain_from_responsibilities(
             observations[:, list(GROWTH_COLUMNS)],
             responsibilities.sum(axis=2),
             counts.sum(axis=(1, 3)),
             pooled_growth,
-            "growth",
+            chain_name="growth",
         ),
-        levels_chain=_chain_from_marginals(
+        levels_chain=hidden_markov.chain_from_responsibilities(
             observations[:, list(LEVELS_COLUMNS)],
             responsibilities.sum(axis=1),
             counts.sum(axis=(0, 2)),
             pooled_levels,
-            "inflation and rates",
+            chain_name="inflation and rates",
         ),
-    )
-
-
-def _chain_from_marginals(
-    block: np.ndarray,
-    responsibilities: np.ndarray,
-    transition_counts: np.ndarray,
-    pooled_covariance: np.ndarray,
-    chain_name: str,
-) -> GaussianHiddenMarkovModel:
-    """One chain's parameters from its own marginal statistics.
-
-    The single-chain maximisation step's formulas, in its order: the initial
-    distribution from the first month's occupancy, each transition row from the
-    expected counts (an abandoned row falls back to uniform, as ADR 0007 decided),
-    means and ridged full covariances from the occupancy-weighted block.
-    """
-    states = responsibilities.shape[1]
-    state_totals = np.maximum(responsibilities.sum(axis=0), MINIMUM_STATE_RESPONSIBILITY)
-    initial_distribution = responsibilities[0] / responsibilities[0].sum()
-
-    row_totals = transition_counts.sum(axis=1)
-    abandoned = row_totals <= MINIMUM_STATE_RESPONSIBILITY
-    transition_matrix = np.where(
-        abandoned[:, None],
-        1.0 / states,
-        transition_counts / np.maximum(row_totals, MINIMUM_STATE_RESPONSIBILITY)[:, None],
-    )
-    transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
-    if bool(abandoned.any()):
-        logger.warning(
-            "state_abandoned chain=%s states=%s; their transition rows fall back to uniform",
-            chain_name,
-            np.flatnonzero(abandoned).tolist(),
-        )
-
-    means = (responsibilities.T @ block) / state_totals[:, None]
-    covariances = np.empty((states, block.shape[1], block.shape[1]))
-    for state in range(states):
-        deviations = block - means[state]
-        weighted = deviations * responsibilities[:, state][:, None]
-        covariance = (weighted.T @ deviations) / state_totals[state]
-        covariances[state] = hidden_markov._regularised_covariance(covariance, pooled_covariance)
-
-    return GaussianHiddenMarkovModel(
-        initial_distribution=initial_distribution,
-        transition_matrix=transition_matrix,
-        means=means,
-        covariances=covariances,
-        covariance_type="full",
     )

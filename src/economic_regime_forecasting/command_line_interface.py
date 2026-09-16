@@ -67,13 +67,14 @@ from economic_regime_forecasting.data.panel import (
 from economic_regime_forecasting.evaluation import verdict as verdict_module
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
+from economic_regime_forecasting.models.model_loading import regime_model_from_dictionary
 from economic_regime_forecasting.models.state_labelling import describe_regimes, regime_table
 from economic_regime_forecasting.models.state_selection import (
     regimes_exist_from_sweep_table,
     sweep_state_counts,
 )
 from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
-    regime_model_from_dictionary,
+    TwoChainStateCount,
 )
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     sweep_state_counts_for_two_chains,
@@ -700,7 +701,19 @@ def submit(workspace: Workspace, today: date) -> int:
         "package_version": __version__,
         "configuration_hash": settings.configuration_hash(),
         "random_seed": settings.random_seed,
-        "regimes": model.state_count,
+        "regimes": int(model.state_count),
+        # A joint count hides how it factors, and the factorisation is what a reader needs to
+        # rebuild the model. Absent for a single-chain run, so that manifest is unchanged.
+        **(
+            {
+                "regimes_by_chain": {
+                    "growth": model.state_count.growth_chain_state_count,
+                    "inflation_and_rates": model.state_count.levels_chain_state_count,
+                }
+            }
+            if isinstance(model.state_count, TwoChainStateCount)
+            else {}
+        ),
         "second_largest_eigenvalue_modulus": model.second_largest_eigenvalue_modulus(),
         "data_as_of": str(workspace.observation_matrix_as_of(today).dates[-1].date()),
         "verdict_by_horizon": {
