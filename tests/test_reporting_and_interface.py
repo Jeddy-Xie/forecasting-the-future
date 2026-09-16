@@ -282,6 +282,31 @@ def test_a_one_state_model_shows_no_visit_length_rather_than_a_huge_one() -> Non
     assert view["shortest visit"].iloc[1] == "40 months"
 
 
+def test_a_two_chain_sweep_shows_the_pair_instead_of_two_blank_columns() -> None:
+    """Persistence and population belong to a chain, not to a pair of them. Printing
+    those columns empty would read as measured-and-blank rather than not applicable."""
+    from economic_regime_forecasting.reporting.tables import sweep_display_table
+
+    sweep = pd.DataFrame(
+        {
+            "states": [1, 4],
+            "growth_chain_states": [1, 2],
+            "levels_chain_states": [1, 2],
+            "free_parameters": [9, 23],
+            "training_log_likelihood": [-900.0, -700.0],
+            "bayesian_information_criterion": [5635.0, 4510.0],
+            "held_out_log_likelihood_per_month": [-4.3, -3.7],
+            "second_eigenvalue_modulus": [0.0, 0.82],
+            "admissible": [True, True],
+            "chosen": [False, True],
+        }
+    )
+    view = sweep_display_table(sweep)
+    assert list(view.columns)[:2] == ["joint states", "growth x levels"]
+    assert view["growth x levels"].iloc[1] == "2 x 2"
+    assert "smallest state" not in view.columns
+
+
 def test_the_forecast_grid_reads_as_percentages_by_horizon() -> None:
     from economic_regime_forecasting.reporting.tables import forecast_display_table
 

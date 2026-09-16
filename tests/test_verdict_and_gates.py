@@ -244,6 +244,40 @@ def test_gate_five_fails_when_a_horizon_is_missing() -> None:
     assert not report.passed
 
 
+def test_gate_two_can_be_re_asserted_from_a_single_chain_run_s_own_table() -> None:
+    """The artifacts a run wrote are enough to ask gate 2 again, without the run."""
+    from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
+        GaussianHiddenMarkovModel,
+    )
+
+    model = GaussianHiddenMarkovModel(
+        initial_distribution=np.array([0.6, 0.4]),
+        transition_matrix=np.array([[0.9, 0.1], [0.2, 0.8]]),
+        means=np.array([[-1.0], [1.0]]),
+        covariances=np.array([[[0.4]], [[0.6]]]),
+    )
+    sweep = pd.DataFrame(
+        {
+            "states": [1, 2],
+            "free_parameters": [2, 7],
+            "training_log_likelihood": [-900.0, -700.0],
+            "bayesian_information_criterion": [1810.0, 1450.0],
+            "held_out_log_likelihood_per_month": [-4.3, -3.1],
+            "smallest_population_share": [1.0, 0.42],
+            "shortest_expected_duration_months": [1e12, 9.0],
+            "second_eigenvalue_modulus": [0.0, 0.7],
+            "admissible": [True, True],
+        }
+    )
+    path = np.array([0] * 60 + [1] * 60)
+
+    report = pipeline_gates.gate_two_from_tables(sweep, model, path, len(path))
+    assert report.number == 2
+    assert len(report.checks) == 5
+    assert report.checks[0].passed
+    assert "2 states -3.1000" in report.checks[0].evidence
+
+
 def test_a_gate_report_renders_every_check_with_its_evidence() -> None:
     report = pipeline_gates.gate_four_backtest(_results(skill=0.5))
     rendered = report.describe()

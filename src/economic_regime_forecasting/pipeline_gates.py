@@ -35,6 +35,9 @@ from economic_regime_forecasting.models.state_selection import (
     StateCountEvaluation,
     StateCountSweep,
 )
+from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
+    TwoTimescaleHiddenMarkovModel,
+)
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     TwoChainStateCountSweep,
 )
@@ -303,8 +306,17 @@ def gate_two_from_tables(
     again, and get the gate the run itself was judged by. Rebuilding the sweep
     objects by hand at the call site is how that goes wrong: it hard-codes one
     model's table shape, which is why this lives here and not in a notebook.
+
+    The fitted model decides which gate is asked, and the tables must agree with it. A
+    model and a sweep table from different runs raise here rather than produce a gate
+    report about a model nobody fitted.
     """
-    if "growth_chain_states" in sweep_table.columns:
+    if isinstance(model, TwoTimescaleHiddenMarkovModel):
+        if "growth_chain_states" not in sweep_table.columns:
+            raise ValueError(
+                "the fitted model has two chains but the sweep table is a single-chain table; "
+                "the two artifacts come from different runs."
+            )
         if per_chain_table is None:
             raise ValueError(
                 "this run's sweep table is a two-chain joint table, and gate 2 asks persistence "
@@ -313,15 +325,10 @@ def gate_two_from_tables(
                 "per_chain_table."
             )
         chains = {}
-        for name in ("growth", "inflation and rates"):
-            chain_model = getattr(
-                model, "growth_chain" if name == "growth" else "levels_chain", None
-            )
-            if chain_model is None:
-                raise ValueError(
-                    f"the sweep table is a two-chain table but the fitted model has no {name} "
-                    "chain; the two artifacts come from different runs."
-                )
+        for name, chain_model in (
+            ("growth", model.growth_chain),
+            ("inflation and rates", model.levels_chain),
+        ):
             rows = per_chain_table[per_chain_table["chain"] == name]
             if rows.empty:
                 raise ValueError(f"the per-chain sweep table has no rows for the {name} chain")
@@ -339,6 +346,12 @@ def gate_two_from_tables(
             ),
             most_likely_state_path,
             months,
+        )
+
+    if "growth_chain_states" in sweep_table.columns:
+        raise ValueError(
+            "the sweep table is a two-chain joint table but the fitted model is a single chain; "
+            "the two artifacts come from different runs."
         )
 
     return gate_two_regime_model(

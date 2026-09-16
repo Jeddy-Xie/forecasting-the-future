@@ -521,6 +521,58 @@ def test_gate_two_for_two_chains_asks_the_same_five_questions() -> None:
     assert "joint regime" in report.checks[4].evidence
 
 
+def test_gate_two_rebuilt_from_a_two_chain_run_s_tables_matches_the_run_s_own_gate() -> None:
+    """A reader with the artifacts but not the run gets the gate the run was judged by.
+
+    The joint table alone cannot answer per-chain persistence or population, so the run
+    writes each chain's own sweep beside it; this asserts the two routes agree exactly.
+    """
+    sample = _simulated_two_chain_sample(300)
+    sweep = sweep_state_counts_for_two_chains(sample, (1, 2), seed=7, restarts=2)
+    model = sweep.recommended_model
+    path = model.most_likely_state_path(sample)
+
+    in_run = pipeline_gates.gate_two_regime_model_of_two_chains(sweep, path, len(sample))
+    from_tables = pipeline_gates.gate_two_from_tables(
+        sweep.joint_table(), model, path, len(sample), per_chain_table=sweep.table()
+    )
+    assert from_tables.describe() == in_run.describe()
+
+
+def test_a_two_chain_sweep_table_without_its_per_chain_companion_is_refused() -> None:
+    """Guessing the per-chain statistics from the joint table would bake an
+    approximation into a gate report: the joint occupancies are not the product of
+    the chains' averages."""
+    sample = _simulated_two_chain_sample(120)
+    sweep = sweep_state_counts_for_two_chains(sample, (1, 2), seed=7, restarts=2)
+    model = sweep.recommended_model
+    with pytest.raises(ValueError, match="per_chain_table"):
+        pipeline_gates.gate_two_from_tables(
+            sweep.joint_table(), model, model.most_likely_state_path(sample), len(sample)
+        )
+
+
+def test_a_model_and_a_sweep_table_from_different_runs_are_refused() -> None:
+    """The fitted model decides which gate is asked, and the table must agree with it.
+    Either mismatch means the two artifacts came from different runs, and a gate report
+    about a model nobody fitted is worse than an error."""
+    sample = _simulated_two_chain_sample(120)
+    sweep = sweep_state_counts_for_two_chains(sample, (1, 2), seed=7, restarts=2)
+    two_chain_model = sweep.recommended_model
+    path = two_chain_model.most_likely_state_path(sample)
+    single_chain_table = sweep.growth_chain_sweep.table()
+
+    with pytest.raises(ValueError, match="single-chain table"):
+        pipeline_gates.gate_two_from_tables(
+            single_chain_table, two_chain_model, path, len(sample), per_chain_table=sweep.table()
+        )
+
+    with pytest.raises(ValueError, match="single chain"):
+        pipeline_gates.gate_two_from_tables(
+            sweep.joint_table(), GROWTH_CHAIN, path, len(sample), per_chain_table=sweep.table()
+        )
+
+
 # ------------------------------------------------------------ settings
 
 
