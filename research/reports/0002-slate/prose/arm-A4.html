@@ -9,8 +9,10 @@ that ends on 1994-01-01.</li>
 <p><b>What happened.</b> It has the largest one-year difference of the six arms, and its one-year 98.33%
 interval is above zero,
 and it also improves at five and ten years. Under experiment 0001's rule, its one-year verdict flips from
-the base rate to the model. At every refit, the joint persistence equals the slower chain's, as
-predicted.</p>
+the base rate to the model. At every refit the joint persistence equals the slower chain's. The arm reported that as a
+confirmed prediction; it is not one. Briefing 04 showed it is an algebraic identity of the
+Kronecker product, verified to 2.1e-15, so it checks the implementation and says nothing about
+whether two timescales help.</p>
 <p>Two further seeds, fixed before they ran, reproduce it. That rules out a lucky starting point as the explanation (see <i>Is A4 just a lucky seed?</i> below).</p>
 <p><b>Review: clean.</b></p>
 <ul>
@@ -27,4 +29,16 @@ accounts for 0.08 of it.</li>
 parameters (58 against 89). So the gain cannot be attributed to the timescale split alone.</li>
 <li>Each forecast rests on thinner evidence: about 45 to 48 months of effective sample, against 112 to
 122 for main.</li>
+<li>Two changes arrived together, and the slate cannot separate them: the two-chain structure, and base
+rates cut on sixteen cells instead of six. The one-year gain landed on the at-horizon questions
+(+0.0884) rather than the any-time ones (+0.0297), which is the opposite of the arm's own hypothesis.</li>
+<li>The ablation that would separate them, main refitted at sixteen states, reads inconclusive:
+main's own gate rejects sixteen unrestricted regimes on this sample as too short-lived and too small
+(shortest visit 5.6 months, smallest population 1.7%). That is the factorisation's practical argument
+&mdash; sixteen regimes are reachable on 58 parameters and not on 399 &mdash; but it leaves the
+mechanism open.</li>
+<li>The model assumes growth is uncorrelated with inflation and rates within each joint regime. Measured
+on the fitting panel, the occupancy-weighted mean absolute correlation is 0.191 with inflation and 0.144
+with rates, against 0.288 for the inflation-and-rates pair the model does capture. The discarded
+dependence is about half the size of the kept one.</li>
 </ul>
