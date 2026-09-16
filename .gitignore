@@ -41,6 +41,17 @@ artifacts/**
 .claude/*.local.json
 .claude/thaw-token.json
 
+# Anvil stress-test assays: a thesis restated for blind lenses, their verdicts and
+# the chair's dossier. They are working notes about ideas under consideration, not
+# conclusions, and this repository is public. They stay on disk and in the session
+# record; what survives an assay is promoted to docs/adr/ or research/briefings/.
+anvil/
+
+# Graph index and agent memory, both rebuilt on demand by the tools that write them.
+.lattice/
+.lattice.json
+.claude/agent-memory/
+
 # Bellows stakeholder heuristics are personal decision notes. This repository is
 # public (verified 2026-09-10, see .claude/bellows.json), so they must never be
 # committed. The directory is empty today; this keeps the first file written
