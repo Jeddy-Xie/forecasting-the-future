@@ -292,4 +292,4 @@ not covered  revised values of observations already published at the cutoff, in 
 
 PASS: no forecast issued on or before 2000-03-01 changed when every observation unavailable at 2000-03-01 was perturbed
 
-exit 0; run time 369 s; written to .cache/models/look_ahead_audit.json
+exit 0; run time 358 s; written to .cache/models/look_ahead_audit.json
