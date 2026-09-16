@@ -66,7 +66,11 @@ class RunSettings:
     random_seed: int = 20260908
     """Seed for every stochastic step. Recorded in each run manifest."""
 
-    hidden_state_counts_to_search: tuple[int, ...] = (1, 2, 3, 4, 5, 6)
+    # Diagnostic 0005 (research/experiments-drafts/0005-state-count-ablation.md): main's own
+    # single full-covariance chain, forced to sixteen states, so that A4's sixteen joint
+    # regimes can be compared against sixteen unrestricted ones. The sweep can choose
+    # nothing else, which is the whole change on this branch.
+    hidden_state_counts_to_search: tuple[int, ...] = (16,)
     """The candidate numbers of latent regimes swept during model selection.
 
     One is in the list deliberately. A single-state model is not a regime model at
