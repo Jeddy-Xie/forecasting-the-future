@@ -194,6 +194,7 @@ class ArtifactNames:
     data_audit: str = "data_audit.parquet"
     revision_audit: str = "revision_audit.parquet"
     state_count_sweep: str = "state_count_sweep.parquet"
+    state_count_sweep_by_chain: str = "state_count_sweep_by_chain.parquet"
     selected_model: str = "selected_model.json"
     regime_descriptions: str = "regime_descriptions.parquet"
     mixing_diagnostics: str = "mixing_diagnostics.parquet"

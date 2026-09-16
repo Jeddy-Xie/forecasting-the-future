@@ -27,8 +27,14 @@ from economic_regime_forecasting.configuration.registry import (
 )
 from economic_regime_forecasting.data.audit import SeriesAudit
 from economic_regime_forecasting.data.cache import CacheStatistics
+from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
+    GaussianHiddenMarkovModel,
+)
 from economic_regime_forecasting.models.regime_forecast import MixingDiagnostics
-from economic_regime_forecasting.models.state_selection import StateCountSweep
+from economic_regime_forecasting.models.state_selection import (
+    StateCountEvaluation,
+    StateCountSweep,
+)
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     TwoChainStateCountSweep,
 )
@@ -281,6 +287,88 @@ def gate_two_regime_model_of_two_chains(
                 ),
             ),
         ),
+    )
+
+
+def gate_two_from_tables(
+    sweep_table: pd.DataFrame,
+    model: GaussianHiddenMarkovModel,
+    most_likely_state_path: np.ndarray,
+    months: int,
+    per_chain_table: pd.DataFrame | None = None,
+) -> GateReport:
+    """Re-assert gate 2 from the artifacts a run wrote, whichever model wrote them.
+
+    A reader who has the artifacts but not the run should be able to ask the gate
+    again, and get the gate the run itself was judged by. Rebuilding the sweep
+    objects by hand at the call site is how that goes wrong: it hard-codes one
+    model's table shape, which is why this lives here and not in a notebook.
+    """
+    if "growth_chain_states" in sweep_table.columns:
+        if per_chain_table is None:
+            raise ValueError(
+                "this run's sweep table is a two-chain joint table, and gate 2 asks persistence "
+                "and population of each chain, which the joint table does not carry. Read "
+                "state_count_sweep_by_chain.parquet from the same run and pass it as "
+                "per_chain_table."
+            )
+        chains = {}
+        for name in ("growth", "inflation and rates"):
+            chain_model = getattr(
+                model, "growth_chain" if name == "growth" else "levels_chain", None
+            )
+            if chain_model is None:
+                raise ValueError(
+                    f"the sweep table is a two-chain table but the fitted model has no {name} "
+                    "chain; the two artifacts come from different runs."
+                )
+            rows = per_chain_table[per_chain_table["chain"] == name]
+            if rows.empty:
+                raise ValueError(f"the per-chain sweep table has no rows for the {name} chain")
+            chains[name] = StateCountSweep(
+                evaluations=_evaluations_from_rows(rows),
+                models={chain_model.state_count: chain_model},
+                recommended_state_count=chain_model.state_count,
+                reason="loaded from the fitted artifact",
+                runner_up_state_count=None,
+            )
+        return gate_two_regime_model_of_two_chains(
+            TwoChainStateCountSweep(
+                growth_chain_sweep=chains["growth"],
+                levels_chain_sweep=chains["inflation and rates"],
+            ),
+            most_likely_state_path,
+            months,
+        )
+
+    return gate_two_regime_model(
+        StateCountSweep(
+            evaluations=_evaluations_from_rows(sweep_table),
+            models={int(model.state_count): model},
+            recommended_state_count=int(model.state_count),
+            reason="loaded from the fitted artifact",
+            runner_up_state_count=None,
+        ),
+        most_likely_state_path,
+        months,
+    )
+
+
+def _evaluations_from_rows(table: pd.DataFrame) -> tuple[StateCountEvaluation, ...]:
+    """One evaluation per row of a sweep table, in the table's own order."""
+    return tuple(
+        StateCountEvaluation(
+            state_count=int(row["states"]),
+            free_parameters=int(row["free_parameters"]),
+            training_log_likelihood=float(row["training_log_likelihood"]),
+            bayesian_information_criterion=float(row["bayesian_information_criterion"]),
+            held_out_log_likelihood_per_month=float(row["held_out_log_likelihood_per_month"]),
+            smallest_population_share=float(row["smallest_population_share"]),
+            shortest_expected_duration_in_months=float(row["shortest_expected_duration_months"]),
+            second_largest_eigenvalue_modulus=float(row["second_eigenvalue_modulus"]),
+            converged=True,
+        )
+        for row in table.to_dict("records")
     )
 
 

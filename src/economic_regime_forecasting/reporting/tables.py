@@ -73,6 +73,24 @@ def _column_name(dimension: str, transform: Transform) -> str:
 def sweep_display_table(sweep_table: pd.DataFrame) -> pd.DataFrame:
     """The state sweep with the columns a reader actually compares, in order."""
     view = sweep_table.copy()
+    if "growth_chain_states" in view.columns:
+        # A two-chain run sweeps each chain separately, so persistence and population
+        # belong to a chain, not to a pair. Showing those columns empty would read as
+        # "measured, and blank"; the pair and its joint quantities are what this table has.
+        return pd.DataFrame(
+            {
+                "joint states": view["states"],
+                "growth x levels": (
+                    view["growth_chain_states"].astype(int).astype(str)
+                    + " x "
+                    + view["levels_chain_states"].astype(int).astype(str)
+                ),
+                "parameters": view["free_parameters"],
+                "criterion (lower better)": view["bayesian_information_criterion"].round(0),
+                "held-out (higher better)": view["held_out_log_likelihood_per_month"].round(3),
+                "admissible": view["admissible"],
+            }
+        )
     single_state = view["states"] == 1
     # A one-state model has no second state to leave for, so its expected visit is
     # the length of the sample. Printing 1e12 months is noise; printing nothing

@@ -308,9 +308,10 @@ def _fit_two_timescale_regimes(
 ) -> tuple[int, pipeline_gates.GateReport]:
     """Gate 2 for research arm A4: the sweep run on each chain's own block.
 
-    Writes the same three artifacts as the single-chain path: the joint sweep
-    table, the product of the two chosen chains as the selected model, and a
-    description of every joint regime. `forecast-now` reads the chain counts back
+    Writes four artifacts: the joint sweep table, each chain's own sweep beside it
+    (the joint table alone cannot answer per-chain persistence or population, which
+    gate 2 asks of each chain), the product of the two chosen chains as the selected
+    model, and a description of every joint regime. `forecast-now` reads the chain counts back
     off the selected model and refits both chains on today's panel.
     """
     settings = workspace.settings
@@ -326,6 +327,7 @@ def _fit_two_timescale_regimes(
     descriptions = describe_regimes(model, standardised, natural)
 
     workspace.artifacts.write_table(ARTIFACTS.state_count_sweep, sweep.joint_table())
+    workspace.artifacts.write_table(ARTIFACTS.state_count_sweep_by_chain, sweep.table())
     workspace.artifacts.write_json(ARTIFACTS.selected_model, model.to_dictionary())
     workspace.artifacts.write_table(ARTIFACTS.regime_descriptions, regime_table(descriptions))
 
