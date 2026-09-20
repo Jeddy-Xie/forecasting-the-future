@@ -79,6 +79,7 @@ from economic_regime_forecasting.models.two_timescale_hidden_markov_model import
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     sweep_state_counts_for_two_chains,
 )
+from economic_regime_forecasting.reporting.tables import text_table
 
 logger = logging.getLogger("economic_regime_forecasting")
 
@@ -1122,6 +1123,100 @@ def baseline_list(directory: Path = regression_baseline.BASELINE_DIRECTORY) -> i
     return 0
 
 
+# ------------------------------------------------------------ what was generated
+
+
+WRITTEN_BY: dict[str, str] = {
+    ARTIFACTS.data_audit: "audit-data",
+    ARTIFACTS.revision_audit: "audit-data",
+    ARTIFACTS.state_count_sweep: "fit-regimes",
+    ARTIFACTS.state_count_sweep_by_chain: "fit-regimes",
+    ARTIFACTS.selected_model: "fit-regimes",
+    ARTIFACTS.regime_descriptions: "fit-regimes",
+    ARTIFACTS.current_forecasts: "forecast-now",
+    ARTIFACTS.mixing_diagnostics: "forecast-now",
+    ARTIFACTS.backtest_results: "backtest",
+    ARTIFACTS.backtest_fallback_record: "backtest",
+    ARTIFACTS.burn_in_state_count_choice: "backtest, audit-look-ahead",
+    ARTIFACTS.evaluation_metrics: "evaluate",
+    ARTIFACTS.verdicts: "evaluate",
+    ARTIFACTS.run_summary: "check-gates",
+    ARTIFACTS.gate_reports: "check-gates",
+    ARTIFACTS.variant_comparison: "compare-variants",
+    ARTIFACTS.variant_comparison_manifest: "compare-variants",
+    ARTIFACTS.look_ahead_audit: "audit-look-ahead",
+}
+"""Which command writes each named artifact, read off the call sites rather than
+guessed. Every name in ``ArtifactNames`` appears here; a name that appears in
+neither is a file the pipeline cannot produce, which is why ``run_manifest`` was
+deleted rather than listed."""
+
+
+def _size(number: int) -> str:
+    if number < 1024:
+        return f"{number} B"
+    if number < 1024 * 1024:
+        return f"{number / 1024:.1f} KB"
+    return f"{number / (1024 * 1024):.1f} MB"
+
+
+def _age(seconds: float) -> str:
+    if seconds < 3600:
+        return f"{seconds / 60:.0f} min"
+    if seconds < 86400:
+        return f"{seconds / 3600:.0f} hours"
+    return f"{seconds / 86400:.0f} days"
+
+
+def _row(path: Path, name: str, written_by: str, now: float) -> tuple[str, str, str, str]:
+    if not path.is_file():
+        return (name, "-", "not written", written_by)
+    stat = path.stat()
+    return (name, _size(stat.st_size), _age(now - stat.st_mtime), written_by)
+
+
+def artifacts(workspace: Workspace, today: date) -> int:
+    """Every generated file in one table, with the command that wrote it.
+
+    Generated output lands in four places and none of them has an index, so
+    opening anything has meant knowing the filename (D10). Three are git-ignored
+    and rebuildable; `submission/` is tracked deliberately.
+    """
+    now = time.time()
+    store = workspace.artifacts.directory
+
+    named = sorted(WRITTEN_BY)
+    rows = [_row(store / name, name, WRITTEN_BY[name], now) for name in named]
+    print(f"pipeline artifacts, under {store}")
+    print(text_table(("file", "size", "age", "written by"), rows))
+
+    cached = sorted(store.glob("model_*.json")) + sorted(store.glob("burn_in_state_count_*.json"))
+    if cached:
+        total = sum(path.stat().st_size for path in cached)
+        print(
+            f"\nand {len(cached)} cached fits and burn-in choices, {_size(total)} in total, "
+            "keyed by refit date, state count, seed and configuration hash"
+        )
+
+    for label, directory, writer, pattern in (
+        ("submission (tracked)", SUBMISSION_DIRECTORY, "submit", "*"),
+        ("baselines (tracked)", regression_baseline.BASELINE_DIRECTORY, "baseline capture", "*"),
+        ("rendered pages", PROJECT_ROOT / "artifacts", "scripts/graph_view.py", "*/*"),
+    ):
+        found = sorted(path for path in directory.glob(pattern) if path.is_file())
+        print(f"\n{label}, under {directory}")
+        if not found:
+            print(f"  nothing written yet; `{writer}` writes here")
+            continue
+        print(
+            text_table(
+                ("file", "size", "age", "written by"),
+                [_row(path, path.relative_to(directory).as_posix(), writer, now) for path in found],
+            )
+        )
+    return 0
+
+
 # ------------------------------------------------------- the look-ahead audit
 
 
@@ -1312,6 +1407,7 @@ def build_parser() -> argparse.ArgumentParser:
         ("register", "record the shipped forecasts as dated, resolvable claims"),
         ("resolve", "score every registered forecast whose date has passed"),
         ("compare-variants", "the 2x2 of the two look-ahead fixes, against one decision rule"),
+        ("artifacts", "every generated file in one table, with the command that wrote it"),
     ):
         subparsers.add_parser(name, help=help_text)
     return parser
@@ -1418,6 +1514,8 @@ def main(argv: list[str] | None = None) -> int:
             # matching how `register_forecasts` prints a `RegisterError`.
             print(f"submit: {error}", file=sys.stderr)
             return 2
+    if arguments.command == "artifacts":
+        return artifacts(workspace, today)
     if arguments.command == "check-gates":
         return check_gates(workspace, today)
     if arguments.command == "compare-variants":

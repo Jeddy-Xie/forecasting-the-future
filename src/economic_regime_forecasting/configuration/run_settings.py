@@ -204,7 +204,10 @@ class ArtifactNames:
     verdicts: str = "verdicts.parquet"
     gate_reports: str = "gate_reports.parquet"
     run_summary: str = "run_summary.json"
-    run_manifest: str = "run_manifest.json"
+    # run_manifest was removed 2026-09-21: declared here, written nowhere and read
+    # nowhere, in src, scripts or the notebooks. `forecast artifacts` would have
+    # listed a file the pipeline cannot produce. Re-adding it means adding its
+    # writer in the same change.
     burn_in_state_count_choice: str = "burn_in_state_count_choice.json"
     variant_comparison: str = "variant_comparison.parquet"
     variant_comparison_manifest: str = "variant_comparison_manifest.json"

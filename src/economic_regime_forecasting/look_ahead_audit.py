@@ -108,6 +108,7 @@ from economic_regime_forecasting.data.cache import (
     SeriesSnapshot,
     digest_of,
 )
+from economic_regime_forecasting.reporting.tables import text_table
 
 logger = logging.getLogger(__name__)
 
@@ -609,19 +610,6 @@ def _render(value: Any) -> str:
     return str(value)
 
 
-def _text_table(headings: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
-    """Left-aligned columns under a rule, wide enough for their longest cell."""
-    widths = [
-        max(len(headings[column]), *(len(row[column]) for row in rows))
-        for column in range(len(headings))
-    ]
-    lines = ["  ".join(heading.ljust(widths[i]) for i, heading in enumerate(headings)).rstrip()]
-    lines.append("  ".join("-" * width for width in widths))
-    for row in rows:
-        lines.append("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)).rstrip())
-    return "\n".join(lines)
-
-
 @dataclass(frozen=True)
 class LookAheadAudit:
     """The two runs, what was perturbed between them, and every row that moved."""
@@ -764,7 +752,7 @@ class LookAheadAudit:
         ]
         lines.append("")
         lines.append(
-            _text_table(
+            text_table(
                 ("forecast date", "indicator", "horizon", "field", "original", "perturbed"),
                 table_rows,
             )

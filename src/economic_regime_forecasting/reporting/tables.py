@@ -25,6 +25,19 @@ from economic_regime_forecasting.features.observation_matrix import COLUMN_NAMES
 from economic_regime_forecasting.models.state_labelling import RegimeDescription
 
 
+def text_table(headings: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
+    """Left-aligned columns under a rule, wide enough for their longest cell."""
+    widths = [
+        max(len(headings[column]), *(len(row[column]) for row in rows))
+        for column in range(len(headings))
+    ]
+    lines = ["  ".join(heading.ljust(widths[i]) for i, heading in enumerate(headings)).rstrip()]
+    lines.append("  ".join("-" * width for width in widths))
+    for row in rows:
+        lines.append("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)).rstrip())
+    return "\n".join(lines)
+
+
 def to_percent_per_year(value: float, transform: Transform) -> float:
     """Put one dimension's mean into percent a year, whatever units it arrived in.
 

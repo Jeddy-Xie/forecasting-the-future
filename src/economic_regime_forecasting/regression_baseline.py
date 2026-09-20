@@ -70,6 +70,7 @@ from economic_regime_forecasting import __version__
 from economic_regime_forecasting.configuration.run_settings import ARTIFACTS, PROJECT_ROOT
 from economic_regime_forecasting.data.cache import ArtifactStore, now_in_utc
 from economic_regime_forecasting.evaluation import paired_skill_comparison
+from economic_regime_forecasting.reporting.tables import text_table
 
 BASELINE_DIRECTORY = PROJECT_ROOT / "baselines"
 """Where committed baselines live. Not under ``.cache/``: these are the record a
@@ -884,20 +885,7 @@ def _field_table(items: Sequence[FieldDifference]) -> str:
         )
         for item in items
     ]
-    return _text_table(headings, rows)
-
-
-def _text_table(headings: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
-    """Left-aligned columns under a rule, wide enough for their longest cell."""
-    widths = [
-        max(len(headings[column]), *(len(row[column]) for row in rows))
-        for column in range(len(headings))
-    ]
-    lines = ["  ".join(heading.ljust(widths[i]) for i, heading in enumerate(headings)).rstrip()]
-    lines.append("  ".join("-" * width for width in widths))
-    for row in rows:
-        lines.append("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)).rstrip())
-    return "\n".join(lines)
+    return text_table(headings, rows)
 
 
 def _is_number(value: Any) -> bool:
@@ -1140,7 +1128,7 @@ def describe_listing(
         )
         for item in listing
     ]
-    return _text_table(headings, rows)
+    return text_table(headings, rows)
 
 
 # ------------------------------------------------------------ paired comparison
@@ -1389,7 +1377,7 @@ class PairedComparison:
                 )
         lines.append("")
         lines.append(
-            _text_table(
+            text_table(
                 (
                     "horizon",
                     "in both",
@@ -1425,7 +1413,7 @@ class PairedComparison:
             "the interval belongs to the mean above):"
         )
         lines.append(
-            _text_table(
+            text_table(
                 ("indicator", *(f"{horizon} months" for horizon in horizons)),
                 [
                     (indicator, *(by_horizon.get(horizon, "absent") for horizon in horizons))

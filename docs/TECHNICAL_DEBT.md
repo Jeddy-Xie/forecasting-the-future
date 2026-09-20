@@ -351,7 +351,30 @@ counts.
 ---
 
 ## D10 · No single place to see everything the pipeline generated
-**ergonomic** · raised 2026-09-09 by Jeddy
+**closed** 2026-09-21 by `forecast artifacts`, the command this entry proposes: every
+generated file in one table with its size, its age and the command that wrote it,
+across all four places output lands -- the artifact store, `submission/`, `baselines/`
+and `artifacts/`.
+
+Three things came out of building it rather than describing it:
+
+- **The artifact-to-command map is read off the call sites, not guessed**, and a check
+  holds it against `ArtifactNames` in both directions. A name declared but unattributed
+  would print a blank writer; a name attributed but undeclared would print as missing
+  forever. Both are silent failures, so both are asserted.
+- **`run_manifest` was deleted.** It was declared in `ArtifactNames` and written nowhere
+  and read nowhere, in `src`, `scripts` or the notebooks. This command would have listed
+  a file the pipeline cannot produce. The removal is recorded in `run_settings.py` beside
+  where it was, with the condition for re-adding it: bring its writer in the same change.
+- **This entry's own description was out of date.** It says `artifacts/<date>/` holds
+  rendered pages. It holds one graph view written by `scripts/graph_view.py`; no pipeline
+  command writes there. The command says what is actually there.
+
+Building it also removed a duplication it would otherwise have tripled: the text-table
+formatter existed byte-identically in `regression_baseline.py` and `look_ahead_audit.py`.
+Both now use one `reporting.tables.text_table`, so the output is unchanged by
+construction.
+**was: ergonomic** · raised 2026-09-09 by Jeddy
 
 Generated output lands in three places: `.cache/models/` for the eleven named
 pipeline artifacts and the cached fits, `artifacts/<date>/` for rendered pages,
@@ -555,3 +578,44 @@ is the failure the audit exists to prevent.
 count, and both the command-line interface and the audit call it. A test builds a
 configuration whose count differs from the sweep's, and asserts that the audit fits
 with the backtest's count.
+
+---
+
+## D16 · Seven modules import across the layer table, and nothing fails
+**structural** · found 2026-09-21 while giving `forecast artifacts` a home
+
+The package docstring declares a layer order and says dependencies point one way
+only. `scripts/layer_check.py` reads that table as the specification and reports
+where the imports disagree with it. Seven do:
+
+| module | imports | the table allows |
+|---|---|---|
+| `data/audit.py:30` | features | configuration |
+| `data/indicator_outcomes.py:31` | features | configuration |
+| `data/panel.py:32` | features | configuration |
+| `evaluation/verdict.py:40` | configuration | nothing |
+| `features/observation_matrix.py:31` | data | configuration |
+| `reporting/tables.py:20` | configuration | evaluation, models |
+| `reporting/tables.py:24` | features | evaluation, models |
+
+All seven pre-date this session; none was introduced by the `text_table` move, which
+only added a function with no imports of its own. The root-level orchestration modules
+(`command_line_interface`, `look_ahead_audit`, `regression_baseline`, `pipeline_gates`,
+`forecast_register`) are exempt by the checker's own design and are not at issue.
+
+**What it costs.** Not correctness: nothing here is a cycle, and the suite, the gates
+and the audit all pass. What it costs is the docstring's standing as a specification. A
+reader who takes the table literally will be wrong about this package seven times, and
+the layer rule is one of the few architectural claims the project makes about itself.
+
+**Why it is not fixed here.** `layer_check.py` exits 0, so this has never blocked
+anything, and the fix is a judgement the owner should make rather than a repair: either
+the imports move, which is real surgery in `data` and `features`, or the table is
+rewritten to describe the package as it is. The checker states the choice exactly --
+"the table is the specification, so decide which one is the defect" -- and it is the
+kind of decision that should be made once, deliberately, not absorbed into an unrelated
+change.
+
+**Shape of the fix.** Decide which side is wrong. Then, whichever way it goes, make the
+check enforceable: `scripts/layer_check.py` exits 0 today whatever it finds, so nothing
+stops the count going from seven to eight.

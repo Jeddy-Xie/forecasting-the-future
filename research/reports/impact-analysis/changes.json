@@ -249,6 +249,100 @@
       ]
     },
     {
+      "id": "D6-ORDER",
+      "kind": "integrity",
+      "date": "2026-09-21",
+      "title": "The composition's Markov assumption, tested directly",
+      "what_changed": "The any-time composition assumes a condition depends on last month's condition and this month's regime and nothing else. That was only ever tested indirectly, as miscalibration. Both orders are now fitted on the same months with the same filtered regime weights and the same shrinkage, and compared by log likelihood with a BIC penalty.",
+      "impact": {
+        "recorded": {
+          "headline": "no indicator prefers second order",
+          "detail": "pooled, second order buys 32.1 log-likelihood points for 320 extra parameters, dBIC +2847.5 over 909 months at sixteen regimes; the composition does not understate persistence, which is the failure the debt was watching for"
+        },
+        "provenance": "research/derivations/condition_process_order.py, committed and runnable; in-sample on the final model's filtered probabilities, which is the direct test the debt asked for"
+      },
+      "status": "closed D6",
+      "status_kind": "ok",
+      "notes": [
+        "The two recession rows are identical because both indicators resolve off recession_indicator and share one monthly condition series.",
+        "With sixteen regimes the penalty term is large, so the same conclusion is stated from the unpenalised likelihoods too."
+      ],
+      "evidence": [
+        "docs/TECHNICAL_DEBT.md D6",
+        "research/derivations/condition_process_order.py"
+      ]
+    },
+    {
+      "id": "D1-D4",
+      "kind": "integrity",
+      "date": "2026-09-21",
+      "title": "Two debts answered by the slate that had already run",
+      "what_changed": "D1 asked what a Dirichlet prior on the transition matrix would change; arm A1 is exactly that fix. D4 asked for the direct per-horizon path to be implemented and compared; arm A5 is exactly that path. Neither needed new engineering, only reading the measurement against the question.",
+      "impact": {
+        "recorded": {
+          "headline": "D1's mechanism confirmed, its consequence contradicted",
+          "detail": "the prior does shorten the horizon (lambda2 0.9777 to 0.9700 at 1994-03), but ten-year skill IMPROVED +0.1905 90% [+0.0899, +0.2320] where the debt predicted it would worsen. D4: the direct path fixes the ten-year compounding, +0.2647 90% [+0.0459, +0.2526], and breaks one year, -0.1017, HARMFUL"
+        },
+        "provenance": "each arm's own paired.json, look-ahead reviews CLEAN; experiment 0002"
+      },
+      "status": "closed D1 and D4; neither adopted",
+      "status_kind": "ok",
+      "notes": [
+        "D1's entry should not be quoted as though its argument had been borne out. It predicted regularising would strengthen the paper's conclusion; the measurement points the other way, on 2.25 effective independent observations.",
+        "D4's data-efficiency cost is visible as predicted: mean effective sample size for recession-within-ten-years falls 98.1 to 39.9.",
+        "D7, D8 and D12 were closed the same day by recorded decision rather than by work, because their fixes are new experiments, not repairs."
+      ],
+      "evidence": [
+        "docs/TECHNICAL_DEBT.md D1",
+        "docs/TECHNICAL_DEBT.md D4"
+      ]
+    },
+    {
+      "id": "D10-ARTIFACTS",
+      "kind": "infrastructure",
+      "date": "2026-09-21",
+      "title": "One table for everything the pipeline generated",
+      "what_changed": "`forecast artifacts` lists every generated file with its size, its age and the command that wrote it, across the artifact store, submission/, baselines/ and artifacts/. The artifact-to-command map is read off the call sites and held against ArtifactNames in both directions by a check.",
+      "impact": {
+        "recorded": {
+          "headline": "18 named artifacts, all attributed; one deleted as unproducible",
+          "detail": "run_manifest was declared and written nowhere and read nowhere, so the command would have listed a file the pipeline cannot produce; it is removed with the condition for re-adding it. Building it also collapsed a byte-identical text-table formatter that existed in two modules"
+        },
+        "provenance": "docs/TECHNICAL_DEBT.md D10; tests/test_artifacts_command.py"
+      },
+      "status": "closed D10",
+      "status_kind": "ok",
+      "notes": [
+        "The debt's own description was out of date: artifacts/<date>/ holds one graph view from scripts/graph_view.py, not rendered pages, and no pipeline command writes there."
+      ],
+      "evidence": [
+        "docs/TECHNICAL_DEBT.md D10"
+      ]
+    },
+    {
+      "id": "D16-LAYERS",
+      "kind": "integrity",
+      "date": "2026-09-21",
+      "title": "Seven modules import across the layer table, and nothing fails",
+      "what_changed": "The package docstring declares a layer order and says dependencies point one way only. scripts/layer_check.py reads that table as the specification; seven imports disagree with it, in data, features, evaluation and reporting. All seven pre-date this session.",
+      "impact": {
+        "recorded": {
+          "headline": "not correctness, but the docstring's standing as a specification",
+          "detail": "nothing here is a cycle; the suite, the gates and the audit all pass. A reader who takes the layer table literally will be wrong about this package seven times, and layer_check exits 0 whatever it finds, so nothing stops the count rising"
+        },
+        "provenance": "scripts/layer_check.py, run 2026-09-21"
+      },
+      "status": "open; the owner decides which side is the defect",
+      "status_kind": "wait",
+      "notes": [
+        "The checker states the choice exactly: either the imports move, which is real surgery in data and features, or the table is rewritten to describe the package as it is.",
+        "Whichever way it goes, the check should be made enforceable; today it reports and exits 0."
+      ],
+      "evidence": [
+        "docs/TECHNICAL_DEBT.md D16"
+      ]
+    },
+    {
       "id": "D15",
       "kind": "integrity",
       "date": "2026-09-16",
@@ -455,10 +549,6 @@
   ],
   "decisions": [
     {
-      "title": "Adopt A4 as main's method",
-      "detail": "Merging the branch changes the shipped configuration and needs your shipping token. Under the project's own rule, A4's one-year verdict on the honest start is ship the model, where main's is ship the base rate because main fails the calibration gate."
-    },
-    {
       "title": "Register A4's forecasts forward",
       "detail": "Beside the shipped configuration's, so both are scored as they resolve from 2027-07-01. It is the only out-of-sample test there is, and it is outward-facing."
     },
@@ -471,10 +561,6 @@
       "detail": "Main is ahead of origin by more than thirty commits and no arm branch has ever been pushed. Nothing outward-facing moves without your word."
     },
     {
-      "title": "How to fix the recession lag (D14)",
-      "detail": "A longer fixed lag of at least 662 days, or availability dated by each NBER announcement. Either lands as its own change, measured against main."
-    },
-    {
       "title": "The calibration gate at n = 31",
       "detail": "Keep it and report the one-year failure as uninformative, or register a new sample-size-aware test. Moving the threshold is not an option."
     },
@@ -485,6 +571,10 @@
     {
       "title": "A materiality floor for judged leaks",
       "detail": "A6 is void for a leak that moves its one-year difference by 0.0002, because the rule voids for any path. Whether a future registration should state a size below which a found leak is recorded but does not void an arm is a choice for next time."
+    },
+    {
+      "title": "The layer table, or the imports (D16)",
+      "detail": "Seven imports disagree with the package's declared layer order, all pre-dating this session. Either the imports move -- real surgery in data and features -- or the table is rewritten to describe the package as it is. layer_check exits 0 either way today, so nothing forces the question."
     }
   ],
   "next_candidates": [
