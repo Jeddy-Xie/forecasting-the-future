@@ -111,7 +111,7 @@ sample</i>: every arm was designed by someone who had already seen main's result
 out-of-sample test is forecasts registered forward, the first of which resolves on 2027-07-01. Nothing
 has been merged or shipped; that is your call, below.</p>
 
-  <p class="generated">generated 2026-09-20 23:23 JST from main at <code>f3f1cc8</code> by <code>research/tools/build_slate_report.py</code></p>
+  <p class="generated">generated 2026-09-21 00:47 JST from main at <code>3272065</code> by <code>research/tools/build_slate_report.py</code></p>
 </header>
 
 <h2>Six ideas, one rule</h2>
@@ -317,19 +317,26 @@ The dots move a lot; the intervals say how little that means.</p></div>
 <h2>What you need to decide</h2>
 <div class="prose">
 <ol class="decisions">
-<li><b>Whether to adopt A4 as main's method.</b> That means merging <code>research/two-timescale-chains</code>,
-which changes the shipped configuration and needs your shipping token. Under experiment 0001's rule,
-A4's one-year verdict on the honest start is <i>ship the model</i>, where main's is <i>ship the base
-rate</i>, because main fails the calibration gate. A4 edited two existing tests without removing any
-assertion. The covenant asks you to review that before it merges.</li>
+<li><b>Whether to adopt A4 as main's method &mdash; decided 2026-09-20, adopted.</b>
+<code>research/two-timescale-chains</code> is merged and the two-chain model is the pipeline's default at
+configuration <code>fec79a040f9ca6f9</code>, sixteen regimes; ADR 0010 records what the decision does and
+does not claim. Under experiment 0001's rule its one-year verdict on the honest start is <i>ship the
+model</i>, where main's was <i>ship the base rate</i>, because main fails the calibration gate.
+<b>Not shipped:</b> <code>submission/forecasts.csv</code> still carries the older configuration, and
+re-shipping needs your token &mdash; that decision is still open, below.</li>
 <li><b>Whether to register A4's forecasts forward</b> in <code>forecasts/register.jsonl</code>, beside the
 shipped configuration's, so both are scored as they resolve from 2027-07-01. It is the only
 out-of-sample test there is, and it is outward-facing, so nothing is registered without you.</li>
 <li><b>Experiment 0001's calibration gate at n ≈ 31.</b> You can keep it and report the one-year
 failure as uninformative, or register a new, sample-size-aware test. Moving the threshold is not one of
 the options.</li>
-<li><b>How to fix D14</b>: either a longer fixed recession lag, or availability by turning point, from
-a dated table of NBER announcements. Either way, it lands after this slate, measured against main.</li>
+<li><b>How to fix D14 &mdash; decided 2026-09-21.</b> Availability by turning point, from a dated table
+of the eight NBER announcements since 1990: a recession month is published at the later of that
+announcement and the constant lag, so the rule only ever delays. It landed after this slate as ADR 0011,
+measured against a baseline captured immediately before it so A4's adoption is not folded in: 57 moved
+fields, every one on the two recession indicators, one-year skill &minus;0.0071 with a 90% interval of
+[&minus;0.0165, &minus;0.0009], and no verdict changed. One-year skill <i>falls</i>, which is the right
+sign for closing a leak: some of it was earned on post-trough codings no forecaster could have read.</li>
 <li><b>Re-shipping.</b> <code>submission/forecasts.csv</code> still carries the benchmark's pre-fix base
 rates, which moved by at most 0.0061, and D14 would move them again. The shipping guard refuses a
 re-ship without your token.</li>
