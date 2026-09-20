@@ -133,7 +133,9 @@ def prepare_indicator_history(
     revised -- the funds rate, the ten-year yield and the bill rate not at all,
     the unemployment rate only through seasonal factors, and recession dates are
     settled decades later -- and because the timing is still enforced: a condition
-    is only used once its publication lag has passed. The one series where
+    is only used once it had been published, which for recession dating means once
+    the turning point opening its phase had been announced (D14, ADR 0011) and for
+    every other series means once its publication lag has passed. The one series where
     revisions are material, industrial production, is measured in the data audit
     so the size of the approximation is on the record rather than assumed away.
     """

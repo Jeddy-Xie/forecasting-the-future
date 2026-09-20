@@ -230,7 +230,38 @@ close the question rather than leaving it argued.
 ---
 
 ## D6 · The path composition's Markov assumption is only tested indirectly
-**evidential**
+**closed** 2026-09-21 by the direct test this entry asks for:
+`research/derivations/condition_process_order.py` fits the condition process at both
+orders on the same months, with the same filtered regime weights and the same
+shrinkage, and compares them by log likelihood with a BIC penalty for the extra
+parameters. Against the sixteen-regime default, 909 months:
+
+| indicator | first order | second order | dBIC | prefers |
+|---|---:|---:|---:|---|
+| consumer_price_inflation_above_five_percent_within_horizon | −64.8 | −65.3 | +218.8 | first |
+| consumer_price_inflation_above_three_percent_at_horizon | −177.0 | −170.5 | +205.0 | first |
+| economy_in_recession_at_horizon_date | −83.0 | −82.1 | +216.2 | first |
+| economy_in_recession_within_horizon | −83.0 | −82.1 | +216.2 | first |
+| federal_funds_rate_above_four_percent_at_horizon | −58.1 | −57.9 | +215.8 | first |
+| federal_funds_rate_below_one_percent_within_horizon | −32.1 | −30.2 | +212.5 | first |
+| industrial_production_growth_above_two_percent_at_horizon | −178.7 | −172.7 | +206.0 | first |
+| treasury_yield_curve_inverted_within_horizon | −86.3 | −86.5 | +217.4 | first |
+| unemployment_rate_above_five_percent_at_horizon | −109.6 | −99.4 | +197.5 | first |
+| unemployment_rate_above_seven_percent_within_horizon | −78.4 | −72.0 | +205.0 | first |
+
+Pooled, second order buys 32.1 log-likelihood points for 320 extra parameters, dBIC
++2847.5. **There is no preference for second order at any indicator**, so the
+composition does not understate persistence, which is the failure this entry was
+watching for. The two recession rows are identical because both indicators resolve off
+`recession_indicator` and therefore share one monthly condition series.
+
+Two limits, stated rather than buried. This is an in-sample diagnostic on the final
+model's filtered probabilities, which is what the entry asked for -- a direct test of the
+assumption -- and not a walk-forward one. And with sixteen regimes the penalty term is
+large (32 parameters times log 907, about 218), so the BIC does most of the work; the
+raw likelihood gains are small in every case, which is the same conclusion read off the
+unpenalised numbers.
+**was: evidential**
 
 Equation (2) assumes whether a condition holds depends on last month's condition
 and this month's regime, and nothing else. If that fails it shows up as
