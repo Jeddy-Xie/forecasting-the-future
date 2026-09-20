@@ -204,7 +204,47 @@ and reporting the difference would replace an argument with a measurement.
 ---
 
 ## D5 · Outcomes and conditions are read from final data
-**evidential** · **narrowed** 2026-09-09 by ADR 0008
+**closed** 2026-09-21 by measurement, not by implementation, which is what this entry
+asks for: "the expected effect is small, which is exactly why it has not been done, and
+also why doing it would close the question rather than leaving it argued."
+
+**The open half is narrower than it reads.** Conditions and outcomes require six series.
+Two, `consumer_price_index` and `industrial_production`, are model inputs and already get
+archival vintages. Two, `federal_funds_rate` and the term spread's legs, are never
+revised, which is the "exact for market rates" this entry claims. That leaves exactly
+two: `UNRATE` and `USREC`.
+
+**Measured** by `research/derivations/vintage_vs_final_conditions.py`, comparing each
+refit date's archival vintage against the final file on every month published by then,
+over all 33 refit dates (the 132 vintages are now cached, so it re-runs offline):
+
+| series | values differing | condition | would flip |
+|---|---:|---|---:|
+| USREC | 10 of 29,541 (0.034%) | recession, `> 0.5` | 10 of 29,541 (0.034%) |
+| UNRATE | 467 of 24,584 (1.900%) | unemployment `> 5.0` | 15 of 24,584 (0.061%) |
+| UNRATE | " | unemployment `> 7.0` | 9 of 24,584 (0.037%) |
+
+**34 condition-months in about 54,000, across the whole backtest.** Unemployment is
+revised often -- 1.9% of months -- but almost never by enough to cross a threshold, which
+is the only way a revision reaches a forecast. The recession series moves on ten months,
+each a full flip, and that is the same phenomenon as D14: dating revised as the committee
+announces. D14 is separately fixed (ADR 0011), so those ten are now dated by announcement
+rather than read early.
+
+**Why it is not implemented.** `data.panel.load_final_series` takes no `as_of` and calls
+`build_request(series_id)` with no vintage date, and `prepare_indicator_history` calls it
+**once** for the whole backtest rather than per refit. Making conditions vintage-aware is
+therefore an interface change threading a date down that path and loading thirty-three
+times instead of once -- to correct 34 condition-months. The measurement answers the
+question; the rebuild is not worth its own risk, and that is now a recorded decision
+rather than an assumption.
+
+One trap worth recording, because it nearly went in this entry as a finding: payroll
+employment and core prices are revised, are in the registry, and are **not read** by any
+indicator. Measured against final data payrolls move in 72% of months, and that number
+describes nothing the walk-forward does. The scope that matters is
+`indicator_outcomes.required_series_names`, not "every revised series".
+**was: evidential** · **narrowed** 2026-09-09 by ADR 0008
 
 **The model-input half of this entry is closed.** Under the default the
 walk-forward starts at 1994-03, the first month on which every model input is on
