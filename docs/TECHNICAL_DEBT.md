@@ -150,7 +150,47 @@ this file and the commit history refer to it by number.
 ---
 
 ## D3 · The conditional-rate shrinkage strength was never tuned
-**evidential**
+**closed** 2026-09-21 by the sweep this entry asks for:
+`research/derivations/shrinkage_strength_sweep.py` runs the walk-forward at five strengths
+and scores each with the pre-registered verdict's own statistic, so the curve is in the
+same units as every other number here. All 33 refits, 391 forecast dates, 16 regimes:
+
+| strength | 1 year | 5 years | 10 years |
+|---:|---:|---:|---:|
+| 1 | +0.2563 | +0.0902 | −0.4088 |
+| 3 | +0.2607 | +0.1012 | −0.3153 |
+| **10 (shipped)** | **+0.2673** | **+0.1194** | **−0.1624** |
+| 30 | +0.2686 | +0.1319 | −0.0380 |
+| 100 | +0.2590 | +0.1327 | +0.0307 |
+
+**Something now establishes that 10 is not worse than 3 or 30.** At the pre-registered
+one-year endpoint the curve is flat across its top: 30 beats 10 by +0.0013, which is more
+than an order of magnitude inside the paired interval's half-width of roughly 0.016, so
+the two are not distinguishable on this sample. Below that, 3 loses 0.0066 and 1 loses
+0.0110; above it, 100 loses 0.0083. The shipped value sits where the curve stops rewarding
+more shrinkage and before it starts punishing it.
+
+**The long horizons rise monotonically and do not license a change.** Ten years goes from
+−0.4088 to +0.0307 as the strength climbs, which is what heavy shrinkage toward the pooled
+rate should do when regime-level evidence is thin. But five and ten years carry about 5.5
+and 2.2 effective independent observations, and this project's own limits say no ten-year
+number here is informative. Moving a hyperparameter to chase them would be tuning on the
+sample the result is measured against, which is the failure the pre-registration exists to
+prevent.
+
+**Not changed, and that is the finding.** The value stays at 10. What the entry was
+missing was evidence, not a different number.
+
+One structural note, because this entry's cost estimate is wrong as the code stands. It
+predicts the sweep is "cheap, because the fitted models are already cached and only the
+rate estimation would rerun". `conditional_rate_shrinkage_strength` is a `RunSettings`
+field and is not in the omission map, so it enters `configuration_hash()`, which is part
+of the fitted-model cache key. Every strength therefore misses the cache and refits all 33
+models, even though the shrinkage cannot affect a fit: five full refit sets, about
+seventy minutes, where the entry budgeted for one rate-estimation pass. Exempting a field
+that provably cannot change a fit would make this genuinely cheap, and would be its own
+small change with its own review.
+**was: evidential**
 
 `conditional_rate_shrinkage_strength` is 10. The original brief said to start
 there and tune by cross-validation. It was set and left. Nothing establishes that

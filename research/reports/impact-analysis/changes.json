@@ -324,6 +324,30 @@
       ]
     },
     {
+      "id": "D3-SHRINKAGE",
+      "kind": "integrity",
+      "date": "2026-09-21",
+      "title": "The shrinkage strength, swept instead of assumed",
+      "what_changed": "conditional_rate_shrinkage_strength was set to 10 at the start and left there; nothing established it was better than 3 or 30. The walk-forward now has a committed sweep at five strengths, each scored with the pre-registered verdict's own statistic over all 33 refits.",
+      "impact": {
+        "recorded": {
+          "headline": "one year: 1 +0.2563, 3 +0.2607, 10 +0.2673, 30 +0.2686, 100 +0.2590",
+          "detail": "the curve is flat across its top at the endpoint that counts: 30 beats the shipped 10 by +0.0013, more than an order of magnitude inside the paired interval's half-width of about 0.016, so they are not distinguishable. Five and ten years rise monotonically to +0.1327 and +0.0307, but carry about 5.5 and 2.2 independent observations. The value stays at 10"
+        },
+        "provenance": "research/derivations/shrinkage_strength_sweep.py, 5 strengths x 33 refits x 391 forecast dates"
+      },
+      "status": "closed D3; value unchanged, by evidence",
+      "status_kind": "ok",
+      "notes": [
+        "Not changed is the finding. What the debt lacked was evidence, not a different number; moving a hyperparameter to chase the long horizons would be tuning on the sample the result is measured against.",
+        "The debt's own cost estimate is wrong as the code stands: it budgeted one rate-estimation pass because the fits are cached, but the strength is in RunSettings and therefore in configuration_hash, which is part of the fit-cache key. Every strength missed the cache and refitted all 33 models -- five full refit sets, about seventy minutes -- though the shrinkage cannot affect a fit."
+      ],
+      "evidence": [
+        "docs/TECHNICAL_DEBT.md D3",
+        "research/derivations/shrinkage_strength_sweep.py"
+      ]
+    },
+    {
       "id": "D10-ARTIFACTS",
       "kind": "infrastructure",
       "date": "2026-09-21",
