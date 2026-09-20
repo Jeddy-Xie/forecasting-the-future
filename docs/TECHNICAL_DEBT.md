@@ -62,7 +62,42 @@ found it too short after every trough since 1990. See D14.
 ---
 
 ## D1 · No prior on the transition matrix
-**material** · raised 2026-09-09 by Jeddy
+**closed** 2026-09-21 by measurement, not by implementation. Research arm A1
+(`sticky-dirichlet-prior`, experiment 0002, look-ahead review CLEAN) is exactly the
+fix this entry proposes: in the maximisation step each transition row becomes the
+Dirichlet posterior mean, `A[k,j] = (n[k,j] + beta + kappa*1{j=k}) / (n[k] + K*beta
++ kappa)`, applied in the burn-in sweep, every refit and today's fit.
+
+**The mechanism is confirmed.** Lambda2, read off the fitted transition matrices:
+0.9777 to 0.9700 at the 1994-03 refit, 0.9845 to 0.9761 at 2026-03. The prior does
+regularise the matrix and shorten the horizon, as argued below.
+
+**The consequence is contradicted.** This entry predicted the one-year result would
+survive and the five and ten-year results would get worse, "strengthening the paper's
+conclusion rather than weakening it". Measured, paired against main:
+
+| horizon | main | with the prior | difference | 90% interval |
+|---|---:|---:|---:|---|
+| 12 months | +0.2154 | +0.2200 | +0.0046 | [−0.0126, +0.0232] spans zero |
+| 60 months | +0.0728 | +0.0698 | −0.0030 | [−0.0430, +0.0574] spans zero |
+| 120 months | −0.3528 | −0.1623 | **+0.1905** | [+0.0899, +0.2320] excludes zero |
+
+One and five years survive as predicted. Ten years **improves**, not worsens, and the
+ten-year honesty distance improves too (0.0373 to 0.0199) where this entry expected it
+to fail by a wider margin. On 2.25 effective independent observations that is weak
+evidence, but it points the opposite way to the argument made here, and the argument
+should not be repeated as though it had been borne out.
+
+**Not adopted.** No verdict moved at any horizon, and 0002's pre-registered rule
+returned none of the above: not PROMISING, not CONFIRMED, not HARMFUL. The question
+this entry raised is answered by measurement; adoption was declined by the rule.
+
+One caveat for whoever implements it on main: A1's monotonicity guard comments that the
+log posterior "IS guaranteed to rise". That holds for the MAP update `(n + alpha - 1)/(...)`,
+not for the posterior-MEAN update `(n + alpha)/(...)` A1 actually uses, so the monitored
+quantity is not guaranteed monotone and the guard could fire on a correct fit. It never
+fired on that run and no number depends on it.
+**was: material** · raised 2026-09-09 by Jeddy
 
 The transition matrix is plain maximum likelihood from Baum-Welch. The M-step is
 a ratio of expected counts with no smoothing:
@@ -130,7 +165,27 @@ cached and only the rate estimation would rerun.
 ---
 
 ## D4 · The any-time composition compounds a small bias over 120 months
-**material at the ten-year horizon only**
+**closed** 2026-09-21 by measurement. Research arm A5 (`direct-horizon-rates`,
+experiment 0002, look-ahead review CLEAN) is the comparison this entry asks for: the
+per-horizon conditional rate estimated directly, `rate[k] = sum_s gamma_s[k] * y_s,h /
+sum_s gamma_s[k]`, replacing both compositions for every indicator and horizon.
+
+| horizon | main | direct path | difference | 90% interval |
+|---|---:|---:|---:|---|
+| 12 months | +0.2154 | +0.1137 | −0.1017 | [−0.1448, −0.0586] excludes zero |
+| 60 months | +0.0728 | −0.0856 | −0.1583 | [−0.2285, +0.0019] spans zero |
+| 120 months | −0.3528 | −0.0881 | **+0.2647** | [+0.0459, +0.2526] excludes zero |
+
+The compounding described below is real and the direct path does correct it: ten-year
+skill improves by +0.2647. The price is the short horizon, where the direct path is far
+worse (−0.1017, HARMFUL by 0002's rule, and disqualified from combination). The
+data-efficiency cost this entry predicted "by construction" is visible too: mean
+effective sample size for recession-within-ten-years falls from 98.1 to 39.9.
+
+So the argument this entry wanted replaced by a measurement has been: the path
+composition is the right default, and its ten-year bias is a real and quantified cost of
+that choice rather than an oversight. Not adopted, for the one-year result.
+**was: material at the ten-year horizon only**
 
 The path composition computes survival by multiplying a monthly factor across the
 window. Over 120 months a monthly hazard that is slightly too low compounds into a
@@ -189,7 +244,19 @@ preference for second order would mean the composition understates persistence.
 ---
 
 ## D7 · Questions phrased relative to today are out of scope
-**scope**
+**closed** 2026-09-21 as an accepted limit, by decision rather than by work. This is not
+a defect: the exclusion was deliberate at design time, is recorded in the registry and in
+decision record 0005, and the reason is structural. A question like "will unemployment
+rise two points from where it is now" is a function of today's level as well as the
+regime, so it does not compose through the transition matrix at all.
+
+The fix this entry describes -- modelling the conditional distribution of each level given
+the regime, rather than the probability of an event -- is a substantially larger model
+that would need its own justification and its own experiment. Recording that as a closed
+scope decision is honest; leaving it open implies work is pending that nobody intends to
+do under this design. Reopening it is the owner's call and would start as a new
+pre-registered experiment, not as a debt.
+**was: scope**
 
 "Will unemployment rise two points from where it is now" depends on today's level
 as well as the regime, so it is not a function of the regime alone and does not
@@ -205,7 +272,21 @@ model and would need its own justification.
 ---
 
 ## D8 · One country, one sample
-**scope**
+**closed** 2026-09-21 as an accepted limit, by decision rather than by work, with the
+claim it constrains restated so no later reader has to reconstruct it.
+
+The bound on the information horizon follows from the arithmetic of a transition matrix's
+second eigenvalue and is general for methods of this shape. The *value* -- roughly five
+years on this sample -- is measured once, on United States post-war data, and nothing here
+establishes it for another economy. Every published number is therefore a statement about
+this economy under this method, and is written that way.
+
+The fix, repeating on two or three economies with long monthly histories, stays available
+and is mostly configuration because the data layer is registry-driven. It is a new
+experiment rather than a repair, and it belongs to whoever wants that generalisation.
+Left open, this entry implies a repair nobody is planning; closed, it is what it actually
+is: the sample the conclusions are about.
+**was: scope**
 
 Everything is United States post-war. Whether the second eigenvalue is similar in
 other economies, and therefore whether the information horizon is a property of
@@ -273,7 +354,23 @@ at fifteen years.
 ---
 
 ## D12 · The indicator thresholds were chosen by someone who knew the sample
-**evidential** · found 2026-09-09 during the look-ahead audit
+**closed** 2026-09-21 by recorded decision, which is what this entry itself proposes:
+"nothing to fix retrospectively; the choice is made". Moving a threshold now would be
+strictly worse than leaving it, because it would be moved by someone who has since seen
+every backtest, and the percentile table below is the evidence that the original choice
+was not tuned: the thresholds spread from the 11th to the 79th percentile, which is not
+what tuning for a balanced base rate produces.
+
+What stays true, and is the cost being accepted: the decision rule can say it was fixed
+independently of the data and the indicator set cannot. That limitation is recorded here
+and in the results pages rather than repaired.
+
+The forward half of the fix is the part that binds: any future indicator set is
+registered before anyone looks at how often each condition holds, the way
+`proving/experiments/0001` registers the decision rule. Nothing enforces that yet -- it
+is a rule, not a check -- and making it one is the natural next step if another set is
+ever added.
+**was: evidential** · found 2026-09-09 during the look-ahead audit
 
 The ten indicators ask about levels crossing fixed thresholds: unemployment above
 five and seven percent, inflation above three and five, the policy rate above four
