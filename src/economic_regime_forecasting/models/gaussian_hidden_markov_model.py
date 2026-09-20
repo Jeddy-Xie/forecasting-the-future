@@ -385,7 +385,6 @@ def fit(
     restarts: int = 20,
     max_iterations: int = 500,
     tolerance: float = 1e-6,
-    covariance_type: str = "full",
 ) -> GaussianHiddenMarkovModel:
     """Fit by Baum-Welch from several random starts, keeping the best likelihood.
 
@@ -427,9 +426,7 @@ def fit(
     log_likelihood_by_restart: list[float] = []
 
     for restart in range(restarts):
-        candidate = _initial_model(
-            observations, state_count, generator, pooled_covariance, covariance_type
-        )
+        candidate = _initial_model(observations, state_count, generator, pooled_covariance)
         candidate, log_likelihood, iterations, converged = _run_expectation_maximisation(
             candidate, observations, max_iterations, tolerance, pooled_covariance
         )
@@ -456,7 +453,6 @@ def fit(
         transition_matrix=best_model.transition_matrix,
         means=best_model.means,
         covariances=best_model.covariances,
-        covariance_type=covariance_type,
         fit_report=FitReport(
             log_likelihood=best_log_likelihood,
             iterations=best_iterations,
@@ -474,7 +470,6 @@ def _initial_model(
     state_count: int,
     generator: np.random.Generator,
     pooled_covariance: np.ndarray,
-    covariance_type: str,
 ) -> GaussianHiddenMarkovModel:
     """One starting point: spread means, a random persistence level, pooled spread."""
     means = _seed_means_by_furthest_point(observations, state_count, generator)
@@ -494,15 +489,12 @@ def _initial_model(
     transition_matrix /= transition_matrix.sum(axis=1, keepdims=True)
 
     covariances = np.repeat(pooled_covariance[None, :, :], state_count, axis=0)
-    if covariance_type == "diagonal":
-        covariances = np.stack([np.diag(np.diag(matrix)) for matrix in covariances])
 
     return GaussianHiddenMarkovModel(
         initial_distribution=np.full(state_count, 1.0 / state_count),
         transition_matrix=transition_matrix,
         means=means,
         covariances=covariances,
-        covariance_type=covariance_type,
     )
 
 
@@ -630,7 +622,6 @@ def _maximisation_step(
         responsibilities,
         transition_counts,
         pooled_covariance,
-        covariance_type=model.covariance_type,
     )
 
 
@@ -639,7 +630,6 @@ def chain_from_responsibilities(
     responsibilities: np.ndarray,
     transition_counts: np.ndarray,
     pooled_covariance: np.ndarray,
-    covariance_type: str = "full",
     chain_name: str | None = None,
 ) -> GaussianHiddenMarkovModel:
     """One chain's parameters from its own responsibilities and expected transition counts.
@@ -691,8 +681,6 @@ def chain_from_responsibilities(
         deviations = observations - means[state]
         weighted = deviations * responsibilities[:, state][:, None]
         covariance = (weighted.T @ deviations) / state_totals[state]
-        if covariance_type == "diagonal":
-            covariance = np.diag(np.diag(covariance))
         covariances[state] = _regularised_covariance(covariance, pooled_covariance)
 
     return GaussianHiddenMarkovModel(
@@ -700,7 +688,6 @@ def chain_from_responsibilities(
         transition_matrix=transition_matrix,
         means=means,
         covariances=covariances,
-        covariance_type=covariance_type,
     )
 
 

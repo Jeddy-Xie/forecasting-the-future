@@ -427,32 +427,29 @@ def _missing_vintages(
 def _state_count_for_the_backtest(
     workspace: Workspace, schedule: schedule_module.ForecastSchedule
 ) -> int:
-    """One integer, from whichever of the two sources this configuration declares.
+    """The backtest's state count, decided by the backtest layer and printed here.
 
-    With ``select_state_count_on_a_burn_in_window`` off this reads the winner of
-    the full-sample sweep off `selected_model.json`, exactly as the shipped run
-    did — a forecast issued in 1972 then uses a shape chosen with data through
-    today. With it on the count is swept once on the panel as it stood at the
-    first forecast date, and the choice is written out so the evaluation can read
-    the same evidence rather than the full-sample sweep.
+    The decision itself lives in ``state_count_on_burn_in.state_count_for_the_backtest``
+    so that the look-ahead audit asks exactly the same question (debt D15).
     """
-    if not workspace.settings.select_state_count_on_a_burn_in_window:
+
+    def from_selected_model() -> int:
         model = regime_model_from_dictionary(
             workspace.artifacts.read_json(ARTIFACTS.selected_model)
         )
         # Not int(): a two-chain model's count carries its factorisation.
         return model.state_count
 
-    choice = state_count_on_burn_in.choose_state_count_on_burn_in_window(
+    decided = state_count_on_burn_in.state_count_for_the_backtest(
         workspace.registry,
         workspace.cache,
         workspace.settings,
         first_forecast_date=schedule.forecast_dates[0].date(),
         artifacts=workspace.artifacts,
+        selected_model_state_count=from_selected_model,
     )
-    workspace.artifacts.write_json(ARTIFACTS.burn_in_state_count_choice, choice.as_manifest())
-    print(choice.describe())
-    return choice.state_count
+    print(decided.description)
+    return decided.state_count
 
 
 def run_backtest(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:

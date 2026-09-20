@@ -360,14 +360,12 @@ def fit(
                 growth_chain_state_count,
                 growth_generator,
                 pooled_growth,
-                "full",
             ),
             levels_chain=hidden_markov._initial_model(
                 levels_observations,
                 levels_chain_state_count,
                 levels_generator,
                 pooled_levels,
-                "full",
             ),
         )
         candidate, log_likelihood, iterations, converged = run_expectation_maximisation(

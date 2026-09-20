@@ -219,7 +219,13 @@ histories. The data layer is registry-driven, so this is mostly configuration.
 ---
 
 ## D9 · The diagonal-covariance fallback exists but has never run
-**evidential**
+**closed** 2026-09-20 by deletion. `covariance_type="diagonal"` was reachable only by
+passing the argument explicitly, and no caller anywhere -- source, suite, scripts or
+research -- ever did. Both branches and the parameter that carried them are gone. The
+model keeps its `covariance_type` field and `from_dictionary` still defaults it, so every
+cached fit written before this still loads. Removing untaken generality is the resolution
+this entry itself proposed; the alternative was to exercise a path nothing asks for.
+**was: evidential**
 
 `GaussianHiddenMarkovModel` supports a diagonal covariance type as a fallback for
 unstable fits at small state counts, and nothing has ever selected it. Untested
@@ -248,7 +254,12 @@ another session is currently editing the command line interface.
 ---
 
 ## D11 · The mixing chart in notebook 2 samples five horizons
-**ergonomic**
+**closed** 2026-09-20. The notebook now asks `measure_mixing` for every month to twenty
+years instead of five sampled points, and `plot_mixing` drops its per-point markers once
+the curve is dense, because a marker reads as "measured here". The reported information
+horizon moves from 120 to 121 months: the sampled version could only ever name one of
+12, 24, 60, 120 or 240, so its answer was the grid, not the crossing.
+**was: ergonomic**
 
 The notebook computes the distance at 12, 24, 60, 120 and 240 months and connects
 them, so three quarters of the width is flat tail and the interesting decay is
@@ -364,7 +375,13 @@ changing main now would move the reference run under every arm mid-slate.
 ---
 
 ## D15 · The look-ahead audit chooses the state count its own way
-**evidential** · found 2026-09-15 by the author of research arm A2; verified in the code the same day
+**closed** 2026-09-20. `backtest.state_count_on_burn_in.state_count_for_the_backtest` is
+now the only place the question is answered, and both the command-line interface and
+`look_ahead_audit` call it. A configuration that decides its count anywhere but the sweep
+is therefore audited with the count it will actually run. A caller that cannot read
+`selected_model.json` -- the audit, which refits everything from scratch by design -- gets
+a refusal rather than a guess.
+**was: evidential** · found 2026-09-15 by the author of research arm A2
 
 `look_ahead_audit.py`'s `_run_from_scratch` picks the number of regimes by calling
 `choose_state_count_on_burn_in_window` directly, then fits with that choice. The

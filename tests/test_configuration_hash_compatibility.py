@@ -107,12 +107,12 @@ def test_the_hash_is_a_pure_function_of_the_non_cache_fields(tmp_path) -> None: 
     assert one.configuration_hash() == other.configuration_hash()
 
 
-def test_the_omission_map_holds_only_the_two_documented_switches() -> None:
-    """A guard against a third field being added to the map silently: the map's
-    docstring says every entry is permanent and append-only, so its current
-    membership is worth pinning even though this test must be revisited (by a
-    reviewed, additive change, never a silent edit) the day a legitimate third
-    entry is added."""
+def test_the_omission_map_holds_only_the_documented_switches() -> None:
+    """A guard against a field being added to the map silently: the map's docstring
+    says every entry is permanent and append-only, so its current membership is worth
+    pinning even though this test must be revisited (by a reviewed, additive change,
+    never a silent edit) each time a legitimate entry is added. It holds three today:
+    the two look-ahead switches, and the two-chain model adopted in ADR 0010."""
     assert set(SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE) == {
         "select_state_count_on_a_burn_in_window",
         "start_walk_forward_when_every_input_is_point_in_time",

@@ -90,7 +90,7 @@ import pandas as pd
 
 from economic_regime_forecasting.backtest.schedule import ForecastSchedule
 from economic_regime_forecasting.backtest.state_count_on_burn_in import (
-    choose_state_count_on_burn_in_window,
+    state_count_for_the_backtest,
 )
 from economic_regime_forecasting.backtest.walk_forward import run_walk_forward
 from economic_regime_forecasting.configuration.registry import (
@@ -401,7 +401,9 @@ def _run_from_scratch(
     artifacts = ArtifactStore(model_store)
     cache = series_cache_at(cache_root)
     try:
-        choice = choose_state_count_on_burn_in_window(
+        # The same question the backtest asks, so a configuration that decides its count
+        # anywhere but the sweep is audited with the count it will actually run (D15).
+        choice = state_count_for_the_backtest(
             registry,
             cache,
             settings,

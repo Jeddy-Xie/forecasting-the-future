@@ -318,12 +318,16 @@ def plot_mixing(mixing_table: pd.DataFrame, threshold: float) -> Figure:
         linewidth=0,
         label="range across forecast dates",
     )
+    # A marker per point reads as "measured here" and is right for a handful of
+    # sampled horizons. Since D11 the curve is computed every month, where 240
+    # markers would hide the line they sit on.
+    dense = len(horizons) > 24
     axes.plot(
         horizons,
         mixing_table["mean_distance_to_stationary"],
         linewidth=2.0,
         color=POSITIVE_COLOUR,
-        marker="o",
+        marker=None if dense else "o",
         markersize=6,
         label="mean across forecast dates",
     )

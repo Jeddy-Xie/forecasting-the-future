@@ -8,6 +8,7 @@ says it is -- so it is tested directly rather than left to the end-to-end run.
 from __future__ import annotations
 
 import csv
+import json
 from datetime import date
 from pathlib import Path
 
@@ -189,6 +190,52 @@ def test_the_manifest_records_what_is_needed_to_reproduce_the_run(prepared) -> N
         assert field in manifest, field
     assert manifest["random_seed"] == workspace.settings.random_seed
     assert manifest["indicator_count"] == 10
+
+
+def test_a_two_chain_manifest_records_how_its_regimes_factor(prepared) -> None:  # type: ignore[no-untyped-def]
+    """Sixteen joint regimes say nothing about the two chains that make them, and the
+    factorisation is what a reader needs to rebuild the model. ADR 0010 made the two-chain
+    model the default, so the manifest this writes is the one that describes a real run."""
+    from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
+        TwoTimescaleHiddenMarkovModel,
+    )
+
+    workspace, artifacts, directory = prepared
+    growth = GaussianHiddenMarkovModel(
+        initial_distribution=np.array([0.5, 0.5]),
+        transition_matrix=np.array([[0.9, 0.1], [0.1, 0.9]]),
+        means=np.array([[-1.0], [1.0]]),
+        covariances=np.repeat(np.eye(1)[None, :, :], 2, axis=0),
+    )
+    levels = GaussianHiddenMarkovModel(
+        initial_distribution=np.array([0.4, 0.3, 0.3]),
+        transition_matrix=np.array([[0.9, 0.05, 0.05], [0.05, 0.9, 0.05], [0.05, 0.05, 0.9]]),
+        means=np.array([[-1.0, 0.0], [0.0, 1.0], [1.0, -1.0]]),
+        covariances=np.repeat(np.eye(2)[None, :, :], 3, axis=0),
+    )
+    artifacts.write_json(
+        ARTIFACTS.selected_model, TwoTimescaleHiddenMarkovModel(growth, levels).to_dictionary()
+    )
+    _write_verdicts(artifacts, dict.fromkeys(HORIZONS, "SHIP MODEL"))
+
+    assert interface.submit(workspace, date(2026, 9, 8)) == 0
+
+    manifest = json.loads((directory / "manifest.json").read_text())
+    assert manifest["regimes"] == 6
+    assert manifest["regimes_by_chain"] == {"growth": 2, "inflation_and_rates": 3}
+
+
+def test_a_single_chain_manifest_says_nothing_about_chains(prepared) -> None:  # type: ignore[no-untyped-def]
+    """The factorisation is absent rather than null for a model that has none, so a
+    single-chain manifest is byte-identical to the ones already on the record."""
+    workspace, artifacts, directory = prepared
+    _write_verdicts(artifacts, dict.fromkeys(HORIZONS, "SHIP MODEL"))
+
+    assert interface.submit(workspace, date(2026, 9, 8)) == 0
+
+    manifest = json.loads((directory / "manifest.json").read_text())
+    assert manifest["regimes"] == 2
+    assert "regimes_by_chain" not in manifest
 
 
 def test_every_probability_in_the_grid_is_a_probability(prepared) -> None:  # type: ignore[no-untyped-def]

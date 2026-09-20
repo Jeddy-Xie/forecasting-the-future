@@ -89,8 +89,10 @@ it is a *top-level* flag, so it goes before the subcommand
 ### Shipping the submission is a separate, deliberate act
 
 `submission/forecasts.csv` is the only artifact that leaves this repository, and
-since ADR 0008 the pipeline default is the **honest** configuration, which is not
-the one that produced it. So `scripts/run_full_pipeline.sh` runs
+the pipeline default has moved twice since it was written: to the **honest**
+configuration in ADR 0008, and to the honest configuration fitted with **two chains
+on two timescales** in ADR 0010, hash `fec79a040f9ca6f9`. Neither is the one that
+produced the submission. So `scripts/run_full_pipeline.sh` runs
 `forecast submit --verify-only`, which writes nothing under any configuration and
 reports the divergence every time.
 

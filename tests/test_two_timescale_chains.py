@@ -362,10 +362,10 @@ def _starting_chains(sample: np.ndarray) -> tuple[GaussianHiddenMarkovModel, ...
     pooled_growth = two_timescale._pooled_covariance(sample[:, GROWTH])
     pooled_levels = two_timescale._pooled_covariance(sample[:, LEVELS])
     growth = hidden_markov._initial_model(
-        sample[:, GROWTH], 2, np.random.default_rng(3), pooled_growth, "full"
+        sample[:, GROWTH], 2, np.random.default_rng(3), pooled_growth
     )
     levels = hidden_markov._initial_model(
-        sample[:, LEVELS], 3, np.random.default_rng(4), pooled_levels, "full"
+        sample[:, LEVELS], 3, np.random.default_rng(4), pooled_levels
     )
     return growth, levels
 

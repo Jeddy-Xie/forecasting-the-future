@@ -30,7 +30,10 @@ from economic_regime_forecasting.backtest.state_count_on_burn_in import (
 from economic_regime_forecasting.configuration.registry import EconomicSeriesRegistry
 from economic_regime_forecasting.configuration.run_settings import CacheLayout, RunSettings
 from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache, SeriesSnapshot
-from economic_regime_forecasting.models.state_selection import regimes_exist_from_sweep_table
+from economic_regime_forecasting.models.state_selection import (
+    StateSelectionError,
+    regimes_exist_from_sweep_table,
+)
 
 MONTHS = 400
 START = "1950-01-01"
@@ -252,6 +255,48 @@ def test_the_cache_key_changes_with_the_configuration_hash(
 
 
 # ---------------------------------------------------------- regimes_exist
+
+
+def test_a_configuration_that_does_not_sweep_gets_the_count_it_will_actually_run(
+    settings,  # type: ignore[no-untyped-def]
+) -> None:
+    """Debt D15: the backtest and the look-ahead audit must ask the same question.
+
+    A configuration whose count comes from the full-sample sweep rather than the burn-in
+    one is honoured identically wherever it runs, so an audit cannot quietly test a
+    different model than the one under test.
+    """
+    without_sweep = dataclasses.replace(settings, select_state_count_on_a_burn_in_window=False)
+
+    decided = state_count_on_burn_in.state_count_for_the_backtest(
+        registry=None,  # type: ignore[arg-type]
+        cache=None,  # type: ignore[arg-type]
+        settings=without_sweep,
+        first_forecast_date=date(1994, 3, 1),
+        artifacts=None,  # type: ignore[arg-type]
+        selected_model_state_count=lambda: 6,
+    )
+    assert decided.state_count == 6
+    assert decided.runner_up_state_count is None
+    assert "selected_model.json" in decided.description
+
+
+def test_a_caller_that_cannot_read_the_selected_model_is_refused_rather_than_guessed_for(
+    settings,  # type: ignore[no-untyped-def]
+) -> None:
+    """The audit refits everything from scratch and has no fitted artifact to read. Silently
+    falling back to the sweep would audit a different count than the backtest runs, which is
+    exactly the failure D15 records."""
+    without_sweep = dataclasses.replace(settings, select_state_count_on_a_burn_in_window=False)
+
+    with pytest.raises(StateSelectionError, match="selected_model.json"):
+        state_count_on_burn_in.state_count_for_the_backtest(
+            registry=None,  # type: ignore[arg-type]
+            cache=None,  # type: ignore[arg-type]
+            settings=without_sweep,
+            first_forecast_date=date(1994, 3, 1),
+            artifacts=None,  # type: ignore[arg-type]
+        )
 
 
 def test_regimes_exist_from_sweep_table_says_no_when_one_state_wins() -> None:

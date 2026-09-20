@@ -4,14 +4,18 @@ Everything here is produced by `forecast check-gates` and is regenerated, not
 typed. The numbers come from a walk-forward run of 19,740 forecasts issued
 monthly from December 1971 to September 2026, of which 17,712 have resolved.
 
-**Which run.** The headline tables below were produced by the **shipped**
-configuration, hash `9f95b12dba40d138`, which since 2026-09-09 **is not the
-pipeline default any more**. The default is now the honest configuration
-`ad7fcc1affd0746a`, which closes two look-ahead paths and reaches a materially
-different verdict. See *The cost of the two look-ahead paths* below and ADR 0008.
+**Which run.** Three configurations matter here, and the tables below are the
+oldest of them. They were produced by the **shipped** configuration, hash
+`9f95b12dba40d138`, which stopped being the default on 2026-09-09. It was replaced
+by the honest configuration `ad7fcc1affd0746a`, which closes two look-ahead paths
+and reaches a materially different verdict (ADR 0008). Since 2026-09-20 the default
+is `fec79a040f9ca6f9`: the same honest configuration fitted with two chains on two
+timescales instead of one (ADR 0010).
+
 The tables are labelled rather than replaced, because replacing them without
 regenerating `submission/forecasts.csv` would leave the submission and the report
-describing different runs.
+describing different runs. Re-shipping needs the owner's token, so the submission
+still carries `9f95b12dba40d138` and says so.
 
 **Correction, 2026-09-15: the benchmark counted one outcome early.** The claim
 below, that the climatology "never knows anything the model could not have known",

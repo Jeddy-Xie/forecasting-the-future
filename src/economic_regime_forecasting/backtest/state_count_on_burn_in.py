@@ -27,17 +27,21 @@ one implementation.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 
 import pandas as pd
 
 from economic_regime_forecasting.configuration.registry import EconomicSeriesRegistry
-from economic_regime_forecasting.configuration.run_settings import RunSettings
+from economic_regime_forecasting.configuration.run_settings import ARTIFACTS, RunSettings
 from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
 from economic_regime_forecasting.data.panel import assemble_point_in_time_panel
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
-from economic_regime_forecasting.models.state_selection import sweep_state_counts
+from economic_regime_forecasting.models.state_selection import (
+    StateSelectionError,
+    sweep_state_counts,
+)
 from economic_regime_forecasting.models.two_timescale_hidden_markov_model import TwoChainStateCount
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     sweep_state_counts_for_two_chains,
@@ -156,6 +160,63 @@ def _cache_name(settings: RunSettings, first_forecast_date: date) -> str:
     return (
         f"burn_in_state_count_choice_{first_forecast_date.isoformat()}"
         f"_seed{settings.random_seed}_{settings.configuration_hash()}.json"
+    )
+
+
+@dataclass(frozen=True)
+class BacktestStateCount:
+    """The count the backtest will fit, how it was decided, and the runner-up if there was one."""
+
+    state_count: int
+    runner_up_state_count: int | None
+    description: str
+
+
+def state_count_for_the_backtest(
+    registry: EconomicSeriesRegistry,
+    cache: SeriesCache,
+    settings: RunSettings,
+    first_forecast_date: date,
+    artifacts: ArtifactStore,
+    selected_model_state_count: Callable[[], int] | None = None,
+) -> BacktestStateCount:
+    """The number of regimes the backtest will fit, decided in ONE place.
+
+    Every caller that runs the walk-forward asks this, so a configuration that chooses
+    its count somewhere other than the sweep is honoured identically wherever it runs.
+    Debt D15 is what happens otherwise: the look-ahead audit called the sweep directly,
+    so an arm that fixed its count elsewhere was audited with main's count and never ran
+    its own code. An audit that quietly tests a different model than the one under test
+    is worse than no audit.
+
+    With ``select_state_count_on_a_burn_in_window`` off the count comes from the
+    full-sample sweep already written to ``selected_model.json``; the caller supplies
+    that reader, because reading a fitted artifact belongs to whoever owns the artifact
+    store. A caller that cannot read one -- the audit refits everything from scratch by
+    design -- may omit it, and this refuses rather than guessing.
+    """
+    if not settings.select_state_count_on_a_burn_in_window:
+        if selected_model_state_count is None:
+            raise StateSelectionError(
+                "this configuration takes its state count from the full-sample sweep in "
+                "selected_model.json, and this caller cannot read one. Pass "
+                "selected_model_state_count, or set select_state_count_on_a_burn_in_window."
+            )
+        count = selected_model_state_count()
+        return BacktestStateCount(
+            state_count=count,
+            runner_up_state_count=None,
+            description=f"{count} regimes, read from the full-sample sweep in selected_model.json",
+        )
+
+    choice = choose_state_count_on_burn_in_window(
+        registry, cache, settings, first_forecast_date=first_forecast_date, artifacts=artifacts
+    )
+    artifacts.write_json(ARTIFACTS.burn_in_state_count_choice, choice.as_manifest())
+    return BacktestStateCount(
+        state_count=choice.state_count,
+        runner_up_state_count=choice.runner_up_state_count,
+        description=choice.describe(),
     )
 
 
