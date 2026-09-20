@@ -101,14 +101,30 @@ def methods_table(changes: list[dict], by_arm: dict[str, dict], arms_root: Path)
     rows = []
     entries = [c for c in changes if c["kind"] == "method"]
     measured = [(c, measurement(c, by_arm, arms_root)) for c in entries]
-    measured.sort(key=lambda pair: (pair[1].get("difference") is None, -(pair[1].get("difference") or 0)))
-    for change, m in measured:
-        detail = (
-            f"<td class='num'><b>{signed(m['difference'])}</b><br><span class='sub'>{span(m['ci90'])}<br>"
-            f"{span(m['ci_confirm'])}</span></td>"
-            f"<td class='num'>{signed(m['main_skill'])} → {signed(m['arm_skill'])}</td>"
-            f"<td>{esc((m.get('review') or '—').title())}</td>"
+    measured.sort(
+        key=lambda pair: (
+            pair[1]["kind"] != "recorded",
+            pair[1].get("difference") is None,
+            -(pair[1].get("difference") or 0),
         )
+    )
+    for change, m in measured:
+        if m["kind"] == "recorded":
+            # A method's impact need not come from an arm run: this one was measured on main
+            # itself, by the regression harness, after the change landed.
+            detail = (
+                f"<td colspan='3' class='measure'>{m['headline']}"
+                + (f"<br><span class='sub'>{m['detail']}</span>" if m.get("detail") else "")
+                + (f"<br><span class='provenance'>{m['provenance']}</span>" if m.get("provenance") else "")
+                + "</td>"
+            )
+        else:
+            detail = (
+                f"<td class='num'><b>{signed(m['difference'])}</b><br><span class='sub'>{span(m['ci90'])}<br>"
+                f"{span(m['ci_confirm'])}</span></td>"
+                f"<td class='num'>{signed(m['main_skill'])} → {signed(m['arm_skill'])}</td>"
+                f"<td>{esc((m.get('review') or '—').title())}</td>"
+            )
         rows.append(
             f"<tr><td><b>{esc(change['id'])}</b><br><span class='sub'>{esc(change.get('date',''))}</span></td>"
             f"<td>{change['title']}</td>{detail}"
@@ -213,6 +229,15 @@ def main() -> int:
     best, best_measure = leading_method(changes, by_arm, arms_root)
 
     counts = {kind: sum(1 for c in changes if c["kind"] == kind) for kind in ("method", "integrity", "infrastructure")}
+    adopted = next((c for c in changes if c.get("id", "").startswith("ADOPT-")), None)
+    standing = (
+        "It is the pipeline's method as of "
+        f"{esc(adopted.get('date', ''))}: merged and running by default, but NOT shipped — the "
+        "submission still carries the older configuration, and re-shipping needs the owner's token."
+        if adopted
+        else "It is a validated candidate, not the shipped method: nothing has been merged, shipped "
+        "or registered forward."
+    )
     endpoint = registry["primary_endpoint"]
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()  # noqa: S603, S607
     stamp = datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M %Z")
@@ -226,8 +251,7 @@ def main() -> int:
             f"with a {endpoint['confirm_level']:.4g} interval of {span(best_measure['ci_confirm'])} and a clean "
             f"independent look-ahead review. Mean one-year skill goes {signed(best_measure['main_skill'])} "
             f"→ {signed(best_measure['arm_skill'])}.</p>"
-            f"<p class='prose'>It is a validated candidate, not the shipped method: nothing has been merged, "
-            f"shipped or registered forward. {counts['method']} methods have been measured this way, alongside "
+            f"<p class='prose'>{standing} {counts['method']} methods have been measured this way, alongside "
             f"{counts['integrity']} integrity findings and {counts['infrastructure']} pieces of measurement "
             f"machinery.</p>"
         )
@@ -251,7 +275,12 @@ def main() -> int:
                      + "".join(f"<li><b>{d['title']}.</b> {d['detail']}</li>" for d in registry["decisions"])
                      + "</ol></div>",
         "NEXT": "<div class='prose'><ul>"
-                + "".join(f"<li><b>{c['title']}.</b> {c['detail']}</li>" for c in registry["next_candidates"])
+                + "".join(
+                    f"<li><b>{c['title']}.</b> {c['detail']}"
+                    + (f"<br><span class='sub'>Provable here? {c['provability']}</span>" if c.get("provability") else "")
+                    + "</li>"
+                    for c in registry["next_candidates"]
+                )
                 + "</ul></div>",
         "HOWTO": registry["how_to_update"],
     }
