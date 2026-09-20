@@ -298,6 +298,32 @@
       ]
     },
     {
+      "id": "D5-VINTAGE",
+      "kind": "integrity",
+      "date": "2026-09-21",
+      "title": "How much the conditions owe to reading final data",
+      "what_changed": "Conditions are read from final revised values with publication timing enforced but not vintage. The size of that approximation was argued rather than measured. It is now measured: each refit date's archival vintage against the final file, on every month published by then, over all 33 refit dates.",
+      "impact": {
+        "recorded": {
+          "headline": "34 condition-months in about 54,000",
+          "detail": "USREC differs on 10 of 29,541 published months (0.034%), each one a full flip of the recession condition. UNRATE differs on 467 of 24,584 (1.900%) but crosses a threshold far more rarely: 15 flips above five percent and 9 above seven. A revision only reaches a forecast by crossing a threshold, so the flip count is the exposure, not the revision rate"
+        },
+        "provenance": "research/derivations/vintage_vs_final_conditions.py, re-runs offline from 132 cached vintages"
+      },
+      "status": "closed D5 by measurement; not implemented, by recorded decision",
+      "status_kind": "ok",
+      "notes": [
+        "The scope is narrower than the debt reads: of the six series conditions and outcomes require, two are model inputs that already get archival vintages and two are never revised. Only UNRATE and USREC were ever exposed.",
+        "USREC's ten flips are D14's phenomenon -- dating revised as the committee announces -- and ADR 0011 now dates those by announcement.",
+        "Not implemented because load_final_series takes no as_of and is called once for the whole backtest rather than per refit, so the fix is an interface change plus thirty-three loads instead of one, to correct 34 condition-months.",
+        "A trap recorded with it: payroll employment and core prices are revised, are in the registry, and are read by no indicator. Payrolls move in 72% of months and that number describes nothing this pipeline does."
+      ],
+      "evidence": [
+        "docs/TECHNICAL_DEBT.md D5",
+        "research/derivations/vintage_vs_final_conditions.py"
+      ]
+    },
+    {
       "id": "D10-ARTIFACTS",
       "kind": "infrastructure",
       "date": "2026-09-21",
@@ -555,10 +581,6 @@
     {
       "title": "The Anvil adjudication",
       "detail": "The stress-test dossier leaves decision and classification blank by design: your decision in your words, and one of FACTUAL, MECHANICAL, TASTE or SCOPE."
-    },
-    {
-      "title": "Push to GitHub",
-      "detail": "Main is ahead of origin by more than thirty commits and no arm branch has ever been pushed. Nothing outward-facing moves without your word."
     },
     {
       "title": "The calibration gate at n = 31",
