@@ -107,13 +107,20 @@ def test_the_widest_schedule_ignores_the_start_policy_under_both_settings(
 def test_the_burn_in_choice_reproduces_the_measured_sweep_at_1994_03(
     live_workspace: interface.Workspace,
 ) -> None:
-    """AC6. `DEFAULT_RUN_SETTINGS` is the `both` cell: 6 states, runner-up 2."""
+    """AC6. Main's default is the `both` cell: 6 states, runner-up 2. On research arm
+    A4's branch the default fits two chains, so main's configuration is named here:
+    the separate-chains switch off, everything else the default."""
+    import dataclasses
+
+    main_settings = dataclasses.replace(
+        DEFAULT_RUN_SETTINGS, separate_chains_for_growth_and_for_inflation_with_rates=False
+    )
     choice = choose_state_count_on_burn_in_window(
         live_workspace.registry,
         live_workspace.cache,
-        DEFAULT_RUN_SETTINGS,
+        main_settings,
         first_forecast_date=HONEST_START,
-        artifacts=ArtifactStore(DEFAULT_RUN_SETTINGS.cache.models),
+        artifacts=ArtifactStore(main_settings.cache.models),
     )
     assert choice.state_count == 6
     assert choice.runner_up_state_count == 2
@@ -130,7 +137,9 @@ def test_the_burn_in_choice_reproduces_the_measured_sweep_at_1971_12(
     import dataclasses
 
     settings = dataclasses.replace(
-        DEFAULT_RUN_SETTINGS, start_walk_forward_when_every_input_is_point_in_time=False
+        DEFAULT_RUN_SETTINGS,
+        start_walk_forward_when_every_input_is_point_in_time=False,
+        separate_chains_for_growth_and_for_inflation_with_rates=False,
     )
     choice = choose_state_count_on_burn_in_window(
         live_workspace.registry,

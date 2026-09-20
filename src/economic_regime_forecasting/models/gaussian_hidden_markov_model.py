@@ -625,6 +625,35 @@ def _maximisation_step(
     )
     transition_counts = np.exp(logsumexp(log_transition_counts, axis=0))
 
+    return chain_from_responsibilities(
+        observations,
+        responsibilities,
+        transition_counts,
+        pooled_covariance,
+        covariance_type=model.covariance_type,
+    )
+
+
+def chain_from_responsibilities(
+    observations: np.ndarray,
+    responsibilities: np.ndarray,
+    transition_counts: np.ndarray,
+    pooled_covariance: np.ndarray,
+    covariance_type: str = "full",
+    chain_name: str | None = None,
+) -> GaussianHiddenMarkovModel:
+    """One chain's parameters from its own responsibilities and expected transition counts.
+
+    The maximisation step in the order the model is written: the initial distribution from
+    the first month's occupancy, each transition row from the expected counts, then means and
+    ridged covariances from the occupancy-weighted observations.
+
+    A model whose hidden state factorises into independent chains marginalises the joint
+    posterior down to each chain and applies exactly these formulas to the marginals, which is
+    why this takes responsibilities rather than being a method on a model. ``chain_name`` names
+    the chain in the abandoned-state warning.
+    """
+    states = responsibilities.shape[1]
     state_totals = np.maximum(responsibilities.sum(axis=0), MINIMUM_STATE_RESPONSIBILITY)
 
     initial_distribution = responsibilities[0] / responsibilities[0].sum()
@@ -643,10 +672,17 @@ def _maximisation_step(
     )
     transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
     if bool(abandoned.any()):
-        logger.warning(
-            "state_abandoned states=%s; their transition rows fall back to uniform",
-            np.flatnonzero(abandoned).tolist(),
-        )
+        if chain_name is None:
+            logger.warning(
+                "state_abandoned states=%s; their transition rows fall back to uniform",
+                np.flatnonzero(abandoned).tolist(),
+            )
+        else:
+            logger.warning(
+                "state_abandoned chain=%s states=%s; their transition rows fall back to uniform",
+                chain_name,
+                np.flatnonzero(abandoned).tolist(),
+            )
 
     means = (responsibilities.T @ observations) / state_totals[:, None]
 
@@ -655,7 +691,7 @@ def _maximisation_step(
         deviations = observations - means[state]
         weighted = deviations * responsibilities[:, state][:, None]
         covariance = (weighted.T @ deviations) / state_totals[state]
-        if model.covariance_type == "diagonal":
+        if covariance_type == "diagonal":
             covariance = np.diag(np.diag(covariance))
         covariances[state] = _regularised_covariance(covariance, pooled_covariance)
 
@@ -664,7 +700,7 @@ def _maximisation_step(
         transition_matrix=transition_matrix,
         means=means,
         covariances=covariances,
-        covariance_type=model.covariance_type,
+        covariance_type=covariance_type,
     )
 
 

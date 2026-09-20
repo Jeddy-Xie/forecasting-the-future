@@ -27,8 +27,20 @@ from economic_regime_forecasting.configuration.registry import (
 )
 from economic_regime_forecasting.data.audit import SeriesAudit
 from economic_regime_forecasting.data.cache import CacheStatistics
+from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
+    GaussianHiddenMarkovModel,
+)
 from economic_regime_forecasting.models.regime_forecast import MixingDiagnostics
-from economic_regime_forecasting.models.state_selection import StateCountSweep
+from economic_regime_forecasting.models.state_selection import (
+    StateCountEvaluation,
+    StateCountSweep,
+)
+from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
+    TwoTimescaleHiddenMarkovModel,
+)
+from economic_regime_forecasting.models.two_timescale_state_selection import (
+    TwoChainStateCountSweep,
+)
 
 MAXIMUM_REGIME_SWITCHES_PER_YEAR = 2.0
 """How often the most likely regime may change before the fit is calling noise a
@@ -197,6 +209,179 @@ def gate_two_regime_model(
                 ),
             ),
         ),
+    )
+
+
+def gate_two_regime_model_of_two_chains(
+    sweep: TwoChainStateCountSweep, most_likely_state_path: np.ndarray, months: int
+) -> GateReport:
+    """Gate 2 for research arm A4's two chains: the same five requirements.
+
+    Each is asked of the object it is about, and this was decided before any run:
+    whether regimes exist, of the joint table (the pair 1 x 1 against every other
+    pair, the sums being exact); persistence and population, of each chain's
+    chosen count, since those are what the selection rule admitted; flicker, of the
+    joint regime path, which is the path the forecasts condition on and which
+    switches whenever either chain does, so it is the stricter reading.
+    """
+    joint = sweep.joint_table()
+    single = joint[joint["states"] == 1]
+    multiple = joint[joint["states"] > 1]
+    both_sides = not single.empty and not multiple.empty
+    holdout = "held_out_log_likelihood_per_month"
+    criterion = "bayesian_information_criterion"
+    beats_on_holdout = both_sides and bool(multiple[holdout].max() > single[holdout].iloc[0])
+    beats_on_criterion = both_sides and bool(multiple[criterion].min() < single[criterion].iloc[0])
+
+    def by_pair(column: str, shown: str) -> str:
+        return ", ".join(
+            f"{int(row['growth_chain_states'])}x{int(row['levels_chain_states'])} "
+            f"{format(float(row[column]), shown)}"
+            for row in joint.to_dict("records")
+        )
+
+    growth = sweep.growth_chain_evaluation
+    levels = sweep.levels_chain_evaluation
+    shortest_joint_visit = float(sweep.recommended_model.expected_state_durations().min())
+    switches = int(np.sum(np.diff(most_likely_state_path) != 0))
+    switches_per_year = switches / max(months / 12.0, 1.0)
+
+    return GateReport(
+        number=2,
+        name="regime model",
+        checks=(
+            Check(
+                requirement="more than one regime beats a single regime out of sample",
+                passed=beats_on_holdout,
+                evidence="held-out log likelihood per month, growth x levels states: "
+                + by_pair(holdout, "+.4f"),
+            ),
+            Check(
+                requirement="the information criterion agrees that regimes exist",
+                passed=beats_on_criterion,
+                evidence="criterion, growth x levels states: " + by_pair(criterion, ",.0f"),
+            ),
+            Check(
+                requirement="no regime lasts less than three months on average",
+                passed=growth.is_persistent_enough and levels.is_persistent_enough,
+                evidence=(
+                    f"shortest expected visit {growth.shortest_expected_duration_in_months:.1f} "
+                    f"months in the growth chain, {levels.shortest_expected_duration_in_months:.1f}"
+                    f" in the inflation-and-rates chain; the shortest joint regime, where both "
+                    f"chains stay put, {shortest_joint_visit:.1f} months"
+                ),
+            ),
+            Check(
+                requirement="no regime holds less than five percent of months",
+                passed=growth.is_populated_enough and levels.is_populated_enough,
+                evidence=(
+                    f"smallest regime holds {growth.smallest_population_share:.1%} of months in "
+                    f"the growth chain, {levels.smallest_population_share:.1%} in the "
+                    "inflation-and-rates chain"
+                ),
+            ),
+            Check(
+                requirement="the regime path does not flicker month to month",
+                passed=switches_per_year <= MAXIMUM_REGIME_SWITCHES_PER_YEAR,
+                evidence=(
+                    f"{switches} switches of the joint regime over {months} months, "
+                    f"{switches_per_year:.2f} a year against a ceiling of "
+                    f"{MAXIMUM_REGIME_SWITCHES_PER_YEAR:.1f}"
+                ),
+            ),
+        ),
+    )
+
+
+def gate_two_from_tables(
+    sweep_table: pd.DataFrame,
+    model: GaussianHiddenMarkovModel,
+    most_likely_state_path: np.ndarray,
+    months: int,
+    per_chain_table: pd.DataFrame | None = None,
+) -> GateReport:
+    """Re-assert gate 2 from the artifacts a run wrote, whichever model wrote them.
+
+    A reader who has the artifacts but not the run should be able to ask the gate
+    again, and get the gate the run itself was judged by. Rebuilding the sweep
+    objects by hand at the call site is how that goes wrong: it hard-codes one
+    model's table shape, which is why this lives here and not in a notebook.
+
+    The fitted model decides which gate is asked, and the tables must agree with it. A
+    model and a sweep table from different runs raise here rather than produce a gate
+    report about a model nobody fitted.
+    """
+    if isinstance(model, TwoTimescaleHiddenMarkovModel):
+        if "growth_chain_states" not in sweep_table.columns:
+            raise ValueError(
+                "the fitted model has two chains but the sweep table is a single-chain table; "
+                "the two artifacts come from different runs."
+            )
+        if per_chain_table is None:
+            raise ValueError(
+                "this run's sweep table is a two-chain joint table, and gate 2 asks persistence "
+                "and population of each chain, which the joint table does not carry. Read "
+                "state_count_sweep_by_chain.parquet from the same run and pass it as "
+                "per_chain_table."
+            )
+        chains = {}
+        for name, chain_model in (
+            ("growth", model.growth_chain),
+            ("inflation and rates", model.levels_chain),
+        ):
+            rows = per_chain_table[per_chain_table["chain"] == name]
+            if rows.empty:
+                raise ValueError(f"the per-chain sweep table has no rows for the {name} chain")
+            chains[name] = StateCountSweep(
+                evaluations=_evaluations_from_rows(rows),
+                models={chain_model.state_count: chain_model},
+                recommended_state_count=chain_model.state_count,
+                reason="loaded from the fitted artifact",
+                runner_up_state_count=None,
+            )
+        return gate_two_regime_model_of_two_chains(
+            TwoChainStateCountSweep(
+                growth_chain_sweep=chains["growth"],
+                levels_chain_sweep=chains["inflation and rates"],
+            ),
+            most_likely_state_path,
+            months,
+        )
+
+    if "growth_chain_states" in sweep_table.columns:
+        raise ValueError(
+            "the sweep table is a two-chain joint table but the fitted model is a single chain; "
+            "the two artifacts come from different runs."
+        )
+
+    return gate_two_regime_model(
+        StateCountSweep(
+            evaluations=_evaluations_from_rows(sweep_table),
+            models={int(model.state_count): model},
+            recommended_state_count=int(model.state_count),
+            reason="loaded from the fitted artifact",
+            runner_up_state_count=None,
+        ),
+        most_likely_state_path,
+        months,
+    )
+
+
+def _evaluations_from_rows(table: pd.DataFrame) -> tuple[StateCountEvaluation, ...]:
+    """One evaluation per row of a sweep table, in the table's own order."""
+    return tuple(
+        StateCountEvaluation(
+            state_count=int(row["states"]),
+            free_parameters=int(row["free_parameters"]),
+            training_log_likelihood=float(row["training_log_likelihood"]),
+            bayesian_information_criterion=float(row["bayesian_information_criterion"]),
+            held_out_log_likelihood_per_month=float(row["held_out_log_likelihood_per_month"]),
+            smallest_population_share=float(row["smallest_population_share"]),
+            shortest_expected_duration_in_months=float(row["shortest_expected_duration_months"]),
+            second_largest_eigenvalue_modulus=float(row["second_eigenvalue_modulus"]),
+            converged=True,
+        )
+        for row in table.to_dict("records")
     )
 
 

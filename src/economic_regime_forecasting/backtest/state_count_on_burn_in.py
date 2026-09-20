@@ -38,6 +38,10 @@ from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
 from economic_regime_forecasting.data.panel import assemble_point_in_time_panel
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models.state_selection import sweep_state_counts
+from economic_regime_forecasting.models.two_timescale_hidden_markov_model import TwoChainStateCount
+from economic_regime_forecasting.models.two_timescale_state_selection import (
+    sweep_state_counts_for_two_chains,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +62,19 @@ class BurnInStateCountChoice:
     months_in_burn_in_panel: int
     reason: str
     sweep_rows: tuple[dict[str, object], ...]
+    growth_chain_sweep_rows: tuple[dict[str, object], ...] = ()
+    """Research arm A4 only: the growth chain's own sweep. With two chains
+    ``state_count`` is a ``TwoChainStateCount`` and ``sweep_rows`` is the joint
+    table, one row per pair of chain counts, which is what the regimes-exist gate
+    reads. Empty for one chain, and then absent from the manifest."""
+
+    levels_chain_sweep_rows: tuple[dict[str, object], ...] = ()
+    """Research arm A4 only: the inflation-and-rates chain's own sweep."""
 
     def as_manifest(self) -> dict[str, object]:
         """Everything a reader needs to see that the choice looked at no future."""
-        return {
-            "state_count": self.state_count,
+        manifest: dict[str, object] = {
+            "state_count": int(self.state_count),
             "runner_up_state_count": self.runner_up_state_count,
             "chosen_as_of": self.chosen_as_of.isoformat(),
             "panel_start": self.panel_start.isoformat(),
@@ -71,20 +83,45 @@ class BurnInStateCountChoice:
             "reason": self.reason,
             "sweep": [dict(row) for row in self.sweep_rows],
         }
+        if isinstance(self.state_count, TwoChainStateCount):
+            manifest["growth_chain_state_count"] = self.state_count.growth_chain_state_count
+            manifest["levels_chain_state_count"] = self.state_count.levels_chain_state_count
+            manifest["growth_chain_sweep"] = [dict(row) for row in self.growth_chain_sweep_rows]
+            manifest["levels_chain_sweep"] = [dict(row) for row in self.levels_chain_sweep_rows]
+        return manifest
 
     @classmethod
     def from_manifest(cls, payload: dict[str, object]) -> BurnInStateCountChoice:
         """Rebuild a choice read back from its cached artifact."""
         runner_up = payload["runner_up_state_count"]
         rows = payload["sweep"]
-        if not isinstance(rows, list):
+        growth_rows = payload.get("growth_chain_sweep", [])
+        levels_rows = payload.get("levels_chain_sweep", [])
+        if (
+            not isinstance(rows, list)
+            or not isinstance(growth_rows, list)
+            or not isinstance(levels_rows, list)
+        ):
             raise BurnInSelectionError(
                 "the cached burn-in choice has no sweep rows, so the regimes-exist gate "
                 "would have nothing honest to read. Delete the artifact and let "
                 "`forecast backtest` recompute it."
             )
+        state_count = int(str(payload["state_count"]))
+        if "growth_chain_state_count" in payload:
+            two_chains = TwoChainStateCount(
+                int(str(payload["growth_chain_state_count"])),
+                int(str(payload["levels_chain_state_count"])),
+            )
+            if int(two_chains) != state_count:
+                raise BurnInSelectionError(
+                    f"the cached burn-in choice says {state_count} regimes but its chains "
+                    f"multiply to {two_chains.describe()}. Delete the artifact and let "
+                    "`forecast backtest` recompute it."
+                )
+            state_count = two_chains
         return cls(
-            state_count=int(str(payload["state_count"])),
+            state_count=state_count,
             runner_up_state_count=None if runner_up is None else int(str(runner_up)),
             chosen_as_of=date.fromisoformat(str(payload["chosen_as_of"])),
             panel_start=date.fromisoformat(str(payload["panel_start"])),
@@ -92,6 +129,8 @@ class BurnInStateCountChoice:
             months_in_burn_in_panel=int(str(payload["months_in_burn_in_panel"])),
             reason=str(payload["reason"]),
             sweep_rows=tuple(dict(row) for row in rows),
+            growth_chain_sweep_rows=tuple(dict(row) for row in growth_rows),
+            levels_chain_sweep_rows=tuple(dict(row) for row in levels_rows),
         )
 
     def sweep_table(self) -> pd.DataFrame:
@@ -155,6 +194,38 @@ def choose_state_count_on_burn_in_window(
             "month it is about to forecast. Check the vintage policy for this date rather than "
             "relaxing the comparison."
         )
+
+    if settings.separate_chains_for_growth_and_for_inflation_with_rates:
+        # Research arm A4: the same rule on each chain's own block, on the same
+        # burn-in panel, so the boundary assertion above covers both.
+        two_chains = sweep_state_counts_for_two_chains(
+            matrix.values,
+            settings.hidden_state_counts_to_search,
+            seed=settings.random_seed,
+            restarts=settings.expectation_maximisation_restarts,
+            max_iterations=settings.expectation_maximisation_max_iterations,
+            tolerance=settings.expectation_maximisation_tolerance,
+        )
+        choice = BurnInStateCountChoice(
+            state_count=two_chains.recommended_state_count,
+            runner_up_state_count=None,
+            chosen_as_of=first_forecast_date,
+            panel_start=panel_start,
+            panel_end=panel_end,
+            months_in_burn_in_panel=len(matrix),
+            reason=two_chains.reason,
+            sweep_rows=two_chains.joint_rows(),
+            growth_chain_sweep_rows=tuple(
+                item.as_row() for item in two_chains.growth_chain_sweep.evaluations
+            ),
+            levels_chain_sweep_rows=tuple(
+                item.as_row() for item in two_chains.levels_chain_sweep.evaluations
+            ),
+        )
+        logger.info("burn_in_state_count %s", choice.describe())
+        if artifacts is not None:
+            artifacts.write_json(cache_name, choice.as_manifest())
+        return choice
 
     sweep = sweep_state_counts(
         matrix.values,

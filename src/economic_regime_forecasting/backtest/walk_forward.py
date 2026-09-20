@@ -51,11 +51,16 @@ from economic_regime_forecasting.data.vintage import LookAheadError, VintagePoli
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import gaussian_hidden_markov_model as hidden_markov
 from economic_regime_forecasting.models import indicator_forecast
+from economic_regime_forecasting.models import two_timescale_hidden_markov_model as two_timescale
 from economic_regime_forecasting.models.gaussian_hidden_markov_model import (
     GaussianHiddenMarkovModel,
 )
 from economic_regime_forecasting.models.indicator_forecast import ConditionalRates
+from economic_regime_forecasting.models.model_loading import regime_model_from_dictionary
 from economic_regime_forecasting.models.state_labelling import canonicalise
+from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
+    TwoChainStateCount,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -229,29 +234,47 @@ def fit_regime_model(
     matrix = build_observation_matrix(
         assemble_point_in_time_panel(registry, as_of, cache), registry
     )
+    # A TwoChainStateCount asks for two chains (research arm A4); an integer asks for
+    # one, as it always has. Both chain counts go into the key, because 2x4 and 4x2
+    # are the same number of joint states and different models.
+    state_label = (
+        state_count.label if isinstance(state_count, TwoChainStateCount) else str(state_count)
+    )
     cache_name = (
-        f"model_{as_of.isoformat()}_states{state_count}_seed{settings.random_seed}"
+        f"model_{as_of.isoformat()}_states{state_label}_seed{settings.random_seed}"
         f"_{settings.configuration_hash()}.json"
     )
 
     model: GaussianHiddenMarkovModel | None = None
     if artifacts is not None and artifacts.has(cache_name):
-        model = GaussianHiddenMarkovModel.from_dictionary(artifacts.read_json(cache_name))
+        model = regime_model_from_dictionary(artifacts.read_json(cache_name))
         if model.state_count != state_count:  # pragma: no cover - key covers it
             model = None
     if model is None:
-        model = canonicalise(
-            hidden_markov.fit(
+        # The date enters the seed so that consecutive refits do not share a
+        # starting point and inherit each other's local optimum.
+        seed = settings.random_seed + as_of.year * 100 + as_of.month
+        if isinstance(state_count, TwoChainStateCount):
+            model = two_timescale.fit(
                 matrix.values,
-                state_count=state_count,
-                # The date enters the seed so that consecutive refits do not share
-                # a starting point and inherit each other's local optimum.
-                seed=settings.random_seed + as_of.year * 100 + as_of.month,
+                growth_chain_state_count=state_count.growth_chain_state_count,
+                levels_chain_state_count=state_count.levels_chain_state_count,
+                seed=seed,
                 restarts=settings.expectation_maximisation_restarts,
                 max_iterations=settings.expectation_maximisation_max_iterations,
                 tolerance=settings.expectation_maximisation_tolerance,
             )
-        )
+        else:
+            model = canonicalise(
+                hidden_markov.fit(
+                    matrix.values,
+                    state_count=state_count,
+                    seed=seed,
+                    restarts=settings.expectation_maximisation_restarts,
+                    max_iterations=settings.expectation_maximisation_max_iterations,
+                    tolerance=settings.expectation_maximisation_tolerance,
+                )
+            )
         if artifacts is not None:
             artifacts.write_json(cache_name, model.to_dictionary())
 

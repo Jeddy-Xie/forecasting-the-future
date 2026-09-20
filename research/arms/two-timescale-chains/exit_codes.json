@@ -1,0 +1,1 @@
+{"arm": "two-timescale-chains", "branch": "research/two-timescale-chains", "commit": "099fbdca6d8ad18eb5110319f9325527a7edc024", "tree_clean_at_start_and_end": true, "check_gates_exit": 0, "compare_exit": 1, "paired_exit": 0, "look_ahead_audit_exit": 0}

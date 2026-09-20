@@ -121,6 +121,19 @@ class RunSettings:
     the model revised consumer price index values through the publication-lag
     fallback -- 41% of the walk-forward, every month from 1971-12 to 1994-02."""
 
+    separate_chains_for_growth_and_for_inflation_with_rates: bool = True
+    """Research arm A4 of experiment 0002: two regime chains instead of one.
+
+    One chain drives the growth column; a second, independent chain drives the
+    inflation and rates columns. Each chain's number of states is chosen on its own
+    block by the usual selection rule, over candidates up to four, on the burn-in
+    window, and the walk-forward fits and filters over the product of the two
+    (``models/two_timescale_hidden_markov_model.py``).
+
+    False reproduces main exactly, one chain over all three columns. At False the
+    field is left out of the configuration hash, so every digest main has written
+    is unchanged. This is True only on the branch ``research/two-timescale-chains``."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
     def configuration_hash(self) -> str:
@@ -151,6 +164,9 @@ class RunSettings:
 SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, object] = {
     "select_state_count_on_a_burn_in_window": False,
     "start_walk_forward_when_every_input_is_point_in_time": False,
+    # Research arm A4 (experiment 0002). False is main's single chain, the behaviour
+    # of the code before the field existed, so the entry meets the rule below.
+    "separate_chains_for_growth_and_for_inflation_with_rates": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 
@@ -178,6 +194,7 @@ class ArtifactNames:
     data_audit: str = "data_audit.parquet"
     revision_audit: str = "revision_audit.parquet"
     state_count_sweep: str = "state_count_sweep.parquet"
+    state_count_sweep_by_chain: str = "state_count_sweep_by_chain.parquet"
     selected_model: str = "selected_model.json"
     regime_descriptions: str = "regime_descriptions.parquet"
     mixing_diagnostics: str = "mixing_diagnostics.parquet"
