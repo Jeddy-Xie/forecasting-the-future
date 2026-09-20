@@ -77,6 +77,29 @@ by four on a burn-in window ending before the first scored forecast date.
 
 ## Consequences
 
+Measured after the merge, as main's own pipeline, against the committed single-chain
+baseline `ad7fcc1affd0746a`, which was deliberately NOT recaptured so the comparison
+has a fixed anchor:
+
+| horizon | baseline skill | this run | difference | 90% | 98.33% |
+|---|---|---|---|---|---|
+| 1 year | +0.2154 | +0.2744 | **+0.0590** | [+0.0275, +0.0877] | [+0.0147, +0.1019] |
+| 5 years | +0.0728 | +0.1192 | +0.0465 | [+0.0249, +0.0953] | [+0.0132, +0.1295] |
+| 10 years | −0.3528 | −0.1673 | +0.1855 | [+0.0843, +0.2228] | [+0.0700, +0.3834] |
+
+These reproduce arm A4's figures to the digit, which is the point: the arm and the
+adopted default are the same computation. 281 of 387 compared fields moved, 106 are
+identical, and five moved categorically:
+
+- the one-year verdict, **SHIP BASE RATE → SHIP MODEL**, because its failing gate goes
+  from `calibration` to `none`;
+- the ten-year failing gates lose `robustness`, keeping skill, calibration and honesty;
+- the run's identity, `ad7fcc1affd0746a` → `fec79a040f9ca6f9`, at 6 → 16 regimes.
+
+All five gates pass (`check-gates` exit 0), and the state count reaches the backtest
+through the single shared function D15 introduced, so the look-ahead audit asks the
+same question the backtest does.
+
 - The default configuration hash becomes `fec79a040f9ca6f9`. Main's previous default
   `ad7fcc1affd0746a` and the shipped `9f95b12dba40d138` both still reproduce from the
   settings that produced them, so every result already on the record stays correctly

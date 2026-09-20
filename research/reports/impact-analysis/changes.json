@@ -11,6 +11,32 @@
   },
   "changes": [
     {
+      "id": "ADOPT-A4",
+      "kind": "method",
+      "date": "2026-09-20",
+      "title": "Adopted: the two-chain model is now the pipeline's default",
+      "what_changed": "Arm A4 merged, so every command — backtest, forecast-now, submit, the notebooks — runs two chains unless a setting says otherwise. Measured as main's own pipeline against the committed single-chain baseline, which was deliberately not recaptured so the comparison keeps a fixed anchor.",
+      "impact": {
+        "recorded": {
+          "headline": "one year +0.0590, 90% [+0.0275, +0.0877], 98.33% [+0.0147, +0.1019]",
+          "detail": "five years +0.0465, ten years +0.1855; 281 of 387 fields moved and five moved categorically — the one-year verdict SHIP BASE RATE to SHIP MODEL, its failing gate calibration to none, ten years dropping robustness, and the run identity ad7fcc1affd0746a to fec79a040f9ca6f9 at 6 to 16 regimes"
+        },
+        "provenance": "forecast baseline compare --paired, run after the merge at 19fe4b0; all five gates pass"
+      },
+      "status": "adopted; not shipped",
+      "status_kind": "ok",
+      "notes": [
+        "It reproduces the arm's figures to the digit, because the arm and the adopted default are the same computation.",
+        "The submission still carries the old shipped configuration and its manifest; re-shipping needs the owner's token and is a separate decision.",
+        "Three independent judges adjudicated the stress-test dossier: all three said adopt, two classifying the decision FACTUAL and one MECHANICAL.",
+        "ADR 0010 records what this does not claim: the mechanism is unestablished, and briefing 05's matched-cell evidence points at granularity rather than timescale separation."
+      ],
+      "evidence": [
+        "docs/adr/0010-two-chains-on-two-timescales.md",
+        "research/briefings/05-are-the-next-proposals-provable.md"
+      ]
+    },
+    {
       "id": "A4",
       "kind": "method",
       "date": "2026-09-15",
@@ -436,15 +462,18 @@
   "next_candidates": [
     {
       "title": "Couple the two chains",
-      "detail": "The top-ranked extension in briefing 04, and the only one that makes the model more than two separate chains. Diagonal coupling costs four parameters, the forward pass already pays the computational cost, and the measured block-independence violation above is the evidence for it. It carries a free falsifier: the joint second eigenvalue equals the slower chain's only while the chains are independent."
+      "detail": "The top-ranked extension in briefing 04, and the only one that makes the model more than two separate chains. Diagonal coupling costs four parameters, the forward pass already pays the computational cost, and the measured block-independence violation above is the evidence for it. It carries a free falsifier: the joint second eigenvalue equals the slower chain's only while the chains are independent.",
+      "provability": "UNDERPOWERED, and aimed at the wrong quantity. Briefing 05 derives the detectable one-year difference as 0.018 at 90% and 0.026 at 98.33%, against a plausible effect near 0.005. It also finds a quantity mismatch: the dependence A4 discards is contemporaneous, in the emission covariance, while coupling changes transitions and leaves that covariance block-diagonal."
     },
     {
       "title": "Time-varying transitions on the growth chain",
-      "detail": "The factorial structure cuts the parameter cost about twentyfold against putting them on a joint chain, which converts an objection the earlier briefing treated as fatal into a survivable one."
+      "detail": "The factorial structure cuts the parameter cost about twentyfold against putting them on a joint chain, which converts an objection the earlier briefing treated as fatal into a survivable one.",
+      "provability": "UNDERPOWERED. The parameter-cost claim is proven (12q against 240q, a twentyfold saving), but the forecasting claim needs an effect near 0.005 against a floor of 0.018 to 0.030 — and the proposed driver's own measured skill in this window is negative."
     },
     {
       "title": "A state-count ablation main's gate will accept",
-      "detail": "The K = 16 ablation could not be fitted. Separating structure from granularity needs a new pre-registration at a count the regimes-exist gate admits."
+      "detail": "The K = 16 ablation could not be fitted. Separating structure from granularity needs a new pre-registration at a count the regimes-exist gate admits.",
+      "provability": "NOT FALSIFIABLE AS STATED, and provable once rewritten: two chains at 2x3, six joint cells matching main's six exactly, holding granularity fixed and varying only structure. Its two hypotheses predict outcomes about 0.06 apart against a floor near 0.025, and it resolves the confound ADR 0010 admits. Register this one first."
     }
   ],
   "how_to_update": "Append an entry to research/reports/impact-analysis/changes.json and rebuild. An entry whose impact is {\"from_arm\": \"<arm>\"} has its numbers resolved live from that arm's own paired.json through score_slate.py, so the page cannot disagree with the files. An entry whose impact is {\"recorded\": {...}, \"provenance\": \"...\"} states where the number came from. Then run .venv/bin/python research/tools/build_impact_analysis.py and republish to the same URL."
