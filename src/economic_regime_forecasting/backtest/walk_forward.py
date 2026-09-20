@@ -39,6 +39,9 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
+from economic_regime_forecasting.configuration import (
+    business_cycle_announcements as announcements,
+)
 from economic_regime_forecasting.configuration.registry import (
     BinaryIndicator,
     EconomicSeriesRegistry,
@@ -111,6 +114,8 @@ class IndicatorHistory:
     outcomes_by_horizon: dict[int, pd.Series]
     climatology_by_horizon: dict[int, pd.Series]
     publication_lag_days: int
+    dated_by_announcement: bool = False
+    """True where a constant lag cannot say when a value was knowable: see D14."""
 
 
 def prepare_indicator_history(
@@ -151,12 +156,17 @@ def prepare_indicator_history(
             else registry[indicator.resolution.series].publication_lag_days
         )
 
+        # Recession dating is announced, not published on a schedule (D14).
+        dated_by_announcement = indicator.resolution.series == announcements.RECESSION_SERIES_NAME
+
         outcomes: dict[int, pd.Series] = {}
         climatology: dict[int, pd.Series] = {}
         for horizon in horizons_in_months:
             resolved = indicator_outcomes.resolve(indicator, source, horizon).outcomes
             outcomes[horizon] = resolved
-            climatology[horizon] = _expanding_climatology(resolved, horizon, lag)
+            climatology[horizon] = _expanding_climatology(
+                resolved, horizon, lag, dated_by_announcement
+            )
 
         histories[indicator.name] = IndicatorHistory(
             indicator=indicator,
@@ -164,23 +174,58 @@ def prepare_indicator_history(
             outcomes_by_horizon=outcomes,
             climatology_by_horizon=climatology,
             publication_lag_days=lag,
+            dated_by_announcement=dated_by_announcement,
         )
     return histories
 
 
-def publication_dates(labels: pd.DatetimeIndex, publication_lag_days: int) -> pd.DatetimeIndex:
+def publication_dates(
+    labels: pd.DatetimeIndex,
+    publication_lag_days: int,
+    *,
+    dated_by_announcement: bool = False,
+) -> pd.DatetimeIndex:
     """The date each observation was published: its period label plus the lag.
 
     The one publication rule the walk-forward applies to final data, whether to a
     condition the forecaster reads or to an outcome its benchmark counts. The lag
     counts from the period-start label, as the registry defines it and as
     ``data.vintage.censor_by_publication_lag`` applies it to the model's inputs.
+
+    A constant lag is wrong for recession dating, which is debt D14: the National
+    Bureau of Economic Research announces turning points rather than months, so a
+    month's coding is knowable only once the turning point that opens its phase has
+    been announced. With ``dated_by_announcement`` a month is published at the LATER
+    of the constant lag and that announcement, so the rule only ever delays a value.
+    Months the table cannot place keep the constant lag.
+
+    It must only ever delay, and the ``max`` is what makes that true. The
+    announcement settling a month's phase is the most recent turning point at or
+    before it, which is routinely years OLDER than the month: the December 1992 call
+    on the 1991 trough settles every month up to the 2001 peak. A first version of
+    this let the announcement REPLACE the constant, which dated a value before the
+    month it describes existed -- 1995-01 published 1992-12-22 -- so a panel built in
+    1994 could read recession codings out to 2001. The look-ahead audit caught it at
+    400 moved rows. D14's complaint was only ever that a constant lag is too SHORT
+    after a trough; there is no direction in which it is too long.
     """
-    return pd.DatetimeIndex(labels) + pd.Timedelta(days=publication_lag_days)
+    published = pd.DatetimeIndex(labels) + pd.Timedelta(days=publication_lag_days)
+    if not dated_by_announcement:
+        return published
+    settled = [announcements.announced_by(label.date()) for label in pd.DatetimeIndex(labels)]
+    return pd.DatetimeIndex(
+        [
+            max(pd.Timestamp(announced), fallback) if announced is not None else fallback
+            for announced, fallback in zip(settled, published, strict=True)
+        ]
+    )
 
 
 def _expanding_climatology(
-    outcomes: pd.Series, horizon_in_months: int, publication_lag_days: int
+    outcomes: pd.Series,
+    horizon_in_months: int,
+    publication_lag_days: int,
+    dated_by_announcement: bool = False,
 ) -> pd.Series:
     """The base rate a forecaster could have quoted at each date.
 
@@ -197,7 +242,9 @@ def _expanding_climatology(
     """
     running_mean = outcomes.expanding(min_periods=1).mean().to_numpy(dtype="float64")
     deciding_labels = pd.DatetimeIndex(outcomes.index) + pd.DateOffset(months=horizon_in_months)
-    published = publication_dates(deciding_labels, publication_lag_days)
+    published = publication_dates(
+        deciding_labels, publication_lag_days, dated_by_announcement=dated_by_announcement
+    )
     # How many forecast dates' outcomes had been published by each date. Both
     # indexes ascend, so one binary search answers it for every date at once, and
     # the outcomes it counts are always a prefix of the forecast dates.
@@ -213,7 +260,11 @@ def _expanding_climatology(
 def condition_available_at(history: IndicatorHistory, as_of: date) -> pd.Series:
     """The indicator's monthly condition, censored to what had been published."""
     condition = history.monthly_condition.dropna()
-    published = publication_dates(pd.DatetimeIndex(condition.index), history.publication_lag_days)
+    published = publication_dates(
+        pd.DatetimeIndex(condition.index),
+        history.publication_lag_days,
+        dated_by_announcement=history.dated_by_announcement,
+    )
     return condition[published <= pd.Timestamp(as_of)]
 
 

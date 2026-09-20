@@ -318,7 +318,22 @@ Kept as a stub because `regression_baseline.py` refers to it by number.
 ---
 
 ## D14 · The recession series' publication lag is too short after a trough
-**evidential** · found 2026-09-15 by the independent look-ahead review of arm A5;
+**closed** 2026-09-21 by ADR 0011, taking the second of the two options below:
+availability by turning point, from a dated table of the eight announcements since
+1990. A recession value is now published at the later of its constant-lag date and
+the announcement that settled its phase, in the pipeline and, by its own separate
+implementation, in the audit. Measured against `baselines/a4-pre-d14`, so A4's
+adoption is not folded in: 57 MOVED fields, all on the two recession indicators,
+and paired skill of −0.0071 at one year (90% [−0.0165, −0.0009]), +0.0002 at five,
++0.0049 at ten. One-year skill falls and the interval excludes zero, which is the
+right sign — some of it was earned on post-trough codings nobody could have read.
+No verdict changed. Eighteen forecast dates moved rather than the 8 predicted
+below; ADR 0011 accounts for all of them (8 same-date, 3 benchmark-only, 7 carried
+by the 2003-03 refit). The first attempt at this fix introduced a worse leak by
+letting the announcement replace the lag rather than delay it, and
+`forecast audit-look-ahead` caught it at 400 moved rows; that is recorded in the
+ADR and pinned by three tests.
+**was: evidential** · found 2026-09-15 by the independent look-ahead review of arm A5;
 every announcement date below was checked at nber.org the same day
 
 The registry gives recession dating a single publication lag,
@@ -352,8 +367,14 @@ each month:
 | 2020-04 | 2020-05 to 2020-06 | 2021-07 | 1 |
 
 That is 8 of the 391 scored forecast dates, and only the two recession indicators.
-The invariance audit cannot see it, because it perturbs by the registered lag, and
-its record says so.
+The invariance audit could not see it while it perturbed by the registered lag, and
+its record said so. It now applies the same announcement rule as the pipeline, by a
+separate implementation, and the two are held side by side by a test.
+
+The measurement in ADR 0011 found 18 forecast dates rather than these 8. The table
+above is not wrong: it enumerates outcome resolution, and the other ten dates come
+from the expanding benchmark (3) and from a refit inside the divergence window
+carrying its rates forward (7).
 
 **What it would change.** Unmeasured on main. In arm A5, its reviewer measured
 that withholding the affected 2001-trough outcomes moves those forecasts by at most

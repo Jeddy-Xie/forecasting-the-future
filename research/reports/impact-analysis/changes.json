@@ -209,15 +209,43 @@
         },
         "provenance": "derived from the registry and NBER announcement dates; two independent reviews"
       },
-      "status": "open, deferred until the slate closed",
-      "status_kind": "wait",
+      "status": "closed 2026-09-21 by ADR 0011",
+      "status_kind": "ok",
       "notes": [
         "Main and every arm read the same registry, so it cannot favour one side of a paired comparison.",
-        "The invariance audit cannot see it: it perturbs by the registered lag, and its own record says so.",
-        "Fix options: a longer fixed lag of at least 662 days, or availability dated by each NBER announcement."
+        "The invariance audit could not see it while it perturbed by the registered lag, and its own record said so. It now applies the same announcement rule, by its own separate implementation.",
+        "Fix options were a longer fixed lag of at least 662 days, or availability dated by each NBER announcement. The second was taken; ADR 0011 says why."
       ],
       "evidence": [
-        "docs/TECHNICAL_DEBT.md D14"
+        "docs/TECHNICAL_DEBT.md D14",
+        "docs/adr/0011-recession-status-is-dated-by-its-announcement.md"
+      ]
+    },
+    {
+      "id": "ADR-0011",
+      "kind": "integrity",
+      "date": "2026-09-21",
+      "title": "Recession status is dated by the announcement that settled it",
+      "what_changed": "A recession month is now published at the later of its constant 400-day lag and the NBER announcement of the turning point opening its phase, from a table of the eight announcements since 1990. The pipeline and the look-ahead audit each apply the rule by their own implementation, so a mistake in one cannot agree with the other.",
+      "impact": {
+        "recorded": {
+          "headline": "one year +0.2744 to +0.2673, 90% [-0.0165, -0.0009]",
+          "detail": "five years +0.0002, ten years +0.0049 [+0.0014, +0.0136]; 57 fields moved, every one on the two recession indicators, and no verdict changed. One-year skill FALLS and the interval excludes zero, which is the right sign: some of it was earned on post-trough codings no forecaster could have read."
+        },
+        "provenance": "forecast baseline compare --paired against baselines/a4-pre-d14, the A4-adopted run captured immediately before this change so A4's effect is not folded in; ADR 0011"
+      },
+      "status": "landed on main; not shipped",
+      "status_kind": "ok",
+      "notes": [
+        "The first version of this fix introduced a worse leak than the one it closed: it let the announcement REPLACE the lag, and because the announcement settling a month is usually older than the month, values were dated before they existed -- 1995-01 published 1992-12-22. A panel built in 1994-05 could read 74 future labels. forecast audit-look-ahead caught it at 400 moved rows.",
+        "The suite was 509 green while that leak existed, because nothing required a publication date to follow its own label. Three tests now do.",
+        "Eighteen forecast dates moved where D14 predicted eight; ADR 0011 accounts for all of them.",
+        "configuration_hash is unchanged at fec79a040f9ca6f9: this is a leak fix, not a variant anyone would select, so it adds no RunSettings field. The regression baseline distinguishes the runs."
+      ],
+      "evidence": [
+        "docs/adr/0011-recession-status-is-dated-by-its-announcement.md",
+        "docs/TECHNICAL_DEBT.md D14",
+        "baselines/a4-pre-d14.json"
       ]
     },
     {

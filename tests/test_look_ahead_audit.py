@@ -864,6 +864,73 @@ def test_a_value_labelled_before_the_cutoff_but_published_after_it_is_perturbed(
     assert count == len(moved) == 8
 
 
+def test_recession_status_stays_unavailable_until_the_committee_announced_it() -> None:
+    """A constant lag is the wrong shape for this one series, in both directions.
+
+    Every month of 2002 sits after the November 2001 trough but before the July 2003
+    call that settled it, so on 10 July 2003 none of them was knowable -- while a
+    400-day lag releases the first half of the year. Left on the constant lag the
+    audit would leave those six months untouched and so never test them.
+    """
+    snapshot = _snapshot(_monthly("2002-01-01", 12), "USREC")
+    cutoff = date(2003, 7, 10)
+    _, by_lag = look_ahead_audit.perturbed_snapshot(snapshot, cutoff, 400)
+    changed, by_announcement = look_ahead_audit.perturbed_snapshot(
+        snapshot, cutoff, 400, dated_by_announcement=True
+    )
+    assert by_lag == 6
+    assert by_announcement == 12
+    june = pd.Timestamp("2002-06-01")
+    assert changed.observations[june] != snapshot.observations[june]
+
+
+def test_announcement_dating_never_releases_a_value_the_constant_lag_withheld() -> None:
+    """The rule is one-directional, and this is the test that says so.
+
+    A first version of it let the announcement REPLACE the constant lag. Because the
+    announcement settling a month is the most recent turning point at or *before* it,
+    and that call is routinely years older than the month, replacing dated values
+    before the months they describe: every month of 1999 came out available at a
+    March 2000 cutoff, and a panel built in 1994 could read recession codings out to
+    2001. The audit caught it at 400 moved rows.
+
+    So withholding is a floor. Announcement dating may add to what the constant lag
+    withholds -- that is the post-trough leak D14 records -- and may never subtract.
+    """
+    snapshot = _snapshot(_monthly("1999-01-01", 12), "USREC")
+    cutoff = date(2000, 3, 1)
+    _, by_lag = look_ahead_audit.perturbed_snapshot(snapshot, cutoff, 400)
+    _, by_announcement = look_ahead_audit.perturbed_snapshot(
+        snapshot, cutoff, 400, dated_by_announcement=True
+    )
+    assert by_lag == 11
+    assert by_announcement == 11
+
+
+def test_the_audit_and_the_pipeline_agree_on_when_recession_status_settled() -> None:
+    """Independent implementations, compared rather than trusted.
+
+    ``perturbed_snapshot`` computes publication dates itself, deliberately, so that a
+    mistake in the pipeline's rule cannot agree with the check about it. That
+    independence is only worth having if the two are also compared, because where
+    they disagree the audit either scrambles values the pipeline legitimately used --
+    failing the audit for a leak that is not there -- or leaves untouched values it
+    should have tested, which is the leak going unseen. Neither side's own tests can
+    see that; only holding them side by side can.
+    """
+    labels = pd.date_range("1998-01-01", "2004-12-01", freq="MS")
+    snapshot = _snapshot(_monthly("1998-01-01", len(labels)), "USREC")
+    published = walk_forward.publication_dates(labels, 400, dated_by_announcement=True)
+    for cutoff in (date(2000, 3, 1), date(2002, 1, 1), date(2003, 7, 10), date(2004, 6, 1)):
+        changed, _ = look_ahead_audit.perturbed_snapshot(
+            snapshot, cutoff, 400, dated_by_announcement=True
+        )
+        audit_withheld = changed.observations.to_numpy() != snapshot.observations.to_numpy()
+        stamp = pd.Timestamp(cutoff)
+        pipeline_withheld = (labels >= stamp) | (published > stamp)
+        assert list(audit_withheld) == list(pipeline_withheld), cutoff
+
+
 def test_a_value_published_exactly_on_the_cutoff_was_available() -> None:
     """May 1 plus 31 days is June 1, the cutoff: available. Plus 32 days is not."""
     snapshot = _snapshot(_monthly("2000-01-01", 12), "X")

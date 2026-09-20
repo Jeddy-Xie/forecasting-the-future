@@ -93,6 +93,9 @@ from economic_regime_forecasting.backtest.state_count_on_burn_in import (
     state_count_for_the_backtest,
 )
 from economic_regime_forecasting.backtest.walk_forward import run_walk_forward
+from economic_regime_forecasting.configuration import (
+    business_cycle_announcements as announcements,
+)
 from economic_regime_forecasting.configuration.registry import (
     BinaryIndicator,
     EconomicSeriesRegistry,
@@ -199,7 +202,10 @@ class PerturbationSummary:
 
 
 def perturbed_snapshot(
-    snapshot: SeriesSnapshot, cutoff: date, publication_lag_days: int = 0
+    snapshot: SeriesSnapshot,
+    cutoff: date,
+    publication_lag_days: int = 0,
+    dated_by_announcement: bool = False,
 ) -> tuple[SeriesSnapshot, int]:
     """``snapshot`` with every value unavailable at ``cutoff`` perturbed, and how many.
 
@@ -212,8 +218,22 @@ def perturbed_snapshot(
     lag of zero, the default, leaves the label rule alone. A snapshot with nothing
     to perturb comes back unchanged, digest and all.
 
+    With ``dated_by_announcement`` a value is published at the LATER of its
+    constant-lag date and the announcement of the turning point opening its phase,
+    which is what recession dating obeys (D14). The rule only ever delays. The
+    announcement that settles a month is the most recent turning point at or before
+    it and is routinely years older than the month itself, so taking it alone would
+    date a value before the month it describes existed.
+
+    The audit must apply the same rule as the pipeline, because where the two
+    disagree it either leaves untested the post-trough months the pipeline calls
+    unknowable, or scrambles values the pipeline legitimately used and fails for a
+    leak that is not there.
+
     The publication date is computed here rather than borrowed from the pipeline's
-    own rule, so that a mistake in that rule cannot agree with the check about it.
+    own rule, so that a mistake in that rule cannot agree with the check about it. The
+    announcement dates come from the same verified table; the rule applying them does
+    not.
     """
     observations = snapshot.observations
     vintage_date = snapshot.request.vintage_date
@@ -225,6 +245,17 @@ def perturbed_snapshot(
         unavailable = np.asarray(labels >= stamp, dtype=bool)
     else:
         published_on = labels + pd.Timedelta(days=publication_lag_days)
+        if dated_by_announcement:
+            published_on = pd.DatetimeIndex(
+                [
+                    max(pd.Timestamp(settled), fallback) if settled is not None else fallback
+                    for settled, fallback in zip(
+                        [announcements.announced_by(label.date()) for label in labels],
+                        published_on,
+                        strict=True,
+                    )
+                ]
+            )
         unavailable = np.asarray((labels >= stamp) | (published_on > stamp), dtype=bool)
     count = int(unavailable.sum())
     if count == 0:
@@ -303,7 +334,14 @@ def copy_series_cache(
         snapshot = source.read(_request_from(sidecar.get("request")))
         if cutoff is not None:
             lag = _lag_for(snapshot.request.series_id, publication_lag_days_by_series)
-            snapshot, count = perturbed_snapshot(snapshot, cutoff, lag)
+            snapshot, count = perturbed_snapshot(
+                snapshot,
+                cutoff,
+                lag,
+                dated_by_announcement=(
+                    snapshot.request.series_id == announcements.RECESSION_SERIES_ID
+                ),
+            )
             if count:
                 observations += count
                 vintage_date = snapshot.request.vintage_date

@@ -15,6 +15,8 @@ from datetime import date, timedelta
 import pandas as pd
 import pytest
 
+from economic_regime_forecasting.backtest.walk_forward import publication_dates
+from economic_regime_forecasting.configuration import business_cycle_announcements as announcements
 from economic_regime_forecasting.configuration.registry import (
     EconomicSeries,
     ModelDimension,
@@ -207,6 +209,102 @@ def test_recession_dating_carries_the_long_lag_the_committee_actually_takes() ->
     forecaster the single most useful fact it could not have had."""
     registry = load_economic_series_registry()
     assert registry["recession_indicator"].publication_lag_days >= 365
+
+
+def test_recession_status_is_dated_by_the_announcement_that_settled_it() -> None:
+    """A constant lag is the wrong shape for this series, and the right rule is
+    narrow: a month's recession status became knowable when the committee announced
+    the turning point that *opened the phase the month sits in* -- the most recent
+    turning point at or before that month.
+
+    Two earlier versions of this rule were wrong. One took the first turning point
+    at or *after* the month; one took the later of the two surrounding
+    announcements. Both agree with the right answer on most months, which is how
+    they survived a reading, so every case below is one where they disagree.
+    """
+    cases = (
+        (
+            date(1999, 1, 1),
+            date(1992, 12, 22),
+            "deep in the expansion the 1991 trough call settled",
+        ),
+        (date(2001, 6, 1), date(2001, 11, 26), "inside the recession, settled by the peak call"),
+        (date(2002, 6, 1), date(2003, 7, 17), "past the trough, unknowable until the trough call"),
+        (date(2008, 6, 1), date(2008, 12, 1), "inside the recession, settled by the peak call"),
+        (date(2020, 7, 1), date(2021, 7, 19), "past the 2020 trough, settled only in July 2021"),
+    )
+    for month, expected, why in cases:
+        assert announcements.announced_by(month) == expected, f"{month}: {why}"
+
+
+def test_a_publication_date_is_never_earlier_than_the_month_it_describes() -> None:
+    """The invariant whose absence let a look-ahead through.
+
+    A first version of announcement dating let the committee's call REPLACE the
+    constant lag. That call settles the phase a month sits in and is usually OLDER
+    than the month, so values were dated before they existed -- 1995-01 published
+    1992-12-22 -- and a panel built in 1994 could read recession codings out to 2001.
+    The suite was 509 green at the time and had nothing to say about it, because no
+    test anywhere required a publication date to follow its own label. This is that
+    sentence, written down.
+    """
+    labels = pd.date_range("1990-01-01", "2024-12-01", freq="MS")
+    for lag in (0, 30, 400):
+        published = publication_dates(labels, lag, dated_by_announcement=True)
+        too_early = [
+            f"{label.date()} would be published {stamp.date()}"
+            for label, stamp in zip(labels, published, strict=True)
+            if stamp < label
+        ]
+        assert not too_early, f"lag {lag}: {too_early[:3]}"
+
+
+def test_announcement_dating_only_ever_delays_a_publication() -> None:
+    """D14 records that a constant lag is too SHORT after a trough. There is no
+    direction in which it is too long, so taking the later of the two dates is what
+    keeps the rule from handing the forecaster something the lag alone withheld."""
+    labels = pd.date_range("1990-01-01", "2024-12-01", freq="MS")
+    for lag in (0, 30, 400):
+        constant = publication_dates(labels, lag)
+        announced = publication_dates(labels, lag, dated_by_announcement=True)
+        assert (announced >= constant).all(), lag
+        assert (announced > constant).any(), f"lag {lag} delayed nothing at all"
+
+
+def test_both_keys_into_the_announcement_table_name_the_registrys_recession_series() -> None:
+    """The two layers key the same rule off different things, so the keys are checked.
+
+    The walk-forward has the registry to hand and keys announcement dating off the
+    series NAME; the audit walks cache entries and keys off the series ID. If those
+    two ever named different series the audit would silently stop applying the rule
+    it exists to check, the pipeline and the check would disagree, and nothing would
+    say so -- every test of the rule itself builds its own snapshot and would still
+    pass. This is the one assertion that ties both constants to the registry.
+    """
+    registry = load_economic_series_registry()
+    entry = registry[announcements.RECESSION_SERIES_NAME]
+    assert entry.series_id == announcements.RECESSION_SERIES_ID
+
+
+def test_a_month_before_the_first_recorded_turning_point_has_no_announcement() -> None:
+    """The table starts at the 1990 peak. Earlier months are not settled by it, and
+    saying so is what lets the caller fall back to the declared lag rather than
+    silently borrowing a date from the wrong business cycle."""
+    assert announcements.announced_by(date(1990, 1, 1)) is None
+
+
+def test_the_settling_announcement_never_moves_earlier_as_the_month_advances() -> None:
+    """Information does not become available sooner by waiting. This is the property
+    that both wrong rules broke: each could hand a later month an earlier
+    announcement date, which would mark a value knowable before the value it
+    supersedes."""
+    latest: date | None = None
+    for stamp in pd.date_range("1990-01-01", "2024-12-01", freq="MS"):
+        settled = announcements.announced_by(stamp.date())
+        if settled is None:
+            continue
+        assert latest is None or settled >= latest, stamp.date()
+        latest = settled
 
 
 def test_policy_counts_cover_every_policy(rising_series: pd.Series) -> None:
