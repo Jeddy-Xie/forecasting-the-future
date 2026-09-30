@@ -83,5 +83,20 @@
   "determinism": {
     "seed": 20260908,
     "requirement": "Two runs of one configuration produce byte-identical outputs, reference columns included."
-  }
+  },
+
+  "amendments": [
+    {
+      "date": "2026-09-29",
+      "by": "claude-fable-5-1, delegated by Jeddy Xie, decision P2-9; written after experiment 0008's arms were run and reviewed, and first applied to arm B1 after the fact, which is stated here rather than hidden",
+      "clarifies": "look_ahead.materiality_floor",
+      "text": "The class-B floor covers the paths a change OPENS: new reads of an approximation that the reference's forecasts do not make on the same rows. It does not cover approximations the reference already carries into the same forecasts through unchanged code, such as main's D5 exposure in the per-regime rates. The wider measurement is still REPORTED whenever a reviewer can compute it, in both directions (change-side only, and both runs). Once a shared approximation is fixed on main, every open comparison is re-measured against the fixed reference. The 0.001 number does not move. The B1 reviewer flagged the ambiguity: under the wider reading B1 exceeded the floor by about 0.0001, with no verdict moved."
+    },
+    {
+      "date": "2026-09-29",
+      "by": "claude-fable-5-1, delegated by Jeddy Xie, decision P2-4; prompted by experiment 0008's arm B2",
+      "clarifies": "reference_forecasters",
+      "text": "For any arm that changes the first month of the model's panel, the R1 and R2 used in its paired comparison are computed on the reference's sample start, and the arm's own-start versions are reported beside them. Otherwise the benchmark moves with the arm."
+    }
+  ]
 }
