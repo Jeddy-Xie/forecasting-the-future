@@ -99,14 +99,15 @@ it is a *top-level* flag, so it goes before the subcommand
 
 ### Shipping the submission is a separate, deliberate act
 
-`submission/forecasts.csv` is the only artifact that leaves this repository. Since
-2026-09-29 it is produced by the default, `fec79a040f9ca6f9`, re-shipped under 0001
-by delegated decision (ADR 0012). Before then it carried `9f95b12dba40d138`, which the
-look-ahead fixes retired. `scripts/run_full_pipeline.sh` still runs only
-`forecast submit --verify-only`: it writes nothing under any configuration, and
-reports any divergence between the approved, live and producing hashes. Shipping
-stays a deliberate act even when nothing has diverged. The next re-ship is governed
-by rule 0007, whose verdict `forecast evaluate` prints beside 0001's.
+`submission/forecasts.csv` is the only artifact that leaves this repository.
+- **Today:** since the second re-ship of 2026-09-29 it comes from the default, `7647c129be85291e`, the
+  regime model blended with the condition chain, shipped under rule 0007 by delegated decision (ADR 0013).
+- **Before:** it carried `fec79a040f9ca6f9` briefly (ADR 0012), and before that `9f95b12dba40d138`, which the
+  look-ahead fixes retired.
+
+`scripts/run_full_pipeline.sh` still runs only `forecast submit --verify-only`. It writes nothing under any
+configuration, and reports the governing rule, both rules' verdicts, and any divergence between the approved,
+live and producing hashes. Shipping stays a deliberate act even when nothing has diverged.
 
 Plain `forecast submit` refuses with exit 2 unless the run is the approved
 configuration, or a single-use token authorises it. Re-shipping is three steps,

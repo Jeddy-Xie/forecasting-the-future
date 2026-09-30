@@ -25,10 +25,10 @@ echo "==> gates"
 poetry run forecast check-gates
 
 echo "==> submission"
-# The submission is a frozen record, re-shipped from the default fec79a040f9ca6f9 on
-# 2026-09-29 (ADR 0012). This step only reports whether the approved, live and
-# producing configurations agree, and writes nothing; shipping is a deliberate act,
-# documented in docs/RUNNING.md.
+# The submission is a frozen record, re-shipped from the default 7647c129be85291e
+# under rule 0007 on 2026-09-29 (ADR 0013). This step only reports whether the
+# approved, live and producing configurations agree, and writes nothing; shipping is
+# a deliberate act, documented in docs/RUNNING.md.
 poetry run forecast submit --verify-only
 
 echo "==> notebooks"

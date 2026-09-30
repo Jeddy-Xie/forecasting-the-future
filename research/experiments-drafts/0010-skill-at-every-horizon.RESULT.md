@@ -110,3 +110,8 @@ two-chain model with R2 (ADR 0013).
   - That is where the regimes' own information sits. Measured this way it is not significant.
 - **Pooled and mean-of-ratios skill agree in sign up to 116 months.**
 - **Nothing was predicted for this run,** as the amendment says.
+
+**Correction, 2026-09-29.** "From about 18 to 60 months" above is loose. In
+`adopted-blend/blend_minus_chain.csv`, against the model-sample benchmark, the blend's point estimate is above
+the chain's at every horizon from 17 to 69 months, and nowhere else. No interval there excludes zero, so the
+reading is unchanged. The original sentence is left standing.
