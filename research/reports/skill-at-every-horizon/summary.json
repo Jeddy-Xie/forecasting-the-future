@@ -1,0 +1,46 @@
+{
+  "block_length": "max(horizon, 12) months",
+  "carries_skill_means": "mean skill above 0.02 and the 90% lower bound above zero",
+  "configuration_hash": "fec79a040f9ca6f9",
+  "honesty_distance_first_at_or_below_0_05": 120,
+  "horizons": [
+    1,
+    120
+  ],
+  "measurement": "0010-skill-at-every-horizon",
+  "readings": [
+    {
+      "benchmark": "series-start",
+      "crossing_is_informative": true,
+      "forecaster": "regime model",
+      "last_informative_horizon": 60,
+      "ship_the_average_horizon": 39,
+      "skill_unbroken_from_one_month_to": 39
+    },
+    {
+      "benchmark": "series-start",
+      "crossing_is_informative": false,
+      "forecaster": "condition chain",
+      "last_informative_horizon": 60,
+      "ship_the_average_horizon": 120,
+      "skill_unbroken_from_one_month_to": 71
+    },
+    {
+      "benchmark": "model-sample",
+      "crossing_is_informative": true,
+      "forecaster": "regime model",
+      "last_informative_horizon": 60,
+      "ship_the_average_horizon": 29,
+      "skill_unbroken_from_one_month_to": 29
+    },
+    {
+      "benchmark": "model-sample",
+      "crossing_is_informative": false,
+      "forecaster": "condition chain",
+      "last_informative_horizon": 60,
+      "ship_the_average_horizon": 120,
+      "skill_unbroken_from_one_month_to": 120
+    }
+  ],
+  "uninformative_below_independent_observations": 5.5
+}
