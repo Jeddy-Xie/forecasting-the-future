@@ -293,7 +293,10 @@ def fit_logistic_recalibration(
     design = np.column_stack([np.ones_like(log_odds), log_odds])
     weights = np.array([0.0, 1.0])
     for _ in range(iterations):
-        fitted = 1.0 / (1.0 + np.exp(-(design @ weights)))
+        # A Newton step can overshoot on the way to the optimum; clipping the linear
+        # predictor keeps exp finite without moving a converged fit, whose log-odds
+        # sit far inside these bounds.
+        fitted = 1.0 / (1.0 + np.exp(-np.clip(design @ weights, -500.0, 500.0)))
         gradient = design.T @ (outcomes - fitted)
         curvature = design.T @ (design * (fitted * (1.0 - fitted))[:, None])
         step = np.linalg.solve(curvature, gradient)
