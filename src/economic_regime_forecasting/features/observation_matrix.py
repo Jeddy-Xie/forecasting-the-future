@@ -28,8 +28,8 @@ from economic_regime_forecasting.configuration.registry import (
     EconomicSeriesRegistry,
     ModelDimension,
 )
+from economic_regime_forecasting.data import transforms
 from economic_regime_forecasting.data.panel import PointInTimePanel
-from economic_regime_forecasting.features import transforms
 
 DIMENSION_ORDER: tuple[ModelDimension, ...] = (
     ModelDimension.GROWTH,

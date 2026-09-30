@@ -54,7 +54,7 @@ explain a difference away; report it with the rows that moved.
 
 ## A3-quadrant-structure-surprises
 - The observation vector is built in `src/economic_regime_forecasting/features/observation_matrix.py`,
-  with transforms in `features/transforms.py`. `features/` may import only `configuration`.
+  with transforms in `data/transforms.py` since D16 closed. `features/` may import `data` and `configuration`.
 - A surprise at month s uses AR(1) coefficients estimated by ordinary least squares on months STRICTLY
   BEFORE s. That is a recursive fit, one per month. Vectorise it with running sums if it is slow, but
   do not replace it with one full-panel regression. That is precisely the leak the pre-registration's

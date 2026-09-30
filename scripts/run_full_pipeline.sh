@@ -16,6 +16,7 @@ echo "==> lint and types"
 poetry run ruff check .
 poetry run ruff format --check .
 poetry run mypy
+python3 scripts/layer_check.py
 
 echo "==> data"
 poetry run forecast fetch-data

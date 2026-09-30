@@ -275,7 +275,7 @@ def load_economic_series_registry(path: Path = ECONOMIC_SERIES_FILE) -> Economic
         if operation != "difference":
             raise RegistryError(
                 f"derived series {name!r} declares operation {operation!r}; only 'difference' "
-                "is implemented. Add the operation to features/transforms.py before using it."
+                "is implemented. Add the operation to data/transforms.py before using it."
             )
         derived.append(
             DerivedSeries(

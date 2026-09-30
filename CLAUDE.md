@@ -46,7 +46,7 @@ Owner: Jeddy Xie. Work happens directly on `main`; commits are the history.
 ## Commands
 - Environment: `poetry install`
 - Suite: `poetry run pytest` (add `-m "not network"` when offline)
-- Lint and types: `poetry run ruff check . && poetry run ruff format --check . && poetry run mypy`
+- Lint, types and layers: `poetry run ruff check . && poetry run ruff format --check . && poetry run mypy && python3 scripts/layer_check.py`
 - Data: `poetry run forecast fetch-data`
 - Gates: `poetry run forecast check-gates`
 - Everything, in order: `./scripts/run_full_pipeline.sh`

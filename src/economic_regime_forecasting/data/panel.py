@@ -26,10 +26,9 @@ from economic_regime_forecasting.configuration.registry import (
     EconomicSeriesRegistry,
     RegistryError,
 )
-from economic_regime_forecasting.data import federal_reserve_client, vintage
+from economic_regime_forecasting.data import federal_reserve_client, transforms, vintage
 from economic_regime_forecasting.data.cache import SeriesCache
 from economic_regime_forecasting.data.vintage import PointInTimeSeries
-from economic_regime_forecasting.features import transforms
 
 logger = logging.getLogger(__name__)
 

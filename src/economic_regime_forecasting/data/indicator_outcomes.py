@@ -28,7 +28,7 @@ from economic_regime_forecasting.configuration.registry import (
     BinaryIndicator,
     ResolutionRule,
 )
-from economic_regime_forecasting.features import transforms
+from economic_regime_forecasting.data import transforms
 
 
 class ResolutionError(ValueError):

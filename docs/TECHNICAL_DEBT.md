@@ -664,6 +664,23 @@ with the backtest's count.
 ## D16 · Seven modules import across the layer table, and nothing fails
 **structural** · found 2026-09-21 while giving `forecast artifacts` a home
 
+**Closed** 2026-09-29, by delegated decision P1-6 (claude-fable-5-1, delegated by Jeddy Xie):
+both sides were partly wrong, so one edge moved and the table was widened where it was merely
+narrower than the design.
+
+- `transforms` moved from `features/` to `data/`. It imports only the registry, numpy and pandas, so
+  it sits below both layers. That removes the one real cycle, data to features to data.
+- `features -> data, configuration` is declared: a matrix is built from a panel.
+- `evaluation/verdict.py` no longer imports `PROJECT_ROOT`. It finds the pre-registration from its
+  own location, so evaluation imports nothing above it, as declared.
+- `reporting -> evaluation, models, features, configuration` is declared. Reporting is the top layer.
+- The check is enforced: `tests/test_layer_table_is_enforced.py` fails on any violation, and
+  `scripts/run_full_pipeline.sh` and CLAUDE.md's lint line run it.
+- Nothing moved: `baseline compare` against `head-2026-09-29` reads 387 of 387 identical.
+
+**One correction to the entry below.** It says `layer_check.py` "exits 0 whatever it finds". It never
+did: on 2026-09-29 it exited 1 on the seven violations. What was missing is that nothing ran it.
+
 The package docstring declares a layer order and says dependencies point one way
 only. `scripts/layer_check.py` reads that table as the specification and reports
 where the imports disagree with it. Seven do:

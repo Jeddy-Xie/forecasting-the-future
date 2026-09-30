@@ -74,7 +74,7 @@ graph_view: 58 nodes, 539 edges (regex engine)
   16.69%  in:47  out:14  src/economic_regime_forecasting/data/cache.py
   13.87%  in:24  out:8   src/economic_regime_forecasting/configuration/registry.py
    8.19%  in:25  out:3   tests/conftest.py
-   7.07%  in:22  out:6   src/economic_regime_forecasting/features/transforms.py
+   7.07%  in:22  out:6   src/economic_regime_forecasting/data/transforms.py
    6.10%  in:30  out:13  src/economic_regime_forecasting/models/gaussian_hidden_markov_model.py
   21 edge(s) run against the declared layering (drawn hot)
 → artifacts/2026-09-09/graph.html
@@ -409,21 +409,16 @@ be most of the way to no enforcement.
 
 ## Open findings
 
-**The layer check exits 1 on seven pre-existing violations.** It found them on
-its first run, which is the argument for having written it. They are four
-distinct situations and they need your decision, not mine — amending the
-docstring to match the code would turn a specification into a description:
+**The layer check found seven pre-existing violations; they are resolved.** They
+were decided on 2026-09-29 by delegated decision P1-6 and recorded as closed under
+debt D16:
 
-| violation | what it looks like |
-|---|---|
-| `data/{audit,indicator_outcomes,panel}.py` → `features.transforms` | Three files use `transforms` for resampling. `transforms` is pure functions with no dependencies of its own, so the likely reading is that it sits *below* both layers and the table never said so. |
-| `evaluation/verdict.py` → `configuration.run_settings.PROJECT_ROOT` | The docstring claims `evaluation` takes "plain arrays; nothing above". It imports a filesystem path. This is the one I would actually change the code for — it is the purity claim leaking. |
-| `features/observation_matrix.py` → `data.panel.PointInTimePanel` | A type import. Real dependency, undeclared. |
-| `reporting/tables.py` → `configuration`, `features` | Real dependencies, undeclared. |
+- `transforms` moved below both layers, into `data/`.
+- `evaluation/verdict.py` stopped importing a filesystem constant.
+- The table now declares `features -> data` and the four `reporting` edges.
 
-Three of the four look like the table was written once and never maintained. One
-looks like a genuine leak. Deciding which is which is the job the check exists to
-put in front of you.
+The check is a failing test now (`tests/test_layer_table_is_enforced.py`), not a
+script someone has to remember to run.
 
 **Two Foundry merges are pending.** Both were sitting uncommitted in a scratch
 worktree under `/private/tmp`, which is not durable storage; they are now

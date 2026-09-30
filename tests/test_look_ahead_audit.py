@@ -968,7 +968,7 @@ def test_a_derived_spread_is_perturbed_where_either_leg_is_unpublished() -> None
     """The term spread is computed from its legs, each perturbed by its own lag, so
     it is perturbed exactly where its label plus the larger lag falls after the
     cutoff -- the lag prepare_indicator_history gives it."""
-    from economic_regime_forecasting.features import transforms
+    from economic_regime_forecasting.data import transforms
 
     cutoff = date(2000, 6, 1)
     long_leg = _monthly("2000-01-01", 12)

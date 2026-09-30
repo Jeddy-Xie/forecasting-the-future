@@ -37,7 +37,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from economic_regime_forecasting.configuration.run_settings import PROJECT_ROOT
 from economic_regime_forecasting.evaluation import bootstrap as bootstrap_module
 from economic_regime_forecasting.evaluation import scoring
 from economic_regime_forecasting.evaluation.calibration import (
@@ -46,7 +45,10 @@ from economic_regime_forecasting.evaluation.calibration import (
 )
 
 PRE_REGISTRATION_FILE: Path = (
-    PROJECT_ROOT
+    # The repository root, found from this file's own location rather than imported
+    # from configuration: evaluation takes plain values and imports nothing above
+    # it (the layer table, debt D16). The same three levels run_settings climbs.
+    Path(__file__).resolve().parents[3]
     / "proving"
     / "experiments"
     / "0001-regime-conditional-forecast-skill"

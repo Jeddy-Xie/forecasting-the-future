@@ -4,11 +4,11 @@ The package is layered so that dependencies point one way only:
 
     configuration  ->  (nothing)
     data           ->  configuration
-    features       ->  configuration
+    features       ->  data, configuration
     models         ->  features, configuration
     backtest       ->  models, features, data, configuration
     evaluation     ->  (plain arrays; nothing above)
-    reporting      ->  evaluation, models
+    reporting      ->  evaluation, models, features, configuration
 
 Every module that touches the network or the filesystem lives in ``data``.
 Everything else takes values and returns values, which is what makes it testable

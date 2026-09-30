@@ -23,6 +23,7 @@ from economic_regime_forecasting.configuration.registry import (
     Transform,
     load_economic_series_registry,
 )
+from economic_regime_forecasting.data import transforms
 from economic_regime_forecasting.data.cache import SeriesCache, SeriesSnapshot
 from economic_regime_forecasting.data.vintage import (
     MINIMUM_USABLE_VINTAGE_MONTHS,
@@ -33,7 +34,6 @@ from economic_regime_forecasting.data.vintage import (
     observe,
     summarise_policies,
 )
-from economic_regime_forecasting.features import transforms
 
 
 def _series_entry(

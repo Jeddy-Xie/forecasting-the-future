@@ -21,7 +21,7 @@ from economic_regime_forecasting.backtest.schedule import (
     build_schedule,
     first_forecast_date_after_burn_in,
 )
-from economic_regime_forecasting.features.transforms import (
+from economic_regime_forecasting.data.transforms import (
     MAXIMUM_BRIDGEABLE_GAP_IN_MONTHS,
     TransformError,
     bridge_isolated_missing_months,
