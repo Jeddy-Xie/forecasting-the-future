@@ -76,3 +76,37 @@ is labelled uninformative, but the sign never changes.
   model's skill horizon, five years well outside it.
 - What it adds is the shape between and beyond them, and that a regime-free forecaster is at least as
   good everywhere on it.
+
+## Second run, 2026-09-29: the adopted blend
+
+This run was made under the amendment in the registration, at `9534469` in a detached worktree (7 minutes 50
+seconds, exit 0; the reproduction check passed). The default is now `7647c129be85291e`, the equal blend of the
+two-chain model with R2 (ADR 0013).
+- **Tables:** `research/reports/skill-at-every-horizon/adopted-blend/`.
+- **A label to read with care.** The printed curve still labels the scored column "regime model"; on this run
+  that column is the blend.
+
+| forecaster | benchmark | carries skill unbroken from 1 month to | H\* | informative there? |
+|---|---|---:|---:|---|
+| the blend | model-sample (R1) | 46 months | **46 months** | yes |
+| the blend | series-start | 63 months | 63 | no: beyond 60 months |
+| condition chain | model-sample | 120 months | 120 | no |
+
+| months | blend, R1 | chain, R1 | blend minus chain, 90% |
+|---:|---:|---:|---|
+| 1 | +0.476 | +0.532 | −0.056 [−0.096, −0.033] |
+| 6 | +0.339 | +0.367 | −0.027 [−0.052, −0.007] |
+| 12 | +0.240 | +0.248 | −0.008 [−0.028, +0.012] |
+| 24 | +0.160 | +0.144 | +0.016 [−0.011, +0.044] |
+| 36 | +0.126 | +0.105 | +0.021 [−0.019, +0.058] |
+| 60 | +0.097 | +0.088 | +0.008 [−0.061, +0.056] |
+| 120 | −0.055 | +0.032 | −0.087 [−0.119, −0.018] |
+
+- **What ships now carries skill for 46 months** against a fair benchmark, against 29 for the regime model alone.
+  The lower bound is +0.0004 at 46 months and −0.0016 at 47, so read it as "about four years", not as a month.
+- **The blend is never significantly better than the chain.** It is significantly worse at 1–8 months and at
+  114–120. In between, the two cannot be told apart.
+  - Its point estimate is ahead of the chain from about 18 to 60 months (+0.016 at 24, +0.021 at 36).
+  - That is where the regimes' own information sits. Measured this way it is not significant.
+- **Pooled and mean-of-ratios skill agree in sign up to 116 months.**
+- **Nothing was predicted for this run,** as the amendment says.
