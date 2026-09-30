@@ -1,0 +1,87 @@
+{
+  "name": "successor-evaluation-rule",
+  "status": "registered",
+  "registered": "2026-09-29",
+  "registered_before": "experiment 0008's reference run was captured and before any 0008 arm ran. It was NOT registered before its own reference numbers were seen: the 2026-09-25 durability review had already measured every number in stated_in_advance, and this rule was written after reading them. That is stated here, not hidden.",
+  "decided_by": "claude-fable-5-1, delegated by Jeddy Xie on 2026-09-29 (decisions P1-2, P1-4, P1-5 and P1-11 in research/ledger/delegated-decisions/). Not the owner's own adjudication.",
+  "relationship_to_0001": "0001 is frozen and untouched. Its five gates keep being evaluated against the series-start climatology exactly as coded when it was frozen, and its verdicts keep being printed. This rule governs every NEW claim, and every re-ship after the one made on 2026-09-29 under 0001. The two verdicts are printed side by side, each labelled, so that neither silently replaces the other.",
+
+  "why": "0001 names an expanding-window climatology but not where the window starts; the archive's start dates chose it. The recession benchmark averages NBER dating back to 1854 and the output benchmark back to 1919, while the model learns only from its observation matrix's first month (1950-12). That accident flatters every skill number, most of all the recession indicators. And 0001 never asked whether regimes improve the forecasts over a forecaster that has none. The 2026-09-25 review measured both; this rule makes them the standard.",
+
+  "reference_forecasters": {
+    "R1_model_sample_climatology": {
+      "column": "model_sample_climatology_probability",
+      "definition": "The expanding, publication-aware climatology of ADR 0009 and ADR 0011, restricted to outcomes whose forecast month is on or after the first month of the observation matrix built at that forecast date. Derived from the panel, never a literal date.",
+      "implementation": "backtest/walk_forward.py: ResolvedOutcomeTotals.average_published_by"
+    },
+    "R2_condition_chain": {
+      "column": "condition_chain_probability",
+      "definition": "Per indicator, a two-state Markov chain on the monthly condition with two rates, entry hazard and persistence, estimated by plain counts from condition-months published by the forecast date and on or after the observation matrix's first month, re-estimated at EVERY forecast date. It starts from the last published condition, read through the same publication-timing functions the model's rates use (including ADR 0011's announcement dating), steps the publication gap and then the horizon. Point in time: the probability of the holding state in month h. Any time within the horizon: one minus the probability of surviving months 1..h without it.",
+      "implementation": "backtest/walk_forward.py: condition_chain_rates with ConditionChainCadence.EVERY_FORECAST_DATE; models/indicator_forecast.py: compose_through_the_condition_chain_at_every_horizon at one regime",
+      "cadence_note": "The method's per-regime rates are re-estimated at annual refits, R2's at every forecast date. Every comparison against R2 therefore includes that cadence difference, measured at about -0.004 at one year on this sample, and it is charged to the method: annual re-estimation is the method's own design, and a reference should be as strong as it honestly can be."
+    },
+    "carried_as": "Columns of the backtest results frame, of baselines/*.forecasts.parquet, and of `forecast baseline compare`. Never RunSettings fields, so no configuration hash or fit-cache key moves.",
+    "pinned_numbers": {
+      "on": "the default configuration fec79a040f9ca6f9, commit that registers this file, 391 forecast dates 1994-03 to 2026-09",
+      "R1": "default mean skill against R1: one year +0.1786, five years +0.0690, ten years -0.2109",
+      "R2": "default minus R2 against the series-start climatology, one year: -0.0582, 90% [-0.0961, -0.0261], 98.33% [-0.1119, -0.0089]",
+      "tolerance": "0.001. These reproduce the 2026-09-25 review from committed code (delegated decision P1-1). A future run that misses them on the same configuration is investigated, never adjusted for."
+    }
+  },
+
+  "metric": {
+    "primary": "Mean Brier skill score against R1 over the indicators whose skill is defined on the full sample, the statistic of 0001's verdict and of the paired machinery.",
+    "reported_beside_it": "Pooled Brier skill against R1: one minus the sum of the method's Brier scores over the sum of R1's, over every resolved row at the horizon. A claim is NOT ESTABLISHED at any horizon where the pooled and mean-of-ratios skill disagree in sign.",
+    "continuity": "Skill against the series-start climatology stays a reported column."
+  },
+
+  "regimes_help": {
+    "statistic": "Paired one-year difference, method minus R2, both scored against the same benchmark, moving-block bootstrap with 12-month blocks, 10,000 resamples, seed 20260908.",
+    "REGIMES HELP": "The 90% interval lies entirely above zero.",
+    "REGIMES DO NOT HELP": "The 90% interval lies entirely below zero.",
+    "NOT SHOWN": "Otherwise."
+  },
+
+  "calibration_test": {
+    "replaces_for_new_claims": "0001's ten-bin expected calibration error below 0.10, which a perfectly calibrated forecaster fails about 91% of the time at about 31 independent observations (research/briefings/derivations/sim_calibration.py). 0001's gate is kept exactly as written for 0001's verdict, and its one-year failure is reported as uninformative with that null printed beside it.",
+    "test": "Pooled over the indicators at a horizon, fit logit P(y = 1) = a + b * logit(p) by maximum likelihood on the resolved rows, p clipped to [0.005, 0.995]. 95% moving-block bootstrap intervals for a and b, using the skill gate's own blocks, resamples and seed. CALIBRATED if the interval for b contains 1 AND the interval for a contains 0.",
+    "size_check_before_use": "sim_calibration.py is extended to measure this test's size: a perfectly calibrated forecaster at 31 effective independent observations must pass at least 80% of the time. If it does not, this registration's fallback applies, fixed now: the slope test alone at 95% (the interval for b contains 1). Which one applies is recorded with the size measurement.",
+    "diagnostic": "Expected calibration error stays a reported diagnostic in both rules."
+  },
+
+  "decision_rule": {
+    "evaluated_per": "horizon",
+    "verdict_values": ["SHIP MODEL", "SHIP BASE RATE"],
+    "all_must_hold": true,
+    "gates": {
+      "skill": "Mean skill against R1 exceeds 0.02 and its 90% moving-block interval (blocks at least the horizon, 10,000 resamples, seed 20260908) excludes zero.",
+      "calibration": "The calibration test above.",
+      "robustness": "Mean skill against R1 is positive in at least three of four disjoint, chronologically contiguous sub-periods.",
+      "honesty": "Mean total variation distance from the projected regime distribution to the stationary one exceeds 0.05 at this horizon.",
+      "not_beaten_by_the_chain": "Method minus R2's 90% interval does not lie entirely below zero."
+    },
+    "on_failure": "Ship R1, the model-sample climatology, for that horizon, and record which gate failed.",
+    "what_ships": "R2 is a reference and is never shipped directly. It can reach the submission only through a pre-registered arm that adopts it: experiment 0008's B1 at one regime, or B3.",
+    "thresholds": "0001's, unchanged, because they were chosen from the structure of the problem rather than from the data: 0.02, 90%, three of four, 0.05."
+  },
+
+  "look_ahead": {
+    "deterministic": "`forecast audit-look-ahead` exits 0 at BOTH standing cutoffs, the default (the first refit at least 72 months after the first forecast date, 2000-03-01 on the live data) and 2022-03-01, which reaches every recession announcement since 1991.",
+    "judged": "One independent reviewer who did not write the change finds no path by which information from after a forecast date reaches that forecast.",
+    "materiality_floor": {
+      "class_A_future_information": "Any path by which an observation labelled after the forecast date, or published after it, reaches a forecast. VOID at any size.",
+      "class_B_shared_approximations": "Revised values of observations already published at the cutoff (D5-class), and registry-lag errors shared with the reference run (D14-class). The reviewer measures the corrected one-year paired difference. The change is VOID unless that could be measured; it is RECORDED-NOT-VOID if the correction moves the one-year paired difference by less than 0.001 in absolute value and moves no verdict at any level or horizon, in which case the corrected number is the one reported.",
+      "not_retroactive": "Experiment 0002's arm A6 stays void: its rule was applied as written."
+    }
+  },
+
+  "stated_in_advance": {
+    "expected_outcome": "Under this rule the current default is expected to read SHIP BASE RATE at one year, because R2 beats it there (the pinned -0.0582) and the not_beaten_by_the_chain gate fails. Under 0001, on the same run, it reads SHIP MODEL. Both are printed.",
+    "written_after_seeing": "Every number above was measured before this rule was written. This rule cannot claim to have predicted them. What it fixes in advance is how every FUTURE change, arm and re-ship is read."
+  },
+
+  "determinism": {
+    "seed": 20260908,
+    "requirement": "Two runs of one configuration produce byte-identical outputs, reference columns included."
+  }
+}
