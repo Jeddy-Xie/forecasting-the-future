@@ -202,6 +202,7 @@ class ArtifactNames:
     backtest_results: str = "backtest_results.parquet"
     evaluation_metrics: str = "evaluation_metrics.parquet"
     verdicts: str = "verdicts.parquet"
+    successor_verdicts: str = "successor_verdicts.parquet"
     gate_reports: str = "gate_reports.parquet"
     run_summary: str = "run_summary.json"
     # run_manifest was removed 2026-09-21: declared here, written nowhere and read

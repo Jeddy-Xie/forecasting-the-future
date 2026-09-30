@@ -264,3 +264,148 @@ def cross_sectional_design_effect(forecast_errors: np.ndarray) -> float:
     if not np.isfinite(average_correlation):
         return 1.0
     return float(max(1.0, 1.0 + (series_count - 1) * average_correlation))
+
+
+# ------------------------------------------------ the recalibration test (rule 0007)
+
+RECALIBRATION_PROBABILITY_CLIP: tuple[float, float] = (0.005, 0.995)
+"""Forecasts are clipped here before the logit, so a forecast of exactly zero or
+one is a very confident forecast rather than an infinite one."""
+
+RECALIBRATION_CONFIDENCE_LEVEL = 0.95
+
+
+def fit_logistic_recalibration(
+    predicted: np.ndarray, realised: np.ndarray, iterations: int = 100
+) -> tuple[float, float]:
+    """Maximum-likelihood intercept a and slope b in logit P(y = 1) = a + b logit(p).
+
+    A calibrated forecaster has a = 0 and b = 1: its log-odds need no shifting and
+    no stretching. Fitted by Newton's method, which converges in a handful of steps
+    on this concave likelihood. When the outcomes do not vary, or the forecasts
+    separate them perfectly, there is no finite answer, and that raises.
+    """
+    predictions, outcomes = _aligned(predicted, realised)
+    if np.unique(outcomes).size < 2:
+        raise ScoringError("the outcomes do not vary, so a recalibration cannot be fitted")
+    low, high = RECALIBRATION_PROBABILITY_CLIP
+    log_odds = np.log(np.clip(predictions, low, high) / (1.0 - np.clip(predictions, low, high)))
+    design = np.column_stack([np.ones_like(log_odds), log_odds])
+    weights = np.array([0.0, 1.0])
+    for _ in range(iterations):
+        fitted = 1.0 / (1.0 + np.exp(-(design @ weights)))
+        gradient = design.T @ (outcomes - fitted)
+        curvature = design.T @ (design * (fitted * (1.0 - fitted))[:, None])
+        step = np.linalg.solve(curvature, gradient)
+        weights = weights + step
+        if not np.all(np.isfinite(weights)) or np.abs(weights).max() > 1e6:
+            raise ScoringError("the recalibration diverged: the forecasts separate the outcomes")
+        if np.abs(step).max() < 1e-10:
+            return float(weights[0]), float(weights[1])
+    raise ScoringError(f"the recalibration did not converge in {iterations} Newton steps")
+
+
+@dataclass(frozen=True)
+class RecalibrationTest:
+    """Rule 0007's calibration test at one horizon: the fitted intercept and slope,
+    each with a moving-block bootstrap interval over forecast dates."""
+
+    intercept: float
+    slope: float
+    intercept_interval: tuple[float, float]
+    slope_interval: tuple[float, float]
+    confidence_level: float
+    block_length: int
+    resamples_used: int
+    uses_intercept: bool
+    """False when the size check found the joint test too strict at this sample size
+    and the registration's fallback, the slope alone, applies."""
+
+    @property
+    def calibrated(self) -> bool:
+        slope_ok = self.slope_interval[0] <= 1.0 <= self.slope_interval[1]
+        intercept_ok = self.intercept_interval[0] <= 0.0 <= self.intercept_interval[1]
+        return slope_ok and (intercept_ok or not self.uses_intercept)
+
+    def describe(self) -> str:
+        level = f"{self.confidence_level:.0%}"
+        low, high = self.slope_interval
+        parts = [f"slope {self.slope:+.3f} [{low:+.3f}, {high:+.3f}] (1 is calibrated)"]
+        if self.uses_intercept:
+            parts.append(
+                f"intercept {self.intercept:+.3f} [{self.intercept_interval[0]:+.3f}, "
+                f"{self.intercept_interval[1]:+.3f}] (0 is calibrated)"
+            )
+        return (
+            f"{'; '.join(parts)}, {level} moving-block intervals, blocks of {self.block_length} "
+            f"months, {self.resamples_used} resamples"
+        )
+
+
+def assess_recalibration(
+    predicted: np.ndarray,
+    realised: np.ndarray,
+    *,
+    block_length: int,
+    resamples: int,
+    seed: int,
+    confidence_level: float = RECALIBRATION_CONFIDENCE_LEVEL,
+    uses_intercept: bool = True,
+) -> RecalibrationTest:
+    """Fit the recalibration on date-by-indicator matrices and bootstrap it by date.
+
+    Resampling whole dates keeps every indicator on a date together, the same
+    dependence the skill bootstrap preserves. The fit is memoised on the drawn
+    dates, so the intercept's interval and the slope's are read off one set of
+    resamples.
+    """
+    from economic_regime_forecasting.evaluation import bootstrap as bootstrap_module
+
+    predicted = np.atleast_2d(np.asarray(predicted, dtype="float64"))
+    realised = np.atleast_2d(np.asarray(realised, dtype="float64"))
+    fits: dict[bytes, tuple[float, float]] = {}
+
+    def fit_on(positions: np.ndarray) -> tuple[float, float]:
+        key = np.ascontiguousarray(positions).tobytes()
+        if key not in fits:
+            rows_predicted = predicted[positions].ravel()
+            rows_realised = realised[positions].ravel()
+            usable = np.isfinite(rows_predicted) & np.isfinite(rows_realised)
+            try:
+                fits[key] = fit_logistic_recalibration(
+                    rows_predicted[usable], rows_realised[usable]
+                )
+            except ScoringError as error:
+                raise ValueError(str(error)) from error
+        return fits[key]
+
+    everything = np.arange(predicted.shape[0])
+    intercept, slope = fit_on(everything)
+
+    def intercept_on(positions: np.ndarray) -> float:
+        return fit_on(positions)[0]
+
+    def slope_on(positions: np.ndarray) -> float:
+        return fit_on(positions)[1]
+
+    intervals = [
+        bootstrap_module.moving_block_bootstrap(
+            statistic,
+            everything,
+            block_length=block_length,
+            resamples=resamples,
+            seed=seed,
+            confidence_level=confidence_level,
+        )
+        for statistic in (intercept_on, slope_on)
+    ]
+    return RecalibrationTest(
+        intercept=intercept,
+        slope=slope,
+        intercept_interval=(intervals[0].lower_bound, intervals[0].upper_bound),
+        slope_interval=(intervals[1].lower_bound, intervals[1].upper_bound),
+        confidence_level=confidence_level,
+        block_length=intervals[1].block_length,
+        resamples_used=intervals[1].resamples,
+        uses_intercept=uses_intercept,
+    )

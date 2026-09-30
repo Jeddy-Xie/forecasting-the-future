@@ -83,6 +83,40 @@ within 0.001. The numbers here are the committed code's.
 3. **The acceptance check is part of the record.** Both of the review's headline numbers reproduced
    from `src/` within 0.001 before either reference was used for anything.
 
+## The calibration test's size, measured before use
+
+Rule 0007 replaced 0001's ten-bin calibration gate for new claims with a logistic
+recalibration test. It fixed in advance that the joint test (slope interval contains 1,
+intercept interval contains 0) applies only if a perfectly calibrated forecaster passes it
+at least 80% of the time at this sample size, and the slope alone otherwise.
+
+`research/briefings/derivations/sim_recalibration_test_size.py` measured it on 200 simulated
+panels shaped like the one-year sample:
+
+| test | a perfectly calibrated forecaster passes |
+|---|---:|
+| joint: slope and intercept | 60.5% |
+| slope alone | 77.5% |
+
+So the slope test alone applies (`CALIBRATION_TEST_USES_INTERCEPT = False`). It is not clean
+either. Its 95% intervals under-cover on outcomes this persistent, and it fails a calibrated
+forecaster about one time in four. That errs against shipping the model. It is recorded, not
+adjusted.
+
+On the default, one year, the fitted slope is 0.613 [0.429, 0.825]. The model is
+overconfident: its log-odds need shrinking by about 40%. A calibrated forecaster would
+rarely produce an interval that far below 1, even allowing for the test's under-coverage.
+
+## Rule 0007's verdict on the default, 2026-09-29
+
+| horizon | 0001 | 0007 | 0007's failing gates |
+|---|---|---|---|
+| 1 year | SHIP MODEL | SHIP BASE RATE (R1) | calibration; not beaten by the chain (−0.0691 [−0.1148, −0.0292] against R1) |
+| 5 years | SHIP BASE RATE | SHIP BASE RATE (R1) | skill, calibration, robustness |
+| 10 years | SHIP BASE RATE | SHIP BASE RATE (R1) | skill, robustness, honesty, not beaten by the chain |
+
+That is what 0007 stated in advance it expected.
+
 ## The cadence finding
 
 The first implementation of R2 re-learned its rates at the model's annual refits. It gave −0.0544

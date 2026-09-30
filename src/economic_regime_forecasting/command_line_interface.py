@@ -66,6 +66,7 @@ from economic_regime_forecasting.data.panel import (
     load_final_series,
 )
 from economic_regime_forecasting.evaluation import skill_by_horizon as skill_by_horizon_module
+from economic_regime_forecasting.evaluation import successor_verdict as successor_verdict_module
 from economic_regime_forecasting.evaluation import verdict as verdict_module
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
@@ -560,9 +561,38 @@ def evaluate(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.Gat
             print(f"    {'ok  ' if gate.passed else 'FAIL'}  {gate.name}: {gate.evidence}")
         print()
 
+    _evaluate_under_the_successor_rule(workspace, results)
+
     report = pipeline_gates.gate_five_evaluation(table, settings.forecast_horizons_in_months)
     print(report.describe())
     return (0 if report.passed else 1), report
+
+
+def _evaluate_under_the_successor_rule(workspace: Workspace, results: pd.DataFrame) -> None:
+    """Rule 0007's verdict, printed and written beside 0001's, never instead of it.
+
+    0001's gate is the one this stage answers to; rule 0007 governs re-ships from
+    2026-09-29 on, and a reader must see both, labelled, on the same run.
+    """
+    settings = workspace.settings
+    verdicts = successor_verdict_module.evaluate_all_horizons(
+        results,
+        settings.forecast_horizons_in_months,
+        resamples=settings.bootstrap_resamples,
+        seed=settings.random_seed,
+    )
+    workspace.artifacts.write_table(
+        ARTIFACTS.successor_verdicts, successor_verdict_module.verdict_table(verdicts)
+    )
+    print(
+        "Rule 0007, beside it: skill against R1 (the model-sample climatology), a calibration "
+        "test sized for this sample, and the regime-free chain as the bar to clear"
+    )
+    for item in verdicts:
+        print(item.describe())
+        for gate in item.gates:
+            print(f"    {'ok  ' if gate.passed else 'FAIL'}  {gate.name}: {gate.evidence}")
+        print()
 
 
 def _hash_that_produced_the_artifacts(results: pd.DataFrame) -> str:
@@ -1186,6 +1216,7 @@ WRITTEN_BY: dict[str, str] = {
     ARTIFACTS.burn_in_state_count_choice: "backtest, audit-look-ahead",
     ARTIFACTS.evaluation_metrics: "evaluate",
     ARTIFACTS.verdicts: "evaluate",
+    ARTIFACTS.successor_verdicts: "evaluate",
     ARTIFACTS.run_summary: "check-gates",
     ARTIFACTS.gate_reports: "check-gates",
     ARTIFACTS.variant_comparison: "compare-variants",

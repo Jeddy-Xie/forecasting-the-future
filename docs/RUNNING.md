@@ -82,6 +82,16 @@ Each stage can also be run alone, in this order:
 | `forecast compare-variants` | — | the 2x2 of look-ahead fixes and the comparison table |
 | `forecast skill-by-horizon` | — | skill at every month from 1 to 120, and where the model stops carrying it (measurement 0010) |
 
+`forecast evaluate` prints two verdicts per horizon. The first is 0001's, the frozen rule gate 5
+answers to. The second is rule 0007's, the rule that governs every re-ship from 2026-09-29 on:
+
+- skill against the model-sample climatology R1;
+- a calibration test sized for about 31 independent observations;
+- the regime-free chain R2 as the bar to clear.
+
+Both are written to disk, 0001's to `verdicts.parquet` and 0007's to `successor_verdicts.parquet`.
+Neither replaces the other.
+
 Add `--verbose` to any of them to see what each step is doing. Add
 `--as-of YYYY-MM-DD` to run the whole thing as though it were an earlier date;
 it is a *top-level* flag, so it goes before the subcommand
