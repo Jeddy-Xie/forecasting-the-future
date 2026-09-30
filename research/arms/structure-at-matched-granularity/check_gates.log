@@ -1,0 +1,463 @@
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-01-01 archive_covers_from=1973-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-01-01 archive_covers_from=1988-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPILFESL as_of=1975-01-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPILFESL as_of=1990-01-01 archive_covers_from=nothing
+
+==============================================================================
+audit_data
+==============================================================================
+                        series identifier         role frequency                   units                 transform declared_start observed_start observed_end  observations  missing  publication_lag_days  revised  start_matches_registry
+         industrial_production     INDPRO       growth   monthly        index 2017 = 100 year_over_year_log_change     1919-01-01     1919-01-01   2026-07-01          1291        0                    47     True                    True
+    nonfarm_payroll_employment     PAYEMS       growth   monthly    thousands of persons year_over_year_log_change     1939-01-01     1939-01-01   2026-08-01          1052        0                    36     True                    True
+          consumer_price_index   CPIAUCSL    inflation   monthly   index 1982-1984 = 100 year_over_year_log_change     1947-01-01     1947-01-01   2026-07-01           955        1                    44     True                    True
+     core_consumer_price_index   CPILFESL    inflation   monthly   index 1982-1984 = 100 year_over_year_log_change     1957-01-01     1957-01-01   2026-07-01           835        1                    44     True                    True
+three_month_treasury_bill_rate      TB3MS        rates   monthly        percent per year                     level     1934-01-01     1934-01-01   2026-08-01          1112        0                    32    False                    True
+            federal_funds_rate   FEDFUNDS        rates   monthly        percent per year                     level     1954-07-01     1954-07-01   2026-08-01           866        0                    32    False                    True
+       ten_year_treasury_yield       GS10        rates   monthly        percent per year                     level     1953-04-01     1953-04-01   2026-08-01           881        0                    32    False                    True
+             unemployment_rate     UNRATE       labour   monthly percent of labour force                     level     1948-01-01     1948-01-01   2026-08-01           944        1                    36     True                    True
+           recession_indicator      USREC outcome_only   monthly             binary flag                     level     1854-12-01     1854-12-01   2026-08-01          2061        0                   400     True                    True
+
+Gate 1 — data: PASS
+  ok    every series in the registry was fetched and audited
+        9 of 9 audited
+  ok    each series starts where the registry says it does
+        every declared start date matches the service
+  ok    a second pass over the same series is served entirely from cache
+        9 hit(s), 0 miss(es), 0 write(s); hit rate 100%
+  ok    every series has at least twenty years of monthly history
+        shortest is core_consumer_price_index with 835 observations
+
+==============================================================================
+fit_regimes
+==============================================================================
+              chain  states  free_parameters  training_log_likelihood  bayesian_information_criterion  held_out_log_likelihood_per_month  smallest_population_share  shortest_expected_duration_months  second_eigenvalue_modulus  persistent_enough  populated_enough  admissible
+             growth       1                2              -846.524909                     1706.227671                          -1.043891                   1.000000                       1.000022e+12                   0.000000               True              True        True
+             growth       2                7              -574.415432                     1194.953348                          -0.901740                   0.361816                       1.809642e+01                   0.913272               True              True        True
+             growth       3               14              -352.134225                      796.513420                          -0.547343                   0.189710                       1.140839e+01                   0.938810               True              True        True
+             growth       4               23              -222.143431                      595.832170                          -0.508070                   0.187046                       5.983139e+00                   0.946046               True              True        True
+inflation and rates       1                5             -2003.421958                     4039.788549                          -3.122500                   1.000000                       1.000022e+12                   0.000000               True              True        True
+inflation and rates       2               13             -1482.325264                     3050.306572                          -2.540113                   0.451200                       6.428609e+01                   0.974136               True              True        True
+inflation and rates       3               23             -1219.432685                     2590.410679                          -2.198272                   0.246554                       2.878321e+01                   0.981833               True              True        True
+inflation and rates       4               35              -958.005900                     2146.624226                          -1.253351                   0.133859                       2.314177e+01                   0.982573               True              True        True
+
+ states  growth_chain_states  levels_chain_states  free_parameters  training_log_likelihood  bayesian_information_criterion  held_out_log_likelihood_per_month  second_eigenvalue_modulus  admissible  chosen
+      1                    1                    1                7             -2849.946867                     5746.016219                          -4.166391                   0.000000        True   False
+      6                    2                    3               30             -1793.848116                     3785.364027                          -3.100012                   0.981833        True   False
+      6                    3                    2               27             -1834.459488                     3846.819991                          -3.087455                   0.974136        True    True
+
+Restricted to pairs of chain counts whose product is 6, matching the single chain's 6 states (experiment 0006); admissible pairs 2x3, 3x2. 3x2 wins on joint held-out log likelihood (-3.0875 per month), while the Bayesian information criterion prefers 2x3. The holdout decides because it asks the out-of-sample question directly; the disagreement is reported rather than resolved silently. Unrestricted, each chain's own sweep would have chosen 4x4.
+
+ state                                                regime                                   short_regime  growth_standardised  growth_natural  inflation_standardised  inflation_natural  rates_standardised  rates_natural  population_share  expected_duration_months
+     0 contracting growth, moderate inflation, neutral rates contracting, moderate inflation, neutral rates            -1.378667       -0.054075               -0.339238           0.017322           -0.182933       1.535929          0.124441                 12.004495
+     1        contracting growth, high inflation, high rates        contracting, high inflation, high rates            -1.378667       -0.046950                0.746650           0.076817            1.970020       8.096613          0.071410                 11.342798
+     2      steady growth, moderate inflation, neutral rates      steady, moderate inflation, neutral rates            -0.255085        0.018213               -0.339238           0.027326           -0.182933       3.390361          0.329041                 10.302889
+     3             steady growth, high inflation, high rates             steady, high inflation, high rates            -0.255085        0.020602                0.746650           0.056334            1.970020       5.350492          0.117537                  9.818672
+     4      steady growth, moderate inflation, neutral rates      steady, moderate inflation, neutral rates             0.472419        0.062498               -0.339238           0.024214           -0.182933       3.817904          0.167853                 17.244447
+     5             steady growth, high inflation, high rates             steady, high inflation, high rates             0.472419        0.084693                0.746650           0.038370            1.970020       4.941682          0.189718                 15.877197WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1970-12-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1971-12-01 archive_covers_from=1954-01-01 (214 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1971-12-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1971-12-01 archive_covers_from=1954-01-01 (214 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1971-12-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-01-01 archive_covers_from=1954-01-01 (215 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-01-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-02-01 archive_covers_from=1954-01-01 (216 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-02-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-03-01 archive_covers_from=1954-01-01 (217 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-03-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-04-01 archive_covers_from=1954-01-01 (218 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-04-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-05-01 archive_covers_from=1954-01-01 (219 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-05-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-06-01 archive_covers_from=1954-01-01 (220 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-06-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-07-01 archive_covers_from=1954-01-01 (221 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-07-01 archive_covers_from=nothing
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-08-01 archive_covers_from=1954-01-01 (222 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-08-01 archive_covers_from=1970-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-09-01 archive_covers_from=1954-01-01 (223 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-09-01 archive_covers_from=1971-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-10-01 archive_covers_from=1954-01-01 (224 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-10-01 archive_covers_from=1971-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=INDPRO as_of=1972-11-01 archive_covers_from=1954-01-01 (225 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-11-01 archive_covers_from=1971-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1972-12-01 archive_covers_from=1971-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-01-01 archive_covers_from=1971-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-02-01 archive_covers_from=1971-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-03-01 archive_covers_from=1971-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-04-01 archive_covers_from=1971-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-05-01 archive_covers_from=1971-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-06-01 archive_covers_from=1971-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-07-01 archive_covers_from=1971-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-08-01 archive_covers_from=1971-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-09-01 archive_covers_from=1972-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-10-01 archive_covers_from=1972-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-11-01 archive_covers_from=1972-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1973-12-01 archive_covers_from=1972-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-01-01 archive_covers_from=1972-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-02-01 archive_covers_from=1972-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-03-01 archive_covers_from=1972-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-04-01 archive_covers_from=1972-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-05-01 archive_covers_from=1972-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-06-01 archive_covers_from=1972-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-07-01 archive_covers_from=1972-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-08-01 archive_covers_from=1972-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-09-01 archive_covers_from=1973-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-10-01 archive_covers_from=1973-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-11-01 archive_covers_from=1973-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1974-12-01 archive_covers_from=1973-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-01-01 archive_covers_from=1973-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-02-01 archive_covers_from=1973-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-03-01 archive_covers_from=1973-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-04-01 archive_covers_from=1973-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-05-01 archive_covers_from=1973-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-06-01 archive_covers_from=1973-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-07-01 archive_covers_from=1973-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-08-01 archive_covers_from=1973-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-09-01 archive_covers_from=1974-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-10-01 archive_covers_from=1974-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-11-01 archive_covers_from=1974-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1975-12-01 archive_covers_from=1974-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-01-01 archive_covers_from=1974-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-02-01 archive_covers_from=1974-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-03-01 archive_covers_from=1974-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-04-01 archive_covers_from=1974-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-05-01 archive_covers_from=1974-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-06-01 archive_covers_from=1974-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-07-01 archive_covers_from=1974-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-08-01 archive_covers_from=1974-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-09-01 archive_covers_from=1975-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-10-01 archive_covers_from=1975-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-11-01 archive_covers_from=1975-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1976-12-01 archive_covers_from=1975-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-01-01 archive_covers_from=1975-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-02-01 archive_covers_from=1975-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-03-01 archive_covers_from=1975-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-04-01 archive_covers_from=1975-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-05-01 archive_covers_from=1975-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-06-01 archive_covers_from=1975-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-07-01 archive_covers_from=1975-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-08-01 archive_covers_from=1975-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-09-01 archive_covers_from=1976-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-10-01 archive_covers_from=1976-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-11-01 archive_covers_from=1976-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1977-12-01 archive_covers_from=1976-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-01-01 archive_covers_from=1976-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-02-01 archive_covers_from=1976-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-03-01 archive_covers_from=1976-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-04-01 archive_covers_from=1976-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-05-01 archive_covers_from=1976-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-06-01 archive_covers_from=1976-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-07-01 archive_covers_from=1976-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-08-01 archive_covers_from=1976-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-09-01 archive_covers_from=1977-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-10-01 archive_covers_from=1977-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-11-01 archive_covers_from=1977-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1978-12-01 archive_covers_from=1977-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-01-01 archive_covers_from=1977-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-02-01 archive_covers_from=1977-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-03-01 archive_covers_from=1977-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-04-01 archive_covers_from=1977-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-05-01 archive_covers_from=1977-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-06-01 archive_covers_from=1977-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-07-01 archive_covers_from=1977-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-08-01 archive_covers_from=1977-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-09-01 archive_covers_from=1978-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-10-01 archive_covers_from=1978-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-11-01 archive_covers_from=1978-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1979-12-01 archive_covers_from=1978-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-01-01 archive_covers_from=1978-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-02-01 archive_covers_from=1978-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-03-01 archive_covers_from=1978-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-04-01 archive_covers_from=1978-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-05-01 archive_covers_from=1978-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-06-01 archive_covers_from=1978-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-07-01 archive_covers_from=1978-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-08-01 archive_covers_from=1978-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-09-01 archive_covers_from=1979-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-10-01 archive_covers_from=1979-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-11-01 archive_covers_from=1979-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1980-12-01 archive_covers_from=1979-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-01-01 archive_covers_from=1979-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-02-01 archive_covers_from=1979-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-03-01 archive_covers_from=1979-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-04-01 archive_covers_from=1979-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-05-01 archive_covers_from=1979-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-06-01 archive_covers_from=1979-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-07-01 archive_covers_from=1979-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-08-01 archive_covers_from=1979-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-09-01 archive_covers_from=1980-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-10-01 archive_covers_from=1980-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-11-01 archive_covers_from=1980-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1981-12-01 archive_covers_from=1980-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-01-01 archive_covers_from=1980-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-02-01 archive_covers_from=1980-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-03-01 archive_covers_from=1980-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-04-01 archive_covers_from=1980-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-05-01 archive_covers_from=1980-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-06-01 archive_covers_from=1980-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-07-01 archive_covers_from=1980-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-08-01 archive_covers_from=1980-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-09-01 archive_covers_from=1981-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-10-01 archive_covers_from=1981-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-11-01 archive_covers_from=1981-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1982-12-01 archive_covers_from=1981-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-01-01 archive_covers_from=1981-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-02-01 archive_covers_from=1981-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-03-01 archive_covers_from=1981-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-04-01 archive_covers_from=1981-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-05-01 archive_covers_from=1981-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-06-01 archive_covers_from=1981-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-07-01 archive_covers_from=1981-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-08-01 archive_covers_from=1981-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-09-01 archive_covers_from=1982-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-10-01 archive_covers_from=1982-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-11-01 archive_covers_from=1982-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1983-12-01 archive_covers_from=1982-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-01-01 archive_covers_from=1982-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-02-01 archive_covers_from=1982-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-03-01 archive_covers_from=1982-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-04-01 archive_covers_from=1982-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-05-01 archive_covers_from=1982-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-06-01 archive_covers_from=1982-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-07-01 archive_covers_from=1982-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-08-01 archive_covers_from=1982-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-09-01 archive_covers_from=1983-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-10-01 archive_covers_from=1983-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-11-01 archive_covers_from=1983-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1984-12-01 archive_covers_from=1983-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-01-01 archive_covers_from=1983-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-02-01 archive_covers_from=1983-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-03-01 archive_covers_from=1983-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-04-01 archive_covers_from=1983-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-05-01 archive_covers_from=1983-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-06-01 archive_covers_from=1983-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-07-01 archive_covers_from=1983-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-08-01 archive_covers_from=1983-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-09-01 archive_covers_from=1984-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-10-01 archive_covers_from=1984-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-11-01 archive_covers_from=1984-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1985-12-01 archive_covers_from=1984-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-01-01 archive_covers_from=1984-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-02-01 archive_covers_from=1984-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-03-01 archive_covers_from=1984-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-04-01 archive_covers_from=1984-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-05-01 archive_covers_from=1984-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-06-01 archive_covers_from=1984-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-07-01 archive_covers_from=1984-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-08-01 archive_covers_from=1984-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-09-01 archive_covers_from=1985-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-10-01 archive_covers_from=1985-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-11-01 archive_covers_from=1985-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1986-12-01 archive_covers_from=1985-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-01-01 archive_covers_from=1985-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-02-01 archive_covers_from=1985-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-03-01 archive_covers_from=1985-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-04-01 archive_covers_from=1985-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-05-01 archive_covers_from=1985-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-06-01 archive_covers_from=1985-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-07-01 archive_covers_from=1985-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-08-01 archive_covers_from=1985-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-09-01 archive_covers_from=1986-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-10-01 archive_covers_from=1986-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-11-01 archive_covers_from=1986-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1987-12-01 archive_covers_from=1986-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-01-01 archive_covers_from=1986-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-02-01 archive_covers_from=1986-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-03-01 archive_covers_from=1986-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-04-01 archive_covers_from=1986-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-05-01 archive_covers_from=1986-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-06-01 archive_covers_from=1986-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-07-01 archive_covers_from=1986-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-08-01 archive_covers_from=1986-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-09-01 archive_covers_from=1987-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-10-01 archive_covers_from=1987-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-11-01 archive_covers_from=1987-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1988-12-01 archive_covers_from=1987-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-01-01 archive_covers_from=1987-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-02-01 archive_covers_from=1987-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-03-01 archive_covers_from=1987-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-04-01 archive_covers_from=1987-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-05-01 archive_covers_from=1987-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-06-01 archive_covers_from=1987-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-07-01 archive_covers_from=1987-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-08-01 archive_covers_from=1987-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-09-01 archive_covers_from=1988-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-10-01 archive_covers_from=1988-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-11-01 archive_covers_from=1988-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1989-12-01 archive_covers_from=1988-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-01-01 archive_covers_from=1988-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-02-01 archive_covers_from=1988-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-03-01 archive_covers_from=1988-10-01 (16 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-04-01 archive_covers_from=1988-10-01 (17 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-05-01 archive_covers_from=1988-10-01 (18 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-06-01 archive_covers_from=1988-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-07-01 archive_covers_from=1988-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-08-01 archive_covers_from=1988-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-09-01 archive_covers_from=1989-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-10-01 archive_covers_from=1989-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-11-01 archive_covers_from=1989-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1990-12-01 archive_covers_from=1989-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-01-01 archive_covers_from=1989-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-02-01 archive_covers_from=1989-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-03-01 archive_covers_from=1989-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-04-01 archive_covers_from=1989-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-05-01 archive_covers_from=1989-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-06-01 archive_covers_from=1989-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-07-01 archive_covers_from=1989-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-08-01 archive_covers_from=1989-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-09-01 archive_covers_from=1990-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-10-01 archive_covers_from=1990-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-11-01 archive_covers_from=1990-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1991-12-01 archive_covers_from=1990-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-01-01 archive_covers_from=1990-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-02-01 archive_covers_from=1990-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-03-01 archive_covers_from=1990-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-04-01 archive_covers_from=1990-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-05-01 archive_covers_from=1990-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-06-01 archive_covers_from=1990-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-07-01 archive_covers_from=1990-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-08-01 archive_covers_from=1990-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-09-01 archive_covers_from=1991-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-10-01 archive_covers_from=1991-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-11-01 archive_covers_from=1991-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1992-12-01 archive_covers_from=1991-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-01-01 archive_covers_from=1991-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-02-01 archive_covers_from=1991-06-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-03-01 archive_covers_from=1991-07-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-04-01 archive_covers_from=1991-08-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-05-01 archive_covers_from=1991-09-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-06-01 archive_covers_from=1991-10-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-07-01 archive_covers_from=1991-11-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-08-01 archive_covers_from=1991-12-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-09-01 archive_covers_from=1992-01-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-10-01 archive_covers_from=1992-02-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-11-01 archive_covers_from=1992-03-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1993-12-01 archive_covers_from=1992-04-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1994-01-01 archive_covers_from=1992-05-01 (19 months)
+WARNING economic_regime_forecasting.data.vintage vintage_fallback series=CPIAUCSL as_of=1994-02-01 archive_covers_from=1992-06-01 (19 months)
+
+
+Gate 2 — regime model: PASS
+  ok    more than one regime beats a single regime out of sample
+        held-out log likelihood per month, growth x levels states: 1x1 -4.1664, 2x3 -3.1000, 3x2 -3.0875
+  ok    the information criterion agrees that regimes exist
+        criterion, growth x levels states: 1x1 5,746, 2x3 3,785, 3x2 3,847
+  ok    no regime lasts less than three months on average
+        shortest expected visit 11.4 months in the growth chain, 64.3 in the inflation-and-rates chain; the shortest joint regime, where both chains stay put, 9.8 months
+  ok    no regime holds less than five percent of months
+        smallest regime holds 19.0% of months in the growth chain, 45.1% in the inflation-and-rates chain
+  ok    the regime path does not flicker month to month
+        63 switches of the joint regime over 909 months, 0.83 a year against a ceiling of 2.0
+
+==============================================================================
+forecast_now
+==============================================================================
+horizon_months                                                12     60     120
+indicator                                                                      
+consumer_price_inflation_above_five_percent_within_horizon  0.055  0.394  0.677
+consumer_price_inflation_above_three_percent_at_horizon     0.343  0.428  0.460
+economy_in_recession_at_horizon_date                        0.090  0.117  0.124
+economy_in_recession_within_horizon                         0.090  0.446  0.718
+federal_funds_rate_above_four_percent_at_horizon            0.429  0.505  0.527
+federal_funds_rate_below_one_percent_within_horizon         0.107  0.407  0.604
+industrial_production_growth_above_two_percent_at_horizon   0.564  0.574  0.571
+treasury_yield_curve_inverted_within_horizon                0.128  0.524  0.791
+unemployment_rate_above_five_percent_at_horizon             0.613  0.613  0.610
+unemployment_rate_above_seven_percent_within_horizon        0.149  0.548  0.786
+
+The second eigenvalue modulus is 0.9756, a half life of 28 months. Regime information survives to 60 months (5 years); beyond that the projection is the unconditional base rate.
+
+Gate 3 — forecasts: PASS
+  ok    every indicator has a forecast at every horizon
+        30 forecasts against 30 expected
+  ok    every probability lies in the unit interval and is finite
+        range 0.0552 to 0.7913
+  ok    every forecast carries an effective sample size
+        smallest effective sample size 164.9 months
+  ok    every forecast carries its distance to the stationary distribution
+        The second eigenvalue modulus is 0.9756, a half life of 28 months. Regime information survives to 60 months (5 years); beyond that the projection is the unconditional base rate.
+
+==============================================================================
+run_backtest
+==============================================================================
+6 regimes chosen as of 1994-03-01 on 518 months of burn-in (1950-12-01 .. 1994-01-01), runner-up None. Restricted to pairs of chain counts whose product is 6, matching the single chain's 6 states (experiment 0006); admissible pairs 2x3, 3x2. 3x2 wins on joint held-out log likelihood (-2.6708 per month), while the Bayesian information criterion prefers 2x3. The holdout decides because it asks the out-of-sample question directly; the disagreement is reported rather than resolved silently. Unrestricted, each chain's own sweep would have chosen 4x4.
+391 forecast dates from 1994-03 to 2026-09, 33 refits, 6 regimes
+0 of 391 forecast dates use the publication-lag fallback
+Gate 4 — backtest: PASS
+  ok    the results frame carries every column the evaluation needs
+        16 columns, 11,730 rows
+  ok    each indicator, date and horizon appears exactly once
+        0 duplicate rows
+  ok    a single configuration produced the whole run
+        configuration hash 063f83b0fb59a509
+  ok    enough forecasts have resolved outcomes to score
+        9,702 of 11,730 forecasts have resolved
+
+==============================================================================
+evaluate
+==============================================================================
+                                                 indicator  horizon_months  resolved_forecasts  base_rate  brier_score  climatology_brier_score  brier_skill_score  logarithmic_loss  area_under_the_curve  expected_calibration_error  reliability  resolution  mean_distance_to_stationary  mean_effective_sample_size
+consumer_price_inflation_above_five_percent_within_horizon              12                 367     0.1226       0.0838                   0.1642             0.4898            0.3101                0.7706                      0.0407       0.0083      0.0316                       0.3161                    144.7822
+consumer_price_inflation_above_five_percent_within_horizon              60                 319     0.3542       0.3076                   0.3098             0.0070            0.8244                0.1346                      0.3950       0.1660      0.0901                       0.0838                    139.0702
+consumer_price_inflation_above_five_percent_within_horizon             120                 259     0.6680       0.2962                   0.2357            -0.2568            0.8619                0.1082                      0.3590       0.1914      0.1166                       0.0179                    133.7227
+   consumer_price_inflation_above_three_percent_at_horizon              12                 376     0.3059       0.2259                   0.2634             0.1423            0.6457                0.4033                      0.1146       0.0309      0.0209                       0.3160                    142.6706
+   consumer_price_inflation_above_three_percent_at_horizon              60                 328     0.3232       0.2473                   0.2638             0.0623            0.6878                0.3525                      0.1464       0.0222      0.0000                       0.0846                    132.6159
+   consumer_price_inflation_above_three_percent_at_horizon             120                 268     0.3284       0.2470                   0.2887             0.1445            0.6871                0.6756                      0.1785       0.0674      0.0423                       0.0179                    125.9078
+                      economy_in_recession_at_horizon_date              12                 378     0.0741       0.0762                   0.1236             0.3833            0.2961                0.3339                      0.0480       0.0062      0.0007                       0.3160                    138.5941
+                      economy_in_recession_at_horizon_date              60                 330     0.0848       0.0797                   0.1271             0.3733            0.3001                0.5540                      0.0467       0.0022      0.0000                       0.0847                    129.4639
+                      economy_in_recession_at_horizon_date             120                 270     0.0741       0.0730                   0.1280             0.4294            0.2855                0.4354                      0.0631       0.0040      0.0000                       0.0180                    123.0166
+                       economy_in_recession_within_horizon              12                 378     0.1614       0.2050                   0.2521             0.1868            0.6514                0.4304                      0.1353       0.0704      0.0013                       0.3160                    141.6291
+                       economy_in_recession_within_horizon              60                 330     0.6212       0.2929                   0.3166             0.0749            0.8534                0.4275                      0.2251       0.0799      0.0233                       0.0847                    133.9993
+                       economy_in_recession_within_horizon             120                 270     0.9667       0.0696                   0.0333            -1.0891            0.3282                0.0477                      0.2105       0.0453      0.0080                       0.0180                    129.3678
+          federal_funds_rate_above_four_percent_at_horizon              12                 378     0.3571       0.2471                   0.2972             0.1685            0.6874                0.6385                      0.1725       0.0368      0.0189                       0.3160                    136.0889
+          federal_funds_rate_above_four_percent_at_horizon              60                 330     0.2636       0.3063                   0.3910             0.2166            0.8077                0.4615                      0.3261       0.1100      0.0007                       0.0847                    125.4686
+          federal_funds_rate_above_four_percent_at_horizon             120                 270     0.2222       0.3437                   0.5450             0.3694            0.8863                0.2887                      0.4288       0.2163      0.0454                       0.0180                    118.3003
+       federal_funds_rate_below_one_percent_within_horizon              12                 378     0.4365       0.1112                   0.3455             0.6780            0.3870                0.9040                      0.0872       0.0112      0.1433                       0.3160                    140.1208
+       federal_funds_rate_below_one_percent_within_horizon              60                 330     0.8273       0.2434                   0.5344             0.5445            0.6448                0.8451                      0.3070       0.1434      0.0448                       0.0847                    132.0414
+       federal_funds_rate_below_one_percent_within_horizon             120                 270     1.0000       0.2015                   0.6855             0.7060            0.5475                   NaN                      0.3809       0.2009      0.0000                       0.0180                    126.9075
+ industrial_production_growth_above_two_percent_at_horizon              12                 377     0.5146       0.2792                   0.2615            -0.0674            0.7596                0.5297                      0.1880       0.0452      0.0150                       0.3160                    142.7597
+ industrial_production_growth_above_two_percent_at_horizon              60                 329     0.4468       0.2831                   0.2798            -0.0117            0.7616                0.6137                      0.1971       0.0412      0.0031                       0.0847                    132.6870
+ industrial_production_growth_above_two_percent_at_horizon             120                 269     0.4461       0.2860                   0.2842            -0.0064            0.7680                0.5283                      0.1993       0.0397      0.0000                       0.0180                    125.9899
+              treasury_yield_curve_inverted_within_horizon              12                 378     0.2434       0.1503                   0.1887             0.2035            0.5036                0.6823                      0.1046       0.0211      0.0556                       0.3160                    143.2190
+              treasury_yield_curve_inverted_within_horizon              60                 330     0.6636       0.3223                   0.2587            -0.2461            0.8488                0.2010                      0.2760       0.1428      0.0491                       0.0847                    135.0665
+              treasury_yield_curve_inverted_within_horizon             120                 270     0.9037       0.1600                   0.1192            -0.3425            0.5129                0.2752                      0.2603       0.0765      0.0082                       0.0180                    129.9679
+           unemployment_rate_above_five_percent_at_horizon              12                 377     0.4721       0.2952                   0.2881            -0.0245            0.7934                0.5681                      0.2234       0.0573      0.0068                       0.3160                    142.7810
+           unemployment_rate_above_five_percent_at_horizon              60                 329     0.4620       0.2953                   0.3018             0.0212            0.7898                0.5391                      0.2196       0.0540      0.0088                       0.0847                    132.6879
+           unemployment_rate_above_five_percent_at_horizon             120                 269     0.4572       0.2994                   0.3359             0.1085            0.7991                0.4444                      0.2206       0.0575      0.0060                       0.0180                    125.9976
+      unemployment_rate_above_seven_percent_within_horizon              12                 367     0.2371       0.0953                   0.1951             0.5116            0.3430                0.8395                      0.0872       0.0148      0.1001                       0.3161                    144.7822
+      unemployment_rate_above_seven_percent_within_horizon              60                 319     0.5737       0.2594                   0.2833             0.0842            0.7057                0.4314                      0.3184       0.1263      0.1141                       0.0838                    139.0702
+      unemployment_rate_above_seven_percent_within_horizon             120                 259     0.7799       0.1868                   0.1959             0.0467            0.5732                0.4402                      0.1555       0.0332      0.0271                       0.0179                    133.7227
+
+1 year: SHIP MODEL. Mean skill score +0.2672, every gate passed.
+    ok    regimes exist: best multi-regime held-out log likelihood per month -2.6708 against -3.6661 for a single regime; information criterion 2,254 against 3,310
+    ok    skill: mean skill score +0.2672 against a bar of +0.02; +0.2672 [+0.1683, +0.3571] at 90%, blocks of 12 months, about 31.5 independent observations
+    ok    calibration: expected calibration error 0.0943 over 3754 forecasts in 10 populated bins, worth about 226 independent observations; the reliability curve is monotone (counting overlapping forecasts as independent would have found 1)
+    ok    robustness: 4 of 4 sub-periods positive; scores +0.083 over 7 indicator(s), +0.074 over 10 indicator(s), +0.373 over 5 indicator(s), +0.224 over 10 indicator(s)
+    ok    honesty: mean total variation distance to the stationary distribution 0.3158 against a floor of 0.05
+
+5 year: SHIP BASE RATE. Failed skill, calibration, robustness. Mean skill score +0.1126.
+    ok    regimes exist: best multi-regime held-out log likelihood per month -2.6708 against -3.6661 for a single regime; information criterion 2,254 against 3,310
+    FAIL  skill: mean skill score +0.1126 against a bar of +0.02; +0.1126 [-0.0683, +0.2118] at 90%, blocks of 60 months, about 5.5 independent observations
+    FAIL  calibration: expected calibration error 0.1863 over 3274 forecasts in 9 populated bins, worth about 28 independent observations; the reliability curve is monotone (counting overlapping forecasts as independent would have found 8)
+    FAIL  robustness: 2 of 4 sub-periods positive; scores +0.047 over 8 indicator(s), -0.155 over 9 indicator(s), +0.202 over 6 indicator(s), -0.027 over 8 indicator(s)
+    ok    honesty: mean total variation distance to the stationary distribution 0.0874 against a floor of 0.05
+
+10 year: SHIP BASE RATE. Failed skill, calibration, honesty. Mean skill score -0.0663.
+    ok    regimes exist: best multi-regime held-out log likelihood per month -2.6708 against -3.6661 for a single regime; information criterion 2,254 against 3,310
+    FAIL  skill: mean skill score -0.0663 against a bar of +0.02; -0.0663 [-0.1384, +0.0496] at 90%, blocks of 120 months, about 2.2 independent observations
+    FAIL  calibration: expected calibration error 0.1258 over 2674 forecasts in 8 populated bins, worth about 20 independent observations; the reliability curve is not monotone (1 reversal(s) beyond noise) (counting overlapping forecasts as independent would have found 9)
+    ok    robustness: 4 of 4 sub-periods positive; scores +0.075 over 7 indicator(s), +0.125 over 2 indicator(s), +0.029 over 6 indicator(s), +0.048 over 5 indicator(s)
+    FAIL  honesty: mean total variation distance to the stationary distribution 0.0204 against a floor of 0.05
+
+Gate 5 — evaluation: PASS
+  ok    every horizon reached a verdict
+        verdicts: 1 year SHIP MODEL, 5 year SHIP BASE RATE, 10 year SHIP BASE RATE
+  ok    every verdict is one of the two the rule allows
+        values seen: ['SHIP BASE RATE', 'SHIP MODEL']
+  ok    a horizon that ships the base rate names the gate that failed
+        1 year: none; 5 year: skill, calibration, robustness; 10 year: skill, calibration, honesty
+
+run summary written to .cache/models/run_summary.json
+
+==============================================================================
+All five gates passed.
