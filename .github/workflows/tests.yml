@@ -12,12 +12,21 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch makes an older run's answer irrelevant.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest, so an image change cannot move the environment
+    # under the suite unannounced (ubuntu-latest becomes Ubuntu 26 on 2026-10-19).
+    runs-on: ubuntu-24.04
+    # The suite takes about twenty minutes on a hosted runner; anything far longer is a hang.
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           # mypy targets 3.11 (pyproject.toml), and numpy's stubs for newer Pythons
           # use syntax 3.11 cannot parse, so the suite runs on the version it is typed for.
