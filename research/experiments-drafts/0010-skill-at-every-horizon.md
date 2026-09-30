@@ -80,3 +80,18 @@ horizons stay one, five and ten years, each governed by its own rule.
 - Neighbouring horizons share almost all their forecasts. A wiggle in the curve is not a finding.
 - One sample, 1994-03 to 2026-09, already used for every choice this project has made. The curve inherits
   the in-sample ceiling ADR 0010 states.
+
+## Amendment, 2026-09-29, before the second run
+
+Committed and dated before the curve is re-run, per delegated decision P2-6(5). On 2026-09-29 the
+default became `7647c129be85291e`: experiment 0008's arm B3, an equal blend of the two-chain regime model
+with the condition chain R2 (ADR 0013).
+
+- **What the second run measures.** The same curve, on that default: the method it ships and scores
+  is the blend, in the `predicted_probability` column. The condition chain is still scored beside it.
+  "Model minus chain" now reads "blend minus chain".
+- **Unchanged:** the reading rule, the block rule, the uninformative label and every other definition
+  above.
+- **Nothing is predicted in advance for the blend's curve.** The blend's one-year numbers are already
+  known from 0008, so this run is a description of how its skill decays, and no prediction here could
+  be a risk.
