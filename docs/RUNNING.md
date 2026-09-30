@@ -80,6 +80,7 @@ Each stage can also be run alone, in this order:
 | `forecast evaluate` | 5 | every metric, and the verdict per horizon |
 | `forecast submit --verify-only` | — | **nothing.** Prints the approved, live and producing configuration hashes |
 | `forecast compare-variants` | — | the 2x2 of look-ahead fixes and the comparison table |
+| `forecast skill-by-horizon` | — | skill at every month from 1 to 120, and where the model stops carrying it (measurement 0010) |
 
 Add `--verbose` to any of them to see what each step is doing. Add
 `--as-of YYYY-MM-DD` to run the whole thing as though it were an earlier date;
@@ -123,6 +124,30 @@ forty minutes, needs no network (every vintage it wants is already cached), and
 is **deliberately not part of `run_full_pipeline.sh`**: it is an analysis, not a
 stage gate.
 
+### Skill at every horizon
+
+`forecast skill-by-horizon` re-walks the backtest from the cached fits at every horizon from one
+month to ten years, checks that the rows at 12, 60 and 120 months equal the gate run's exactly,
+and scores the model and the regime-free reference chain against both benchmarks. It prints the
+curve every six months and the horizon after which the model stops carrying skill, and writes four
+artifacts (`skill_by_horizon*.parquet`, `skill_by_horizon_summary.json`). Run `check-gates` first.
+The reading rule was registered before the first run: `research/experiments-drafts/0010-skill-at-every-horizon.md`.
+It changes no verdict.
+
+### The reference forecasters beside every forecast
+
+Every backtest row carries two forecasts that are not the model's, so every claim can be measured
+against something harder than a nineteenth-century base rate (rule 0007):
+
+| column | what it is |
+|---|---|
+| `climatology_probability` | 0001's benchmark: every resolved outcome since the source series began, back to 1854 for recession dating |
+| `model_sample_climatology_probability` | R1: the same average, counting only outcomes inside the model's own observation matrix |
+| `condition_chain_probability` | R2: a two-state Markov chain on the indicator's own monthly condition, no regimes, re-learned every forecast date |
+
+Neither is a setting, so neither moves the configuration hash, and neither changes a forecast:
+`baseline compare` against a baseline captured before they existed reports nothing moved.
+
 ### Measuring what a change moved
 
 `forecast baseline` compares the run in the cache against a committed baseline in
@@ -134,6 +159,7 @@ follows.
 ```bash
 poetry run forecast baseline compare             # what moved; verdict and run-identity changes first
 poetry run forecast baseline compare --paired    # skill difference per horizon, with intervals (~15 s)
+poetry run forecast baseline compare --paired --benchmark model-sample   # the same, scored against R1
 poetry run forecast baseline list                # every committed baseline
 poetry run forecast baseline capture --name main --force   # on main, only when its numbers are meant to move
 ```
@@ -147,6 +173,12 @@ nothing moved.
 Exit codes: 0 nothing moved, 1 something moved, 2 the comparison could not be
 made. `--paired` exits 0 whenever it could measure, because it measures and does
 not judge. Add `--format json` to either for the branch runner.
+
+With `--require-own-artifacts`, both refuse with exit 2 when the cached artifacts
+were written by a different configuration than the workspace's settings hash to.
+That is what a branch whose gates failed looks like: its cache still holds the
+artifacts it inherited, and a comparison would report +0.0000 everywhere
+(experiment 0005's RESULT). The research-arm harness always passes it.
 
 ## Read the results
 
@@ -209,8 +241,14 @@ regression harness (`docs/REGRESSION_TESTING.md`). The experiment each arm belon
 pre-registered under `proving/experiments/`, before the arm is run.
 
     scripts/research_arm.sh setup <arm>   # worktree on branch research/<arm>, private cache copy
-    scripts/research_arm.sh run   <arm>   # five gates, then compare and compare --paired vs main,
-                                          # then the look-ahead audit; outputs in research/arms/<arm>/
+    scripts/research_arm.sh run   <arm>   # five gates, then compare and compare --paired against the
+                                          # reference, then the look-ahead audit at both cutoffs;
+                                          # outputs in research/arms/<arm>/
+
+The experiment sets what an arm is judged against: `RESEARCH_ARM_REFERENCE` (the baseline, default
+`main`), `RESEARCH_ARM_BENCHMARK` (`series-start` or `model-sample`) and `RESEARCH_ARM_FAMILY_LEVEL`
+(the Bonferroni level, default 0.9833). If the gates fail, `run` makes no comparison at all and writes
+`NO_COMPARISON.txt` instead, so a failed arm cannot pass for a clean control.
     scripts/research_arm.sh path  <arm>   # print the worktree path
 
 One trap is worth knowing before touching a worktree by hand. The package is an editable

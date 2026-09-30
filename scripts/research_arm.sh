@@ -5,8 +5,12 @@
 # modelling logic of its own. See docs/REGRESSION_TESTING.md for what the comparison means.
 #
 #   scripts/research_arm.sh setup <arm>   create the worktree and its private cache
-#   scripts/research_arm.sh run   <arm>   run the five gates there and compare against main
+#   scripts/research_arm.sh run   <arm>   run the five gates there and compare against the reference
 #   scripts/research_arm.sh path  <arm>   print the worktree path
+#
+# The reference, benchmark and family-wise level come from the experiment, through
+# RESEARCH_ARM_REFERENCE (default main), RESEARCH_ARM_BENCHMARK (default series-start) and
+# RESEARCH_ARM_FAMILY_LEVEL (default 0.9833, experiment 0002's six arms).
 #
 # Two traps this exists to close, both measured on 2026-09-15 rather than assumed:
 #
@@ -51,7 +55,8 @@ case "$COMMAND" in
         echo "$WORKTREE"
         ;;
     setup)
-        [ -f "$MAIN_ROOT/baselines/main.json" ] || { echo "no baselines/main.json on main; run 'forecast baseline capture --name main' first" >&2; exit 2; }
+        REFERENCE="${RESEARCH_ARM_REFERENCE:-main}"
+        [ -f "$MAIN_ROOT/baselines/$REFERENCE.json" ] || { echo "no baselines/$REFERENCE.json on main; run 'forecast baseline capture --name $REFERENCE' first" >&2; exit 2; }
         mkdir -p "$ARMS_ROOT"
         if [ -d "$WORKTREE" ]; then
             echo "worktree exists: $WORKTREE (branch $BRANCH), reusing it"
@@ -83,26 +88,44 @@ case "$COMMAND" in
         cd "$WORKTREE"
         export PYTHONPATH="$WORKTREE/src"
         CLI=("$PYTHON" -m economic_regime_forecasting.command_line_interface)
+        # What the arm is judged against, set by the experiment rather than assumed. Defaults are
+        # experiment 0002's; experiment 0008 sets REFERENCE=reference-0008, BENCHMARK=model-sample and
+        # FAMILY_LEVEL=0.9667 (1 - 0.10/3), and reads the series-start benchmark as a secondary.
+        REFERENCE="${RESEARCH_ARM_REFERENCE:-main}"
+        BENCHMARK="${RESEARCH_ARM_BENCHMARK:-series-start}"
+        FAMILY_LEVEL="${RESEARCH_ARM_FAMILY_LEVEL:-0.9833}"
+        LEVELS=(--confidence-level 0.90 --confidence-level "$FAMILY_LEVEL")
         set +e
         "${CLI[@]}" check-gates > "$OUT/check_gates.log" 2>&1;                          GATES=$?
-        "${CLI[@]}" baseline compare --against main              > "$OUT/compare.txt"  2>&1; COMPARE=$?
-        "${CLI[@]}" baseline compare --against main --format json > "$OUT/compare.json" 2>/dev/null
-        # Both levels, from ONE set of resamples: 90% decides PROMISING, and 98.33% (1 - 0.10/6, Bonferroni
-        # across experiment 0002's six arms) decides CONFIRMED_IN_SAMPLE. Without the second level no arm
-        # could ever be confirmed, and the omission would read as an honest non-result.
-        "${CLI[@]}" baseline compare --against main --paired --confidence-level 0.90 --confidence-level 0.9833     > "$OUT/paired.txt"   2>&1; PAIRED=$?
-        "${CLI[@]}" baseline compare --against main --paired --confidence-level 0.90 --confidence-level 0.9833 --format json > "$OUT/paired.json" 2>/dev/null
-        # The deterministic half of the look-ahead defence: perturb everything unavailable at a cutoff
-        # and require every forecast issued up to it to come out byte-identical. An arm that fails
-        # this is void under the pre-registration, whatever its skill score says.
+        COMPARE=-1; PAIRED=-1; PAIRED_SECONDARY=-1
+        if [ "$GATES" -eq 0 ]; then
+            "${CLI[@]}" baseline compare --require-own-artifacts --against "$REFERENCE"              > "$OUT/compare.txt"  2>&1; COMPARE=$?
+            "${CLI[@]}" baseline compare --require-own-artifacts --against "$REFERENCE" --format json > "$OUT/compare.json" 2>/dev/null
+            # Both levels from ONE set of resamples: 90% decides PROMISING, the family-wise level decides
+            # CONFIRMED_IN_SAMPLE. Without the second no arm could ever be confirmed.
+            "${CLI[@]}" baseline compare --require-own-artifacts --against "$REFERENCE" --paired --benchmark "$BENCHMARK" "${LEVELS[@]}"               > "$OUT/paired.txt"  2>&1; PAIRED=$?
+            "${CLI[@]}" baseline compare --require-own-artifacts --against "$REFERENCE" --paired --benchmark "$BENCHMARK" "${LEVELS[@]}" --format json > "$OUT/paired.json" 2>/dev/null
+            if [ "$BENCHMARK" != "series-start" ]; then
+                "${CLI[@]}" baseline compare --require-own-artifacts --against "$REFERENCE" --paired --benchmark series-start "${LEVELS[@]}"               > "$OUT/paired_series_start.txt"  2>&1; PAIRED_SECONDARY=$?
+                "${CLI[@]}" baseline compare --require-own-artifacts --against "$REFERENCE" --paired --benchmark series-start "${LEVELS[@]}" --format json > "$OUT/paired_series_start.json" 2>/dev/null
+            fi
+        else
+            # A failed gate run leaves the arm's cache holding artifacts it inherited, and comparing them
+            # reports +0.0000 everywhere: a failed arm dressed as a passing control (experiment 0005).
+            echo "check-gates exited $GATES, so no comparison was made; read check_gates.log" > "$OUT/NO_COMPARISON.txt"
+        fi
+        # The deterministic half of the look-ahead defence, at both standing cutoffs: the default one
+        # early in the sample, and 2022-03-01, which reaches every recession announcement since 1991.
+        # An arm that fails either is void under the pre-registration, whatever its skill score says.
         "${CLI[@]}" audit-look-ahead > "$OUT/look_ahead_audit.txt" 2>&1;               AUDIT=$?
+        "${CLI[@]}" audit-look-ahead --cutoff 2022-03-01 > "$OUT/look_ahead_audit_2022.txt" 2>&1; AUDIT_2022=$?
         set -e
         CLEAN_THROUGHOUT=false
         if [ "$(git rev-parse HEAD)" = "$COMMIT_AT_START" ] && [ -z "$(tree_changes)" ]; then CLEAN_THROUGHOUT=true; fi
-        printf '{"arm": "%s", "branch": "%s", "commit": "%s", "tree_clean_at_start_and_end": %s, "check_gates_exit": %d, "compare_exit": %d, "paired_exit": %d, "look_ahead_audit_exit": %d}\n' \
-            "$ARM" "$BRANCH" "$COMMIT_AT_START" "$CLEAN_THROUGHOUT" "$GATES" "$COMPARE" "$PAIRED" "$AUDIT" > "$OUT/exit_codes.json"
+        printf '{"arm": "%s", "branch": "%s", "commit": "%s", "reference": "%s", "benchmark": "%s", "family_level": %s, "tree_clean_at_start_and_end": %s, "check_gates_exit": %d, "compare_exit": %d, "paired_exit": %d, "paired_series_start_exit": %d, "look_ahead_audit_exit": %d, "look_ahead_audit_2022_exit": %d}\n' \
+            "$ARM" "$BRANCH" "$COMMIT_AT_START" "$REFERENCE" "$BENCHMARK" "$FAMILY_LEVEL" "$CLEAN_THROUGHOUT" "$GATES" "$COMPARE" "$PAIRED" "$PAIRED_SECONDARY" "$AUDIT" "$AUDIT_2022" > "$OUT/exit_codes.json"
         [ "$CLEAN_THROUGHOUT" = true ] || echo "WARNING: the worktree changed during the run (HEAD moved or files were edited), so these outputs do not count" >&2
-        echo "arm $ARM: check-gates exit $GATES, compare exit $COMPARE, paired exit $PAIRED, look-ahead audit exit $AUDIT; outputs in $OUT"
+        echo "arm $ARM: check-gates exit $GATES, compare exit $COMPARE, paired exit $PAIRED, look-ahead audits exit $AUDIT and $AUDIT_2022; outputs in $OUT"
         ;;
     *) usage;;
 esac

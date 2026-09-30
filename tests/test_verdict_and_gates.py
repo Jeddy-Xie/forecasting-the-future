@@ -54,6 +54,8 @@ def _results(
                         "horizon_months": horizon,
                         "predicted_probability": float(predicted[position]),
                         "climatology_probability": base_rate,
+                        "model_sample_climatology_probability": base_rate,
+                        "condition_chain_probability": base_rate,
                         "realised_outcome": float(outcomes[position]),
                         "composition": "point_in_time",
                         "effective_sample_size": 300.0,

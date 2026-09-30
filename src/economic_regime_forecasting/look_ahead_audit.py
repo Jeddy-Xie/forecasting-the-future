@@ -49,11 +49,13 @@ would hide exactly the leak being tested for: a fit that used future data would 
 read back rather than recomputed.
 
 **What is compared.** Every row, keyed on indicator, forecast date and horizon,
-for *exact* equality of ``predicted_probability``, ``regime_distribution``,
-``climatology_probability`` (so the benchmark is checked too), ``state_count`` and
-``refit_date``. Fits are byte-identical within one environment and one process, so
-any tolerance would only be room for a leak to hide in. ``realised_outcome`` is not
-compared: it legitimately depends on the future, and is scoring data, not an
+for *exact* equality of ``predicted_probability``, ``regime_distribution``, both
+benchmarks -- ``climatology_probability`` and ``model_sample_climatology_probability``
+-- and the regime-free reference forecaster ``condition_chain_probability``, so
+every number a skill score is computed from is checked, plus ``state_count`` and
+``refit_date``. Fits are byte-identical within one environment and one process,
+so any tolerance would only be room for a leak to hide in. ``realised_outcome`` is
+not compared: it legitimately depends on the future, and is scoring data, not an
 input to a forecast.
 
 **What it does not cover**, stated so nobody over-trusts it:
@@ -130,6 +132,8 @@ COMPARED_FIELDS: tuple[str, ...] = (
     "predicted_probability",
     "regime_distribution",
     "climatology_probability",
+    "model_sample_climatology_probability",
+    "condition_chain_probability",
     "state_count",
     "refit_date",
 )

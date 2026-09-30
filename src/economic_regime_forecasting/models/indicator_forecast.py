@@ -273,6 +273,138 @@ def compose_any_time_within_horizon(
     return float(np.clip(1.0 - probability_of_never, 0.0, 1.0))
 
 
+def compose_through_the_condition_chain_at_every_horizon(
+    transition_matrix: np.ndarray,
+    starting_regime_distribution: np.ndarray,
+    rates: ConditionalRates,
+    composition: Composition,
+    longest_horizon_in_months: int,
+    condition_held_when_last_published: bool,
+    months_since_last_published: int,
+) -> np.ndarray:
+    """Probabilities at every horizon from one month to the longest, in one pass.
+
+    The chain is the regime and the indicator's own monthly condition together:
+    a state is a pair, regime and whether the condition holds. Each month the
+    regime moves by the transition matrix, then the condition draws in the regime
+    it arrived in, by the entry hazard if it did not hold the month before and by
+    the persistence if it did. That is the same rule the any-time path already
+    applies inside the horizon window; here it also carries the condition across
+    the months between the last one published and the forecast date, because
+    the condition's value in the forecast month is not known yet. For a monthly
+    series that gap is a month or two; for recession dating it can exceed a year.
+
+    The chain starts at the last published month, with the condition as published
+    and the regime distribution it is given, and steps the gap before the window
+    opens. Element ``h - 1`` of the result answers the horizon ``h`` question:
+
+    - **point in time**: does the condition hold in month ``h`` after the forecast
+      date;
+    - **any time within the horizon**: does it hold in at least one of months one
+      through ``h``, the window the outcome resolver uses.
+
+    With one regime, a transition matrix of ``[[1.0]]`` and a distribution of
+    ``[1.0]``, this is a plain two-state Markov chain on the condition: the
+    regime-free reference forecaster that every regime model has to beat for its
+    regimes to be worth anything.
+    """
+    if longest_horizon_in_months < 1:
+        raise ForecastCompositionError(
+            f"a horizon must be at least one month, got {longest_horizon_in_months}"
+        )
+    if months_since_last_published < 0:
+        raise ForecastCompositionError(
+            f"the last published condition cannot postdate the forecast; got a gap of "
+            f"{months_since_last_published} months"
+        )
+    transitions = np.asarray(transition_matrix, dtype="float64")
+    regimes = np.asarray(starting_regime_distribution, dtype="float64")
+    if transitions.shape != (regimes.size, regimes.size):
+        raise ForecastCompositionError(
+            f"a transition matrix of shape {transitions.shape} cannot move a distribution over "
+            f"{regimes.size} regimes"
+        )
+    if rates.state_count != regimes.size:
+        raise ForecastCompositionError(
+            f"{rates.indicator_name} has rates for {rates.state_count} regimes, but the chain "
+            f"has {regimes.size}"
+        )
+    entry = rates.entry_hazard
+    persistence = rates.persistence
+
+    not_holding = np.zeros_like(regimes) if condition_held_when_last_published else regimes.copy()
+    holding = regimes.copy() if condition_held_when_last_published else np.zeros_like(regimes)
+
+    def step(not_holding: np.ndarray, holding: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        from_not_holding = not_holding @ transitions
+        from_holding = holding @ transitions
+        return (
+            from_not_holding * (1.0 - entry) + from_holding * (1.0 - persistence),
+            from_not_holding * entry + from_holding * persistence,
+        )
+
+    for _ in range(months_since_last_published):
+        not_holding, holding = step(not_holding, holding)
+
+    probabilities = np.empty(longest_horizon_in_months, dtype="float64")
+    if composition is Composition.POINT_IN_TIME:
+        for position in range(longest_horizon_in_months):
+            not_holding, holding = step(not_holding, holding)
+            probabilities[position] = holding.sum()
+    else:
+        # Survival: the mass that has not seen the condition hold in any month of
+        # the window so far. After the first month only non-holding paths survive,
+        # so the entry hazard applies throughout, exactly as in the any-time path.
+        surviving = (not_holding @ transitions) * (1.0 - entry) + (holding @ transitions) * (
+            1.0 - persistence
+        )
+        probabilities[0] = 1.0 - surviving.sum()
+        later_transfer = transitions * (1.0 - entry)[None, :]
+        for position in range(1, longest_horizon_in_months):
+            surviving = surviving @ later_transfer
+            probabilities[position] = 1.0 - surviving.sum()
+    clipped: np.ndarray = np.clip(probabilities, 0.0, 1.0)
+    return clipped
+
+
+def compose_through_the_condition_chain(
+    transition_matrix: np.ndarray,
+    starting_regime_distribution: np.ndarray,
+    rates: ConditionalRates,
+    composition: Composition,
+    horizon_in_months: int,
+    condition_held_when_last_published: bool,
+    months_since_last_published: int,
+) -> float:
+    """One horizon of :func:`compose_through_the_condition_chain_at_every_horizon`.
+
+    It runs the same loop and reads the last element, so a single horizon and the
+    every-horizon curve agree to the bit rather than to a tolerance.
+    """
+    return float(
+        compose_through_the_condition_chain_at_every_horizon(
+            transition_matrix,
+            starting_regime_distribution,
+            rates,
+            composition,
+            horizon_in_months,
+            condition_held_when_last_published,
+            months_since_last_published,
+        )[-1]
+    )
+
+
+def _read_only(array: np.ndarray) -> np.ndarray:
+    array.setflags(write=False)
+    return array
+
+
+SINGLE_REGIME_TRANSITION_MATRIX: np.ndarray = _read_only(np.ones((1, 1)))
+"""The chain with no regimes: one state that always follows itself."""
+
+SINGLE_REGIME_DISTRIBUTION: np.ndarray = _read_only(np.ones(1))
+
+
 def forecast_indicator(
     indicator: BinaryIndicator,
     model: GaussianHiddenMarkovModel,

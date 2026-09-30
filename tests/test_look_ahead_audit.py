@@ -465,6 +465,8 @@ def _results_frame() -> pd.DataFrame:
             "predicted_probability": [0.25, 0.3, 0.7],
             "regime_distribution": ["0.5,0.5", "0.4,0.6", "0.5,0.5"],
             "climatology_probability": [0.4, 0.4, 0.6],
+            "model_sample_climatology_probability": [0.3, 0.3, 0.5],
+            "condition_chain_probability": [0.35, 0.35, 0.65],
             "state_count": [2, 2, 2],
             "refit_date": pd.to_datetime(["2000-01-01"] * 3),
             "realised_outcome": [0.0, 1.0, 1.0],

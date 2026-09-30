@@ -199,6 +199,27 @@ restricted to what a skill score is computed from, plus the configuration that
 made it. The regime distributions and diagnostics are left out; they are most of
 the backtest frame's size and none of its score."""
 
+REFERENCE_FORECAST_COLUMNS: tuple[str, ...] = (
+    "model_sample_climatology_probability",
+    "condition_chain_probability",
+)
+"""The two reference forecasters rule 0007 scores against, recorded whenever the
+backtest carries them. Optional rather than required, so a baseline captured
+before they existed still reads; a comparison that needs one refuses when either
+side lacks it, rather than falling back to the other benchmark."""
+
+BENCHMARK_COLUMNS: dict[str, str] = {
+    "series-start": "climatology_probability",
+    "model-sample": "model_sample_climatology_probability",
+}
+"""Which climatology a paired comparison measures skill against.
+
+``series-start`` averages every resolved outcome since the source series began,
+which reaches back to 1854 for recession dating: 0001's benchmark, exactly as
+coded when it was frozen. ``model-sample`` averages only outcomes whose forecast
+month falls inside the model's own observation matrix, the benchmark rule 0007
+adopts. Both are expanding and publication-aware."""
+
 
 class BaselineError(RuntimeError):
     """A baseline could not be assembled, read, or lined up against a run."""
@@ -575,8 +596,12 @@ def forecast_frame(artifacts: ArtifactStore) -> pd.DataFrame:
             "records. The artifact and this module have drifted apart; fix one to match the "
             "other, and bump FORMAT_VERSION if it is this module that changes."
         )
+    recorded = [
+        *FORECAST_COLUMNS,
+        *(name for name in REFERENCE_FORECAST_COLUMNS if name in results.columns),
+    ]
     return (
-        results.loc[:, list(FORECAST_COLUMNS)]
+        results.loc[:, recorded]
         .sort_values(list(FORECAST_KEY_COLUMNS), kind="mergesort")
         .reset_index(drop=True)
     )
@@ -1238,6 +1263,8 @@ class PairedComparison:
     indicators: tuple[PairedIndicator, ...]
     only_in_baseline_forecast_dates: tuple[str, str] | None
     only_in_this_run_forecast_dates: tuple[str, str] | None
+    benchmark: str = "series-start"
+    """The climatology skill was measured against; see ``BENCHMARK_COLUMNS``."""
 
     @property
     def rows_in_both(self) -> int:
@@ -1274,6 +1301,10 @@ class PairedComparison:
             "baseline_run": self.baseline_run,
             "current_run": self.current_run,
             "statistic": PAIRED_STATISTIC,
+            "benchmark": {
+                "name": self.benchmark,
+                "column": BENCHMARK_COLUMNS[self.benchmark],
+            },
             "bootstrap": {
                 "method": "moving block",
                 "resampled_unit": "forecast date, with every indicator on it kept together",
@@ -1312,6 +1343,7 @@ class PairedComparison:
             f"{self.current_run.get('forecast_date_count')} from "
             f"{self.current_run.get('first_forecast_date')})",
             f"statistic: {PAIRED_STATISTIC}",
+            f"benchmark: the {self.benchmark} climatology ({BENCHMARK_COLUMNS[self.benchmark]})",
             f"interval: {' and '.join(labels)} moving-block bootstrap of forecast dates, blocks "
             "as long as the horizon in months, every indicator on a date kept together, one draw "
             "of dates per resample applied to both runs and read at every level; "
@@ -1321,10 +1353,15 @@ class PairedComparison:
             f"{self.rows_only_in_baseline} only in the baseline, {self.rows_only_in_this_run} "
             "only in this run",
         ]
-        if self.same_forecasts:
+        if self.same_forecasts and self.benchmark == "series-start":
             lines.append(
                 "the two runs resolved the same forecasts, so each side's skill below is exactly "
                 "what its own verdict reports"
+            )
+        elif self.same_forecasts:
+            lines.append(
+                "the two runs resolved the same forecasts; skill here is against the "
+                f"{self.benchmark} climatology, so it is not the number 0001's verdict reports"
             )
         else:
             lines.append(
@@ -1442,7 +1479,12 @@ def _interval_cells(
     return [f"[{item.lower_bound:+.4f}, {item.upper_bound:+.4f}]" for item in result.intervals]
 
 
-def _resolved_forecasts(frame: pd.DataFrame, document: dict[str, Any], side: str) -> pd.DataFrame:
+def _resolved_forecasts(
+    frame: pd.DataFrame,
+    document: dict[str, Any],
+    side: str,
+    benchmark_column: str = BENCHMARK_COLUMNS["series-start"],
+) -> pd.DataFrame:
     """One side's resolved forecasts, indexed by the forecast key.
 
     Resolved means what the verdict means by it: a realised outcome and a
@@ -1457,6 +1499,14 @@ def _resolved_forecasts(frame: pd.DataFrame, document: dict[str, Any], side: str
             f"{side}'s forecasts have no column(s) {missing}. Re-capture the baseline so the "
             "forecasts file is in the current format."
         )
+    if benchmark_column not in frame.columns:
+        raise BaselineError(
+            f"{side}'s forecasts carry no {benchmark_column!r}, the benchmark this comparison "
+            "was asked to score against; they were captured before rule 0007 added it. Compare "
+            "against a baseline captured since, or on the series-start benchmark. Neither side "
+            "falls back to the other benchmark, because a skill score against one is not a skill "
+            "score against the other."
+        )
     recorded = document.get("run", {}).get("configuration_hash")
     found = sorted({str(value) for value in frame["configuration_hash"]})
     if found != [str(recorded)]:
@@ -1465,7 +1515,7 @@ def _resolved_forecasts(frame: pd.DataFrame, document: dict[str, Any], side: str
             f"{recorded}, so the two files do not describe the same run. Re-capture the "
             "baseline, or re-run `forecast check-gates`, so that they do."
         )
-    resolved = frame.dropna(subset=["realised_outcome", "climatology_probability"]).assign(
+    resolved = frame.dropna(subset=["realised_outcome", benchmark_column]).assign(
         forecast_date=lambda table: pd.to_datetime(table["forecast_date"]),
         horizon_months=lambda table: table["horizon_months"].astype("int64"),
     )
@@ -1486,7 +1536,10 @@ def _at_horizon(resolved: pd.DataFrame, horizon: int) -> pd.DataFrame:
 
 
 def _matrices(
-    shared: pd.DataFrame, dates: Sequence[pd.Timestamp], names: Sequence[str]
+    shared: pd.DataFrame,
+    dates: Sequence[pd.Timestamp],
+    names: Sequence[str],
+    benchmark_column: str = BENCHMARK_COLUMNS["series-start"],
 ) -> paired_skill_comparison.ForecastMatrices:
     """Date-by-indicator matrices, laid out exactly as the verdict lays them out:
     dates ascending, indicators in name order."""
@@ -1502,7 +1555,7 @@ def _matrices(
     return paired_skill_comparison.ForecastMatrices(
         predicted=wide("predicted_probability"),
         realised=wide("realised_outcome"),
-        climatology=wide("climatology_probability"),
+        climatology=wide(benchmark_column),
     )
 
 
@@ -1553,6 +1606,7 @@ def compare_paired(
     resamples: int,
     confidence_levels: Sequence[float],
     name: str = "baseline",
+    benchmark: str = "series-start",
 ) -> PairedComparison:
     """This run's skill minus the baseline's, per horizon, on the forecasts both made.
 
@@ -1565,14 +1619,26 @@ def compare_paired(
     ``confidence_levels`` may name several levels -- a nominal one and a
     family-wise one, say -- and every horizon then carries one interval per level,
     all read off one set of resamples.
+
+    ``benchmark`` names the climatology skill is measured against, one of
+    ``BENCHMARK_COLUMNS``. On any benchmark but the series-start one, each side's
+    skill is not the number its own 0001 verdict records, so that cross-check is
+    not made, and the output says which benchmark it used.
     """
     check_format_version(baseline, current, name)
+    if benchmark not in BENCHMARK_COLUMNS:
+        raise BaselineError(
+            f"no benchmark called {benchmark!r}; choose one of {sorted(BENCHMARK_COLUMNS)}"
+        )
+    benchmark_column = BENCHMARK_COLUMNS[benchmark]
     try:
         levels = paired_skill_comparison.confidence_levels_in_order(confidence_levels)
     except paired_skill_comparison.PairedComparisonError as error:
         raise BaselineError(str(error)) from error
-    baseline_resolved = _resolved_forecasts(baseline_forecasts, baseline, "the baseline")
-    current_resolved = _resolved_forecasts(current_forecasts, current, "this run")
+    baseline_resolved = _resolved_forecasts(
+        baseline_forecasts, baseline, "the baseline", benchmark_column
+    )
+    current_resolved = _resolved_forecasts(current_forecasts, current, "this run", benchmark_column)
 
     horizons: list[PairedHorizon] = []
     indicators: list[PairedIndicator] = []
@@ -1606,8 +1672,8 @@ def compare_paired(
         if len(both) == 0:
             note = "no resolved forecast at this horizon is in both runs, so nothing can be paired"
         else:
-            baseline_matrices = _matrices(shared_baseline, dates, names)
-            current_matrices = _matrices(shared_current, dates, names)
+            baseline_matrices = _matrices(shared_baseline, dates, names, benchmark_column)
+            current_matrices = _matrices(shared_current, dates, names, benchmark_column)
             try:
                 result = paired_skill_comparison.paired_mean_skill_difference(
                     baseline_matrices,
@@ -1621,7 +1687,11 @@ def compare_paired(
                 note = str(error)
             else:
                 note = result.interval_note
-                if len(only_in_baseline) == 0 and len(only_in_this_run) == 0:
+                if (
+                    len(only_in_baseline) == 0
+                    and len(only_in_this_run) == 0
+                    and benchmark == "series-start"
+                ):
                     _require_agreement_with_own_verdicts(baseline, current, horizon, result)
 
         horizons.append(
@@ -1682,4 +1752,5 @@ def compare_paired(
         indicators=tuple(indicators),
         only_in_baseline_forecast_dates=_date_span(only_in_baseline_dates),
         only_in_this_run_forecast_dates=_date_span(only_in_this_run_dates),
+        benchmark=benchmark,
     )

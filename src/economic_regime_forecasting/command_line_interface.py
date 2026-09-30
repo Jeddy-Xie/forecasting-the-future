@@ -32,6 +32,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -64,6 +65,7 @@ from economic_regime_forecasting.data.panel import (
     assemble_point_in_time_panel,
     load_final_series,
 )
+from economic_regime_forecasting.evaluation import skill_by_horizon as skill_by_horizon_module
 from economic_regime_forecasting.evaluation import verdict as verdict_module
 from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
@@ -1029,6 +1031,8 @@ def baseline_compare(
     *,
     paired: bool = False,
     confidence_levels: list[float] | None = None,
+    benchmark: str = "series-start",
+    require_own_artifacts: bool = False,
 ) -> int:
     """Compare the artifacts in the cache against a committed baseline.
 
@@ -1047,6 +1051,8 @@ def baseline_compare(
     try:
         baseline = regression_baseline.read_baseline(against, directory)
         current = regression_baseline.assemble_run_summary(workspace.artifacts)
+        if require_own_artifacts:
+            _require_artifacts_from_these_settings(workspace, current)
         if paired:
             regression_baseline.check_format_version(baseline, current, against)
             settings = workspace.settings
@@ -1059,6 +1065,7 @@ def baseline_compare(
                 resamples=settings.bootstrap_resamples,
                 confidence_levels=confidence_levels or [settings.bootstrap_confidence_level],
                 name=against,
+                benchmark=benchmark,
             )
         else:
             comparison = regression_baseline.compare(baseline, current, against)
@@ -1077,6 +1084,29 @@ def baseline_compare(
     else:
         print(comparison.describe(bands))
     return comparison.exit_code
+
+
+def _require_artifacts_from_these_settings(workspace: Workspace, current: dict[str, Any]) -> None:
+    """Refuse to compare a run whose artifacts some other configuration wrote.
+
+    The cache keeps the last run's artifacts until a later run overwrites them. When
+    a branch's gates fail before its backtest writes anything, the artifacts in its
+    cache are still the ones it inherited, and a comparison against the baseline they
+    came from reports +0.0000 at every horizon: indistinguishable from a passing
+    control. Measured in experiment 0005 (its RESULT file), where a failed arm read
+    main against itself. The artifacts must carry the hash of the settings this
+    workspace runs, or there is nothing of this run's to compare.
+    """
+    recorded = current.get("run", {}).get("configuration_hash")
+    expected = workspace.settings.configuration_hash()
+    if recorded != expected:
+        raise regression_baseline.BaselineError(
+            f"the cached artifacts were written by configuration {recorded}, but this "
+            f"workspace's settings hash to {expected}. This run never wrote artifacts of its "
+            "own -- usually because `forecast check-gates` failed before the backtest -- so "
+            "comparing them would compare some earlier run instead. Fix and re-run the gates "
+            "first."
+        )
 
 
 def _bands_to_show(chosen: list[str] | None) -> list[str]:
@@ -1145,6 +1175,10 @@ WRITTEN_BY: dict[str, str] = {
     ARTIFACTS.variant_comparison: "compare-variants",
     ARTIFACTS.variant_comparison_manifest: "compare-variants",
     ARTIFACTS.look_ahead_audit: "audit-look-ahead",
+    ARTIFACTS.skill_by_horizon_forecasts: "skill-by-horizon",
+    ARTIFACTS.skill_by_horizon: "skill-by-horizon",
+    ARTIFACTS.skill_by_horizon_differences: "skill-by-horizon",
+    ARTIFACTS.skill_by_horizon_summary: "skill-by-horizon",
 }
 """Which command writes each named artifact, read off the call sites rather than
 guessed. Every name in ``ArtifactNames`` appears here; a name that appears in
@@ -1215,6 +1249,87 @@ def artifacts(workspace: Workspace, today: date) -> int:
             )
         )
     return 0
+
+
+# ------------------------------------------------------- skill at every horizon
+
+
+def skill_by_horizon(workspace: Workspace, today: date, longest_horizon: int) -> int:
+    """Score the default model and the reference chain at every month to the longest.
+
+    Measurement 0010 (research/experiments-drafts/0010-skill-at-every-horizon.md):
+    the backtest re-walked from the cached fits at every horizon, each forecaster
+    scored against each benchmark with the verdict's own statistic, and the
+    horizon past which the model no longer carries skill. Descriptive: it changes
+    no verdict and writes nothing but its own four artifacts.
+    """
+    settings = workspace.settings
+    schedule = workspace.backtest_schedule(today)
+    state_count = _state_count_for_the_backtest(workspace, schedule)
+    horizons = tuple(range(1, longest_horizon + 1))
+    print(f"{schedule.describe()}, {state_count} regimes, horizons 1..{longest_horizon} months")
+
+    results = walk_forward.run_walk_forward(
+        workspace.registry,
+        workspace.indicators,
+        workspace.cache,
+        settings,
+        state_count,
+        schedule.forecast_dates,
+        schedule.refit_dates,
+        workspace.artifacts,
+        horizons_in_months=horizons,
+    )
+    _require_the_gate_run_is_reproduced(workspace, results)
+    workspace.artifacts.write_table(
+        ARTIFACTS.skill_by_horizon_forecasts, results.drop(columns=["regime_distribution"])
+    )
+
+    curve = skill_by_horizon_module.measure(
+        results,
+        horizons,
+        resamples=settings.bootstrap_resamples,
+        seed=settings.random_seed,
+    )
+    workspace.artifacts.write_table(ARTIFACTS.skill_by_horizon, curve.skill_table())
+    workspace.artifacts.write_table(
+        ARTIFACTS.skill_by_horizon_differences, curve.difference_table()
+    )
+    summary = curve.summary(settings.configuration_hash())
+    workspace.artifacts.write_json(ARTIFACTS.skill_by_horizon_summary, summary)
+    print(curve.describe())
+    return 0
+
+
+def _require_the_gate_run_is_reproduced(workspace: Workspace, results: pd.DataFrame) -> None:
+    """The every-horizon walk must equal the gate run where the two overlap.
+
+    Same fits, same code, same dates: at the configured horizons every row must be
+    identical, or the curve is describing some other run. Checked before anything
+    is scored, against the backtest artifact the gates wrote.
+    """
+    gate_run = _read_backtest_results_or_say_what_to_run(workspace)
+    if set(gate_run["configuration_hash"].unique()) != {workspace.settings.configuration_hash()}:
+        raise SystemExit(
+            "the cached backtest was written by another configuration; run `forecast "
+            "check-gates` first so the curve can be checked against this one"
+        )
+    columns = [
+        "indicator",
+        "forecast_date",
+        "horizon_months",
+        "predicted_probability",
+        "climatology_probability",
+        "realised_outcome",
+    ]
+    overlap = results[results["horizon_months"].isin(gate_run["horizon_months"].unique())]
+    left = overlap.loc[:, columns].sort_values(columns[:3]).reset_index(drop=True)
+    right = gate_run.loc[:, columns].sort_values(columns[:3]).reset_index(drop=True)
+    if not left.equals(right):
+        raise SystemExit(
+            "the every-horizon walk does not reproduce the gate run at the configured horizons. "
+            "The curve would describe a different run; find out why before reading it."
+        )
 
 
 # ------------------------------------------------------- the look-ahead audit
@@ -1376,6 +1491,26 @@ def build_parser() -> argparse.ArgumentParser:
             "level, every one read off the same resamples"
         ),
     )
+    compare_parser.add_argument(
+        "--require-own-artifacts",
+        action="store_true",
+        help=(
+            "refuse, with exit 2, unless the cached artifacts were written by the configuration "
+            "this workspace's settings hash to. The research-arm harness always passes it: an arm "
+            "whose gates failed would otherwise be compared on artifacts it inherited, and read as "
+            "+0.0000 everywhere (experiment 0005)"
+        ),
+    )
+    compare_parser.add_argument(
+        "--benchmark",
+        choices=sorted(regression_baseline.BENCHMARK_COLUMNS),
+        default="series-start",
+        help=(
+            "with --paired, the climatology skill is measured against (default: series-start, "
+            "0001's benchmark as frozen). model-sample is rule 0007's: only outcomes inside the "
+            "model's own observation matrix. Both sides must carry it; neither falls back"
+        ),
+    )
 
     baseline_actions.add_parser("list", help="every committed baseline, one row each")
 
@@ -1410,6 +1545,17 @@ def build_parser() -> argparse.ArgumentParser:
         ("artifacts", "every generated file in one table, with the command that wrote it"),
     ):
         subparsers.add_parser(name, help=help_text)
+
+    curve_parser = subparsers.add_parser(
+        "skill-by-horizon",
+        help="skill at every month from one to ten years, and where it runs out (measurement 0010)",
+    )
+    curve_parser.add_argument(
+        "--longest-horizon",
+        type=int,
+        default=skill_by_horizon_module.LONGEST_HORIZON_IN_MONTHS,
+        help="the longest horizon scored, in months (default: 120)",
+    )
     return parser
 
 
@@ -1494,6 +1640,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     if getattr(arguments, "confidence_levels", None) and not getattr(arguments, "paired", False):
         parser.error("--confidence-level sets the paired comparison's interval; add --paired")
+    if getattr(arguments, "benchmark", "series-start") != "series-start" and not getattr(
+        arguments, "paired", False
+    ):
+        parser.error("--benchmark chooses the paired comparison's climatology; add --paired")
     logging.basicConfig(
         level=logging.INFO if arguments.verbose else logging.WARNING,
         format="%(levelname)s %(name)s %(message)s",
@@ -1516,6 +1666,8 @@ def main(argv: list[str] | None = None) -> int:
             return 2
     if arguments.command == "artifacts":
         return artifacts(workspace, today)
+    if arguments.command == "skill-by-horizon":
+        return skill_by_horizon(workspace, today, arguments.longest_horizon)
     if arguments.command == "check-gates":
         return check_gates(workspace, today)
     if arguments.command == "compare-variants":
@@ -1539,6 +1691,8 @@ def main(argv: list[str] | None = None) -> int:
                 _bands_to_show(arguments.tolerance_bands),
                 paired=arguments.paired,
                 confidence_levels=arguments.confidence_levels,
+                benchmark=arguments.benchmark,
+                require_own_artifacts=arguments.require_own_artifacts,
             )
         return baseline_list()
 

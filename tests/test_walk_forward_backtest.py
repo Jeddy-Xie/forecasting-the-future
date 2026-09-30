@@ -20,8 +20,10 @@ from economic_regime_forecasting.backtest import schedule as schedule_module
 from economic_regime_forecasting.backtest.walk_forward import (
     RESULT_COLUMNS,
     BacktestError,
+    ConditionChainCadence,
     _expanding_climatology,
     condition_available_at,
+    fit_regime_model,
     prepare_indicator_history,
     run_walk_forward,
     validate_results,
@@ -378,6 +380,8 @@ def _valid_results() -> pd.DataFrame:
             "horizon_months": [12, 12],
             "predicted_probability": [0.4, 0.6],
             "climatology_probability": [0.5, 0.5],
+            "model_sample_climatology_probability": [0.45, 0.45],
+            "condition_chain_probability": [0.45, 0.55],
             "realised_outcome": [1.0, 0.0],
             "composition": ["point_in_time"] * 2,
             "effective_sample_size": [100.0, 100.0],
@@ -433,3 +437,92 @@ def test_the_snapshot_factory_produces_what_the_cache_expects(
     )
     assert isinstance(snapshot.request, SeriesRequest)
     assert snapshot.retrieved_at == datetime(2026, 9, 8, tzinfo=UTC)
+
+
+# ------------------------------------------------------------- reference forecasters
+
+
+def test_the_chain_at_refit_cadence_is_the_models_own_estimator_at_one_regime(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    """Delegated decision P1-11: the refit-cadence chain must equal the model's
+    one-regime rates on the aligned months, which is what lets experiment 0008
+    pin B1 at one regime to the chain end to end."""
+    histories = prepare_indicator_history(
+        synthetic_indicators, synthetic_registry, filled_cache, (12,)
+    )
+    fitted = fit_regime_model(
+        date(2000, 1, 1), synthetic_registry, filled_cache, histories, settings, 1
+    )
+    for name in histories:
+        model_rates = fitted.rates_by_indicator[name]
+        chain_rates = fitted.condition_chain_rates_by_indicator[name]
+        np.testing.assert_array_equal(chain_rates.entry_hazard, model_rates.entry_hazard)
+        np.testing.assert_array_equal(chain_rates.persistence, model_rates.persistence)
+
+
+def test_the_cadence_moves_only_the_reference_chain(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    schedule = schedule_module.build_schedule(date(2000, 1, 1), date(2001, 12, 1), 24)
+
+    def run(cadence: ConditionChainCadence) -> pd.DataFrame:
+        return run_walk_forward(
+            synthetic_registry,
+            synthetic_indicators,
+            filled_cache,
+            settings,
+            2,
+            schedule.forecast_dates,
+            schedule.refit_dates,
+            artifacts=None,
+            progress_every=0,
+            condition_chain_cadence=cadence,
+        )
+
+    monthly = run(ConditionChainCadence.EVERY_FORECAST_DATE)
+    at_refits = run(ConditionChainCadence.REFIT)
+    untouched = [column for column in RESULT_COLUMNS if column != "condition_chain_probability"]
+    pd.testing.assert_frame_equal(monthly[untouched], at_refits[untouched])
+    assert not monthly["condition_chain_probability"].equals(
+        at_refits["condition_chain_probability"]
+    )
+
+
+def test_a_run_asked_for_more_horizons_reproduces_the_configured_ones_exactly(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    """Measurement 0010 reads the curve only because, at the configured horizons,
+    the every-horizon walk is the gate run row for row."""
+    schedule = schedule_module.build_schedule(date(2000, 1, 1), date(2000, 12, 1), 24)
+    arguments = (
+        synthetic_registry,
+        synthetic_indicators,
+        filled_cache,
+        settings,
+        2,
+        schedule.forecast_dates,
+        schedule.refit_dates,
+    )
+    configured = run_walk_forward(*arguments, artifacts=None, progress_every=0)
+    every = run_walk_forward(
+        *arguments, artifacts=None, progress_every=0, horizons_in_months=range(1, 61)
+    )
+    overlap = (
+        every[every["horizon_months"].isin(settings.forecast_horizons_in_months)]
+        .sort_values(["indicator", "forecast_date", "horizon_months"])
+        .reset_index(drop=True)
+    )
+    expected = configured.sort_values(["indicator", "forecast_date", "horizon_months"]).reset_index(
+        drop=True
+    )
+    pd.testing.assert_frame_equal(overlap, expected)
+
+
+def test_the_model_sample_climatology_is_a_probability_or_missing(
+    synthetic_registry, synthetic_indicators, filled_cache, settings
+) -> None:  # type: ignore[no-untyped-def]
+    results = _run(synthetic_registry, synthetic_indicators, filled_cache, settings, months=12)
+    values = results["model_sample_climatology_probability"].dropna()
+    assert not values.empty
+    assert values.between(0.0, 1.0).all()

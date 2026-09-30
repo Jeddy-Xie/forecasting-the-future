@@ -33,8 +33,9 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
+from enum import Enum
 
 import numpy as np
 import pandas as pd
@@ -73,6 +74,8 @@ RESULT_COLUMNS: tuple[str, ...] = (
     "horizon_months",
     "predicted_probability",
     "climatology_probability",
+    "model_sample_climatology_probability",
+    "condition_chain_probability",
     "realised_outcome",
     "composition",
     "effective_sample_size",
@@ -89,6 +92,42 @@ class BacktestError(RuntimeError):
     """The walk-forward run could not be completed."""
 
 
+class ConditionChainCadence(str, Enum):
+    """When the reference chain's two rates are re-learned (delegated decision P1-11).
+
+    ``EVERY_FORECAST_DATE`` is rule 0007's R2 and what the column holds: each
+    forecast date counts every condition-month published by that date. ``REFIT``
+    learns them only at the model's annual refits, from exactly the months the
+    per-regime rates use, so it is the model's own estimator at one regime. It
+    exists for two pre-registered checks and is computed on demand, never stored.
+    A function argument, not a setting: a setting would change the configuration
+    hash and with it every cached fit's key.
+    """
+
+    EVERY_FORECAST_DATE = "every forecast date"
+    REFIT = "refit"
+
+
+def condition_chain_rates(
+    indicator: BinaryIndicator,
+    published_condition: pd.Series,
+    sample_starts: pd.Timestamp,
+    shrinkage_strength: float,
+) -> ConditionalRates:
+    """The chain's two rates: plain counts over published months inside the sample.
+
+    With every month in one state, shrinking toward the pooled rate changes nothing,
+    because the pooled rate is the only rate there is.
+    """
+    in_sample = published_condition[published_condition.index >= sample_starts]
+    return indicator_forecast.estimate_conditional_rates(
+        indicator,
+        in_sample.to_numpy(dtype="float64"),
+        np.ones((len(in_sample), 1)),
+        shrinkage_strength=shrinkage_strength,
+    )
+
+
 @dataclass(frozen=True)
 class FittedRegimeModel:
     """A model fitted at one refit date, with the rates learned alongside it."""
@@ -97,6 +136,59 @@ class FittedRegimeModel:
     model: GaussianHiddenMarkovModel
     rates_by_indicator: dict[str, ConditionalRates]
     months_fitted_on: int
+    condition_chain_rates_by_indicator: dict[str, ConditionalRates]
+    """The same months with no regimes at all: one pooled entry hazard and one
+    pooled persistence per indicator. The reference chain at refit cadence."""
+
+
+@dataclass(frozen=True)
+class ResolvedOutcomeTotals:
+    """Running totals of one indicator's outcomes at one horizon, and when each was
+    published, so the average over any window of forecast dates is two lookups.
+
+    The outcomes are in forecast-date order. ``published`` is the date the value
+    deciding each one appeared, by the same rule the expanding climatology counts
+    by, so an average read off these totals counts exactly what that one would.
+    """
+
+    forecast_dates: pd.DatetimeIndex
+    published: pd.DatetimeIndex
+    cumulative_outcomes: np.ndarray
+    """Running sum of outcomes, a missing outcome adding nothing."""
+    cumulative_resolved: np.ndarray
+    """Running count of outcomes that are not missing."""
+
+    @classmethod
+    def from_outcomes(
+        cls, outcomes: pd.Series, published: pd.DatetimeIndex
+    ) -> ResolvedOutcomeTotals:
+        values = outcomes.to_numpy(dtype="float64")
+        resolved = np.isfinite(values)
+        return cls(
+            forecast_dates=pd.DatetimeIndex(outcomes.index),
+            published=published,
+            cumulative_outcomes=np.cumsum(np.where(resolved, values, 0.0)),
+            cumulative_resolved=np.cumsum(resolved.astype("int64")),
+        )
+
+    def average_published_by(self, as_of: pd.Timestamp, sample_starts: pd.Timestamp) -> float:
+        """Mean of every outcome published by ``as_of`` whose forecast month is on or
+        after ``sample_starts``. Missing when there is none.
+
+        Published outcomes are a prefix of the forecast dates, the same assumption
+        ``_expanding_climatology`` rests on, so the window is a contiguous slice.
+        """
+        published_count = int(self.published.searchsorted(as_of, side="right"))
+        first = int(self.forecast_dates.searchsorted(sample_starts, side="left"))
+        if published_count <= first:
+            return float("nan")
+
+        def total(cumulative: np.ndarray) -> float:
+            before = cumulative[first - 1] if first > 0 else 0
+            return float(cumulative[published_count - 1] - before)
+
+        count = total(self.cumulative_resolved)
+        return total(self.cumulative_outcomes) / count if count > 0 else float("nan")
 
 
 @dataclass(frozen=True)
@@ -116,6 +208,8 @@ class IndicatorHistory:
     publication_lag_days: int
     dated_by_announcement: bool = False
     """True where a constant lag cannot say when a value was knowable: see D14."""
+    outcome_totals_by_horizon: dict[int, ResolvedOutcomeTotals] = field(default_factory=dict)
+    """What the model-sample climatology averages; see ``ResolvedOutcomeTotals``."""
 
 
 def prepare_indicator_history(
@@ -163,11 +257,16 @@ def prepare_indicator_history(
 
         outcomes: dict[int, pd.Series] = {}
         climatology: dict[int, pd.Series] = {}
+        totals: dict[int, ResolvedOutcomeTotals] = {}
         for horizon in horizons_in_months:
             resolved = indicator_outcomes.resolve(indicator, source, horizon).outcomes
             outcomes[horizon] = resolved
             climatology[horizon] = _expanding_climatology(
                 resolved, horizon, lag, dated_by_announcement
+            )
+            totals[horizon] = ResolvedOutcomeTotals.from_outcomes(
+                resolved,
+                outcome_publication_dates(resolved, horizon, lag, dated_by_announcement),
             )
 
         histories[indicator.name] = IndicatorHistory(
@@ -177,6 +276,7 @@ def prepare_indicator_history(
             climatology_by_horizon=climatology,
             publication_lag_days=lag,
             dated_by_announcement=dated_by_announcement,
+            outcome_totals_by_horizon=totals,
         )
     return histories
 
@@ -223,6 +323,24 @@ def publication_dates(
     )
 
 
+def outcome_publication_dates(
+    outcomes: pd.Series,
+    horizon_in_months: int,
+    publication_lag_days: int,
+    dated_by_announcement: bool = False,
+) -> pd.DatetimeIndex:
+    """When the value deciding each outcome was published.
+
+    The outcome of a forecast made in month s at horizon h rests on observations up
+    to the one labelled s + h months, published by the one rule the walk-forward
+    applies to final data.
+    """
+    deciding_labels = pd.DatetimeIndex(outcomes.index) + pd.DateOffset(months=horizon_in_months)
+    return publication_dates(
+        deciding_labels, publication_lag_days, dated_by_announcement=dated_by_announcement
+    )
+
+
 def _expanding_climatology(
     outcomes: pd.Series,
     horizon_in_months: int,
@@ -243,9 +361,8 @@ def _expanding_climatology(
     look-ahead audit found it; ADR 0009 records the fix and what it moved.
     """
     running_mean = outcomes.expanding(min_periods=1).mean().to_numpy(dtype="float64")
-    deciding_labels = pd.DatetimeIndex(outcomes.index) + pd.DateOffset(months=horizon_in_months)
-    published = publication_dates(
-        deciding_labels, publication_lag_days, dated_by_announcement=dated_by_announcement
+    published = outcome_publication_dates(
+        outcomes, horizon_in_months, publication_lag_days, dated_by_announcement
     )
     # How many forecast dates' outcomes had been published by each date. Both
     # indexes ascend, so one binary search answers it for every date at once, and
@@ -335,6 +452,7 @@ def fit_regime_model(
     filtered_series = pd.DataFrame(filtered, index=matrix.dates)
 
     rates: dict[str, ConditionalRates] = {}
+    chain_rates: dict[str, ConditionalRates] = {}
     for name, history in histories.items():
         condition = condition_available_at(history, as_of)
         aligned_condition, aligned_states = condition.align(filtered_series, join="inner", axis=0)
@@ -350,12 +468,22 @@ def fit_regime_model(
             aligned_states.to_numpy(dtype="float64"),
             shrinkage_strength=settings.conditional_rate_shrinkage_strength,
         )
+        # The chain at refit cadence: exactly the months the regime rates learn
+        # from, every one in the single state -- the model's own estimator at one
+        # regime. Used only when a caller asks for ConditionChainCadence.REFIT.
+        chain_rates[name] = condition_chain_rates(
+            history.indicator,
+            aligned_condition,
+            pd.Timestamp(matrix.dates[0]),
+            settings.conditional_rate_shrinkage_strength,
+        )
 
     return FittedRegimeModel(
         refit_date=as_of,
         model=model,
         rates_by_indicator=rates,
         months_fitted_on=len(matrix),
+        condition_chain_rates_by_indicator=chain_rates,
     )
 
 
@@ -369,8 +497,22 @@ def run_walk_forward(
     refit_dates: pd.DatetimeIndex,
     artifacts: ArtifactStore | None = None,
     progress_every: int = 60,
+    horizons_in_months: Sequence[int] | None = None,
+    condition_chain_cadence: ConditionChainCadence = ConditionChainCadence.EVERY_FORECAST_DATE,
 ) -> pd.DataFrame:
-    """Run the whole method through history and return one tidy results frame."""
+    """Run the whole method through history and return one tidy results frame.
+
+    ``horizons_in_months`` replaces the configured horizons for this call only, and
+    is how `forecast skill-by-horizon` asks for every month from one to 120. It is
+    an argument rather than a setting on purpose: the horizons are part of the
+    configuration hash, which keys the cached fits, and the fits do not depend on
+    the horizons at all. A setting would refit every model to answer a question
+    about the same models. Rows keep the configured run's hash, because they are
+    that run's forecasts, read at more horizons.
+
+    ``condition_chain_cadence`` says when the reference chain's rates are learned;
+    the default is rule 0007's R2. See ``ConditionChainCadence``.
+    """
     # One pre-flight, before anything is fitted, so a schedule that breaks the
     # promise fails in seconds rather than fifteen minutes. This covers every path
     # that produces a results frame, because this is the only function that builds
@@ -380,9 +522,14 @@ def run_walk_forward(
     if settings.start_walk_forward_when_every_input_is_point_in_time:
         assert_every_forecast_date_is_fully_point_in_time(registry, cache, forecast_dates)
 
-    histories = prepare_indicator_history(
-        indicators, registry, cache, settings.forecast_horizons_in_months
+    horizons = (
+        tuple(settings.forecast_horizons_in_months)
+        if horizons_in_months is None
+        else tuple(horizons_in_months)
     )
+    if not horizons or min(horizons) < 1:
+        raise BacktestError(f"horizons must be whole months of at least one; got {horizons}")
+    histories = prepare_indicator_history(indicators, registry, cache, horizons)
     configuration_hash = settings.configuration_hash()
     refit_set = {stamp.date() for stamp in refit_dates}
 
@@ -403,6 +550,9 @@ def run_walk_forward(
             assemble_point_in_time_panel(registry, forecast_date, cache), registry
         )
         filtered_distribution = fitted.model.filtered_state_probabilities(matrix.values)[-1]
+        # Rule 0007's benchmark averages only outcomes inside the model's own sample,
+        # which begins wherever this date's observation matrix begins.
+        model_sample_starts = pd.Timestamp(matrix.dates[0])
         regime_distribution = ",".join(f"{value:.6f}" for value in filtered_distribution)
 
         for indicator in indicators:
@@ -411,8 +561,36 @@ def run_walk_forward(
             condition_holds_now = (
                 bool(condition_now.iloc[-1] > 0.5) if not condition_now.empty else False
             )
+            if condition_now.empty:
+                raise BacktestError(
+                    f"indicator {indicator.name!r} has no published condition as of "
+                    f"{forecast_date.isoformat()}, so the reference chain has nowhere to start. "
+                    "Its rates were learned at the refit, so this should be impossible; check "
+                    "the publication dating."
+                )
+            chain_rates = (
+                fitted.condition_chain_rates_by_indicator[indicator.name]
+                if condition_chain_cadence is ConditionChainCadence.REFIT
+                else condition_chain_rates(
+                    indicator,
+                    condition_now,
+                    model_sample_starts,
+                    settings.conditional_rate_shrinkage_strength,
+                )
+            )
+            chain_by_horizon = (
+                indicator_forecast.compose_through_the_condition_chain_at_every_horizon(
+                    indicator_forecast.SINGLE_REGIME_TRANSITION_MATRIX,
+                    indicator_forecast.SINGLE_REGIME_DISTRIBUTION,
+                    chain_rates,
+                    indicator.composition,
+                    max(horizons),
+                    condition_holds_now,
+                    months_between(pd.Timestamp(condition_now.index[-1]), stamp),
+                )
+            )
 
-            for horizon in settings.forecast_horizons_in_months:
+            for horizon in horizons:
                 composed = indicator_forecast.forecast_indicator(
                     indicator,
                     fitted.model,
@@ -430,6 +608,10 @@ def run_walk_forward(
                         "climatology_probability": _lookup(
                             history.climatology_by_horizon[horizon], stamp
                         ),
+                        "model_sample_climatology_probability": history.outcome_totals_by_horizon[
+                            horizon
+                        ].average_published_by(stamp, model_sample_starts),
+                        "condition_chain_probability": float(chain_by_horizon[horizon - 1]),
                         "realised_outcome": _lookup(history.outcomes_by_horizon[horizon], stamp),
                         "composition": indicator.composition.value,
                         "effective_sample_size": composed.effective_sample_size,
@@ -450,6 +632,11 @@ def run_walk_forward(
     return results
 
 
+def months_between(earlier: pd.Timestamp, later: pd.Timestamp) -> int:
+    """Whole calendar months from one month label to another."""
+    return (later.year - earlier.year) * 12 + (later.month - earlier.month)
+
+
 def _lookup(series: pd.Series, stamp: pd.Timestamp) -> float:
     value = series.get(stamp, np.nan)
     return float(value) if pd.notna(value) else float("nan")
@@ -463,14 +650,18 @@ def validate_results(results: pd.DataFrame) -> None:
     if results.empty:
         raise BacktestError("the walk-forward run produced no rows")
 
-    probabilities = results["predicted_probability"].to_numpy(dtype="float64")
-    if not np.isfinite(probabilities).all():
-        raise BacktestError("some predicted probabilities are not finite")
-    if probabilities.min() < 0.0 or probabilities.max() > 1.0:
-        raise BacktestError(
-            f"predicted probabilities range from {probabilities.min()} to {probabilities.max()}, "
-            "outside the unit interval"
-        )
+    for column, label in (
+        ("predicted_probability", "predicted"),
+        ("condition_chain_probability", "reference chain"),
+    ):
+        probabilities = results[column].to_numpy(dtype="float64")
+        if not np.isfinite(probabilities).all():
+            raise BacktestError(f"some {label} probabilities are not finite")
+        if probabilities.min() < 0.0 or probabilities.max() > 1.0:
+            raise BacktestError(
+                f"{label} probabilities range from {probabilities.min()} to "
+                f"{probabilities.max()}, outside the unit interval"
+            )
 
     duplicated = results.duplicated(subset=["indicator", "forecast_date", "horizon_months"])
     if bool(duplicated.any()):

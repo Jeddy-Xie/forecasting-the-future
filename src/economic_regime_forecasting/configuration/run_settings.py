@@ -213,6 +213,10 @@ class ArtifactNames:
     variant_comparison_manifest: str = "variant_comparison_manifest.json"
     look_ahead_audit: str = "look_ahead_audit.json"
     backtest_fallback_record: str = "backtest_fallback_record.json"
+    skill_by_horizon_forecasts: str = "skill_by_horizon_forecasts.parquet"
+    skill_by_horizon: str = "skill_by_horizon.parquet"
+    skill_by_horizon_differences: str = "skill_by_horizon_differences.parquet"
+    skill_by_horizon_summary: str = "skill_by_horizon_summary.json"
 
     def backtest_results_for_variant(self, variant: str) -> str:
         """One cell of the look-ahead comparison, kept apart from the default run."""

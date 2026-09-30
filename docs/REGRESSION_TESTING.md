@@ -118,6 +118,28 @@ draws of dates could not produce an interval of zero width.
 be made and 2 when it could not (a horizon with no shared forecasts, a missing
 forecasts file, a format mismatch). `--format json` emits the whole of it.
 
+### Which benchmark
+
+`--benchmark` picks the climatology the paired comparison scores skill against:
+`series-start`, 0001's as it was frozen, or `model-sample`, rule 0007's R1, which
+counts only outcomes inside the model's own observation matrix. Both sides must
+carry the column; a baseline captured before 2026-09-29 does not, and the
+comparison refuses rather than falling back to the other benchmark. On any
+benchmark but the series-start one, each side's skill is not what its own 0001
+verdict records, so that cross-check is skipped and the output says which
+benchmark it used.
+
+### A run that never wrote its own artifacts
+
+With `--require-own-artifacts`, both comparisons refuse, with exit 2, when the
+cache's artifacts carry a different configuration hash from the one the
+workspace's settings produce. It is a flag rather than the default because a
+comparison may legitimately be read under evaluation settings -- resamples, a
+seed -- that differ from the run's; the research-arm harness always passes it.
+That is the signature of a branch whose gates failed before its backtest wrote
+anything: comparing would put the baseline against whatever run the cache
+inherited, and report zeros that look like a passing control.
+
 ## The format version
 
 Every baseline and every run summary records an integer `format_version`,
