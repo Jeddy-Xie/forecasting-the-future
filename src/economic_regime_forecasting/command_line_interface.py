@@ -673,6 +673,7 @@ def verify_submission(workspace: Workspace, today: date) -> int:
     forecasts_file = SUBMISSION_DIRECTORY / "forecasts.csv"
     manifest_file = SUBMISSION_DIRECTORY / "manifest.json"
     committed: str | None = None
+    recorded: dict[str, Any] = {}
     if forecasts_file.exists() and manifest_file.exists():
         try:
             recorded = json.loads(manifest_file.read_text(encoding="utf-8"))
@@ -685,6 +686,13 @@ def verify_submission(workspace: Workspace, today: date) -> int:
     print(f"  this run's settings     : {live}")
     print(f"  produced the artifacts  : {producing}   ({ARTIFACTS.backtest_results})")
     print(f"  committed submission    : {committed if committed else 'absent or unreadable'}")
+    governing = str(recorded.get("governing_rule", "0001"))
+    print(f"  governing rule          : {governing}")
+    disagreements = _verdicts_disagreeing_with_the_manifest(
+        workspace, recorded, producing, committed
+    )
+    for line in disagreements:
+        print(f"  {line}")
 
     if committed is None:
         print(
@@ -700,6 +708,12 @@ def verify_submission(workspace: Workspace, today: date) -> int:
             "drifted apart. Fix one to match the other, in a commit that says which and why."
         )
         return 1
+    if disagreements:
+        print(
+            "\nThe committed manifest's verdicts differ from what this run computes, on the "
+            "configuration that produced both. The shipped record and the run have drifted apart."
+        )
+        return 1
     if live != approved or producing != approved:
         print(
             "\nThis run differs from the shipped record, which is expected: the pipeline "
@@ -713,8 +727,175 @@ def verify_submission(workspace: Workspace, today: date) -> int:
     return 0
 
 
-def submit(workspace: Workspace, today: date, destination: Path | None = None) -> int:
+SUBMISSION_RULES: tuple[str, ...] = ("0001", "0007")
+"""The rules a submission can be shipped under. 0001 is frozen; 0007 has governed
+every re-ship since 2026-09-29 (delegated decision P2-2)."""
+
+BLEND_SOURCE = "blend of regime model and condition chain"
+MODEL_SOURCE = "regime model"
+MODEL_SAMPLE_BASE_RATE_SOURCE = "base rate (model-sample climatology, R1)"
+
+
+class SubmissionStructureError(RuntimeError):
+    """Today's fitted model is not the structure the backtest chose and scored."""
+
+
+def _require_todays_structure_is_the_backtested_one(workspace: Workspace) -> None:
+    """Refuse to ship a model whose regime structure the backtest never scored.
+
+    The backtest chooses its state count once, on the burn-in window; today's
+    forecast is issued by the model `fit-regimes` chose on today's panel. When the
+    two disagree -- experiment 0008's arm B2 backtested three by three and would
+    have shipped four by four -- the verdict describes a model other than the one
+    shipping. Delegated decision P2-10(1).
+    """
+    selected = regime_model_from_dictionary(workspace.artifacts.read_json(ARTIFACTS.selected_model))
+    burn_in = workspace.artifacts.read_json(ARTIFACTS.burn_in_state_count_choice)
+    today_count = selected.state_count
+    today_shape = (
+        (today_count.growth_chain_state_count, today_count.levels_chain_state_count)
+        if isinstance(today_count, TwoChainStateCount)
+        else (int(today_count),)
+    )
+    recorded: dict[str, Any] = dict(burn_in)
+    backtested_shape = (
+        (int(recorded["growth_chain_state_count"]), int(recorded["levels_chain_state_count"]))
+        if "growth_chain_state_count" in recorded
+        else (int(recorded["state_count"]),)
+    )
+    if today_shape != backtested_shape:
+        raise SubmissionStructureError(
+            f"today's fitted model has {' x '.join(map(str, today_shape))} regimes, but the "
+            f"backtest chose and scored {' x '.join(map(str, backtested_shape))} on its burn-in "
+            "window. The verdicts describe a model other than the one that would ship. Refusing; "
+            "find out why the full-sample sweep and the burn-in sweep disagree before shipping."
+        )
+
+
+def _latest_by_indicator_and_horizon(results: pd.DataFrame, column: str) -> pd.Series:
+    """Each indicator's and horizon's last non-missing value of a benchmark column."""
+    return (
+        results.sort_values("forecast_date")
+        .groupby(["indicator", "horizon_months"])[column]
+        .apply(lambda values: values.dropna().iloc[-1] if values.notna().any() else np.nan)
+    )
+
+
+def _submit_under_the_successor_rule(
+    workspace: Workspace, today: date, destination: Path
+) -> tuple[pd.DataFrame, dict[str, object]]:
+    """The grid rule 0007 ships, with every number it was made from beside it.
+
+    Per horizon, 0007's verdict decides: SHIP MODEL issues the method's probability
+    (the blend of the regime model and the condition chain, when blending); SHIP
+    BASE RATE issues R1, the model-sample climatology. The columns name each part
+    so that nothing is labelled as something it is not.
+    """
+    forecasts = workspace.artifacts.read_table(ARTIFACTS.current_forecasts)
+    verdicts_0001 = workspace.artifacts.read_table(ARTIFACTS.verdicts)
+    verdicts_0007 = workspace.artifacts.read_table(ARTIFACTS.successor_verdicts)
+    results = _read_backtest_results_or_say_what_to_run(workspace)
+    by_0001 = dict(zip(verdicts_0001["horizon_months"], verdicts_0001["verdict"], strict=True))
+    by_0007 = dict(zip(verdicts_0007["horizon_months"], verdicts_0007["verdict"], strict=True))
+    model_sample = _latest_by_indicator_and_horizon(results, "model_sample_climatology_probability")
+    series_start = _latest_by_indicator_and_horizon(results, "climatology_probability")
+    blending = "condition_chain_probability" in forecasts.columns
+
+    rows = []
+    for record in forecasts.to_dict("records"):
+        horizon = int(record["horizon_months"])
+        key = (record["indicator"], horizon)
+        method = float(record["probability"])
+        verdict_0007 = str(by_0007.get(horizon, verdict_module.SHIP_BASE_RATE))
+        base_rate = float(model_sample.get(key, np.nan))
+        ships_method = verdict_0007 == verdict_module.SHIP_MODEL
+        rows.append(
+            {
+                "indicator": record["indicator"],
+                "question": record["question"],
+                "horizon_years": horizon // 12,
+                "probability": round(method if ships_method else base_rate, 4),
+                "source": (
+                    (BLEND_SOURCE if blending else MODEL_SOURCE)
+                    if ships_method
+                    else MODEL_SAMPLE_BASE_RATE_SOURCE
+                ),
+                "blend_probability": round(method, 4) if blending else np.nan,
+                "regime_model_probability": round(
+                    float(record["model_probability"]) if blending else method, 4
+                ),
+                "condition_chain_probability": (
+                    round(float(record["condition_chain_probability"]), 4) if blending else np.nan
+                ),
+                "model_sample_base_rate": round(base_rate, 4),
+                "climatological_base_rate": round(float(series_start.get(key, np.nan)), 4),
+                "verdict_0001": str(by_0001.get(horizon, verdict_module.SHIP_BASE_RATE)),
+                "verdict_0007": verdict_0007,
+                "composition": record["composition"],
+                "effective_sample_size": round(float(record["effective_sample_size"]), 1),
+                "distance_to_stationary": round(float(record["distance_to_stationary"]), 4),
+            }
+        )
+    extra: dict[str, object] = {
+        "governing_rule": "0007",
+        "verdict_by_horizon": {f"{int(h) // 12}_year": v for h, v in sorted(by_0007.items())},
+        "verdict_by_horizon_0001": {f"{int(h) // 12}_year": v for h, v in sorted(by_0001.items())},
+        "verdict_by_horizon_0007": {f"{int(h) // 12}_year": v for h, v in sorted(by_0007.items())},
+        "base_rate_definition": (
+            "R1: expanding publication-aware climatology over the model's own sample"
+        ),
+        "successor_rule": "proving/experiments/0007-successor-evaluation-rule/experiment.json",
+    }
+    return pd.DataFrame(rows).sort_values(["indicator", "horizon_years"]), extra
+
+
+def _verdicts_disagreeing_with_the_manifest(
+    workspace: Workspace, recorded: dict[str, Any], producing: str, committed: str | None
+) -> list[str]:
+    """Print both rules' verdicts; return the lines where the manifest disagrees.
+
+    Only compared when the artifacts were produced by the committed configuration:
+    otherwise the run and the record legitimately describe different models.
+    """
+    lines: list[str] = []
+    by_rule = {
+        "0001": (ARTIFACTS.verdicts, "verdict_by_horizon_0001"),
+        "0007": (ARTIFACTS.successor_verdicts, "verdict_by_horizon_0007"),
+    }
+    for rule_name, (artifact, manifest_key) in by_rule.items():
+        if not workspace.artifacts.has(artifact):
+            continue
+        table = workspace.artifacts.read_table(artifact)
+        computed = {
+            f"{int(record['horizon_months']) // 12}_year": str(record["verdict"])
+            for record in table.to_dict("records")
+        }
+        print(
+            f"  verdicts under {rule_name}     : "
+            + ", ".join(f"{key} {value}" for key, value in sorted(computed.items()))
+        )
+        written = recorded.get(manifest_key)
+        if written is None and rule_name == "0001" and "governing_rule" not in recorded:
+            written = recorded.get("verdict_by_horizon")
+        if written is not None and committed == producing and written != computed:
+            lines.append(
+                f"{rule_name}: the manifest records {written}, this run computes {computed}"
+            )
+    return lines
+
+
+def submit(
+    workspace: Workspace,
+    today: date,
+    destination: Path | None = None,
+    rule: str = "0001",
+) -> int:
     """Write the final grid, shipping the base rate where a gate failed.
+
+    ``rule`` names the decision rule the grid is shipped under. The function's
+    default stays 0001, the path every earlier submission took, so its behaviour
+    is pinned by the tests that already describe it; the command line's default is
+    0007, which has governed re-ships since 2026-09-29 (delegated decision P2-2).
 
     ``destination`` other than the repository's own ``submission/`` writes the same
     grid and manifest somewhere nothing is shipped from, and so needs no
@@ -723,11 +904,17 @@ def submit(workspace: Workspace, today: date, destination: Path | None = None) -
     at call time, so the module's ``SUBMISSION_DIRECTORY`` is read when it is used.
     """
     destination = SUBMISSION_DIRECTORY if destination is None else destination
+    if rule not in SUBMISSION_RULES:
+        raise ValueError(f"no rule {rule!r}; choose one of {SUBMISSION_RULES}")
     settings = workspace.settings
     forecasts = workspace.artifacts.read_table(ARTIFACTS.current_forecasts)
     verdicts = workspace.artifacts.read_table(ARTIFACTS.verdicts)
     results = _read_backtest_results_or_say_what_to_run(workspace)
     model = regime_model_from_dictionary(workspace.artifacts.read_json(ARTIFACTS.selected_model))
+    if rule == "0007":
+        # Before any authorisation is consumed: a refused structure must not spend a
+        # single-use token. Only under 0007, whose path is new; 0001's is unchanged.
+        _require_todays_structure_is_the_backtested_one(workspace)
 
     # Before anything is written. `authorise_shipping` returns None when there is
     # nothing to authorise -- a destination that is not the repository's own
@@ -740,6 +927,29 @@ def submit(workspace: Workspace, today: date, destination: Path | None = None) -
         producing_configuration_hash=_hash_that_produced_the_artifacts(results),
     )
 
+    if rule == "0007":
+        submission, rule_fields = _submit_under_the_successor_rule(workspace, today, destination)
+    else:
+        submission, rule_fields = _submission_under_0001(forecasts, verdicts, results), {}
+    destination.mkdir(parents=True, exist_ok=True)
+    submission.to_csv(destination / "forecasts.csv", index=False)
+    _write_manifest(workspace, today, destination, model, verdicts, authorisation, rule_fields)
+    printed = submission[["indicator", "horizon_years", "probability", "source"]]
+    print(printed.to_string(index=False))
+    if authorisation is not None:
+        print(
+            f"\nshipped under authorisation by {authorisation.by} "
+            f"({authorisation.minted_at}): {authorisation.reason}"
+        )
+    print(f"\nwritten to {_display_path(destination)}/ under rule {rule}")
+    return 0
+
+
+def _submission_under_0001(
+    forecasts: pd.DataFrame, verdicts: pd.DataFrame, results: pd.DataFrame
+) -> pd.DataFrame:
+    """The grid as 0001 ships it: every submission until 2026-09-29 came from here,
+    and it is unchanged byte for byte."""
     ships_model = dict(zip(verdicts["horizon_months"], verdicts["verdict"], strict=True))
     latest_climatology = (
         results.sort_values("forecast_date")
@@ -769,10 +979,19 @@ def submit(workspace: Workspace, today: date, destination: Path | None = None) -
             }
         )
 
-    submission = pd.DataFrame(rows).sort_values(["indicator", "horizon_years"])
-    destination.mkdir(parents=True, exist_ok=True)
-    submission.to_csv(destination / "forecasts.csv", index=False)
+    return pd.DataFrame(rows).sort_values(["indicator", "horizon_years"])
 
+
+def _write_manifest(
+    workspace: Workspace,
+    today: date,
+    destination: Path,
+    model: Any,
+    verdicts: pd.DataFrame,
+    authorisation: shipping_approval.ShippingAuthorisation | None,
+    rule_fields: dict[str, object],
+) -> None:
+    settings = workspace.settings
     manifest = {
         "generated_on": today.isoformat(),
         "package_version": __version__,
@@ -807,20 +1026,11 @@ def submit(workspace: Workspace, today: date, destination: Path | None = None) -
         # Present only when a token let an unapproved run through, so a manifest
         # produced by the approved configuration keeps exactly today's schema.
         manifest["shipped_under_authorisation"] = authorisation.as_manifest_entry()
+    # Under 0001 there are no rule fields, so a 0001 manifest keeps its schema.
+    manifest.update(rule_fields)
     (destination / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-
-    print(
-        submission[["indicator", "horizon_years", "probability", "source"]].to_string(index=False)
-    )
-    if authorisation is not None:
-        print(
-            f"\nshipped under authorisation by {authorisation.by} "
-            f"({authorisation.minted_at}): {authorisation.reason}"
-        )
-    print(f"\nwritten to {_display_path(destination)}/")
-    return 0
 
 
 VARIANTS: tuple[tuple[str, bool, bool], ...] = (
@@ -1506,6 +1716,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     submit_parser.add_argument(
+        "--rule",
+        choices=SUBMISSION_RULES,
+        default="0007",
+        help=(
+            "the decision rule the grid is shipped under (default: 0007, which has governed "
+            "re-ships since 2026-09-29; 0001 reproduces every earlier submission's path)"
+        ),
+    )
+    submit_parser.add_argument(
         "--destination",
         type=Path,
         default=None,
@@ -1636,6 +1855,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="register the grid and manifest in this directory (default: submission/)",
     )
     register_parser.add_argument(
+        "--companion",
+        choices=sorted(COMPANIONS),
+        default=None,
+        help=(
+            "register a reference forecaster's grid beside the shipped one, from this "
+            "workspace's artifacts: the condition chain R2 or the model-sample climatology R1"
+        ),
+    )
+    register_parser.add_argument(
         "--check",
         action="store_true",
         help=(
@@ -1689,6 +1917,74 @@ def register_forecasts(workspace: Workspace, today: date, source: Path | None = 
         upcoming = sorted({entry.resolves_on for entry in entries})
         print(f"{len(entries)} total in {_display_path(forecast_register.REGISTER_FILE)}")
         print(f"next resolves {upcoming[0]}, last {upcoming[-1]}")
+    return 0
+
+
+COMPANIONS: dict[str, tuple[str, str]] = {
+    "condition-chain": ("condition_chain", "condition chain (R2)"),
+    "model-sample-climatology": ("model_sample_climatology", "model-sample climatology (R1)"),
+}
+"""The reference forecasters registered forward beside the shipped method (delegated
+decision P2-6): the register's ``forecaster`` field and ``source`` for each."""
+
+
+def register_companion(workspace: Workspace, today: date, companion: str) -> int:
+    """Record a reference forecaster's grid as dated claims beside the shipped one.
+
+    The condition chain's probabilities come from today's grid, which carries them
+    beside the blend; the model-sample climatology is each indicator's and
+    horizon's latest value from the backtest, as the base rate is. Both carry the
+    producing run's configuration hash and the same data date as the shipped grid.
+    """
+    forecaster, source = COMPANIONS[companion]
+    forecasts = workspace.artifacts.read_table(ARTIFACTS.current_forecasts)
+    results = _read_backtest_results_or_say_what_to_run(workspace)
+    producing = _hash_that_produced_the_artifacts(results)
+    if producing != workspace.settings.configuration_hash():
+        print(
+            f"register: the artifacts were written by {producing}, not by this workspace's "
+            f"settings ({workspace.settings.configuration_hash()}); run `forecast check-gates` "
+            "first",
+            file=sys.stderr,
+        )
+        return 2
+    model_sample = _latest_by_indicator_and_horizon(results, "model_sample_climatology_probability")
+    if companion == "condition-chain" and "condition_chain_probability" not in forecasts:
+        print(
+            "register: today's grid carries no condition-chain probabilities; they are written "
+            "when the default blends with the chain",
+            file=sys.stderr,
+        )
+        return 2
+    data_as_of = workspace.observation_matrix_as_of(today).dates[-1].date()
+    rows = []
+    for record in forecasts.to_dict("records"):
+        horizon = int(record["horizon_months"])
+        base_rate = float(model_sample.get((record["indicator"], horizon), np.nan))
+        probability = (
+            float(record["condition_chain_probability"])
+            if companion == "condition-chain"
+            else base_rate
+        )
+        rows.append(
+            forecast_register.RegisteredForecast(
+                indicator=str(record["indicator"]),
+                question=str(record["question"]),
+                horizon_years=horizon // 12,
+                probability=round(probability, 4),
+                source=source,
+                model_probability=round(probability, 4),
+                climatological_base_rate=round(base_rate, 4),
+                data_as_of=data_as_of.isoformat(),
+                made_on=today.isoformat(),
+                resolves_on=forecast_register.resolution_date_for(data_as_of, horizon // 12),
+                configuration_hash=producing,
+                package_version=__version__,
+                forecaster=forecaster,
+            )
+        )
+    written, skipped = forecast_register.register_forecasts(rows)
+    print(f"registered {written} {source} forecast(s); {skipped} already on record")
     return 0
 
 
@@ -1770,7 +2066,10 @@ def main(argv: list[str] | None = None) -> int:
         if arguments.verify_only:
             return verify_submission(workspace, today)
         try:
-            return submit(workspace, today, arguments.destination)
+            return submit(workspace, today, arguments.destination, arguments.rule)
+        except SubmissionStructureError as error:
+            print(f"submit: {error}", file=sys.stderr)
+            return 2
         except shipping_approval.SubmissionNotApprovedError as error:
             # A traceback is not a message. An exit code of 2 with that text is,
             # matching how `register_forecasts` prints a `RegisterError`.
@@ -1789,6 +2088,8 @@ def main(argv: list[str] | None = None) -> int:
             warning = forecast_register.staleness_warning(today)
             print(warning if warning else "the forecast register is current")
             return 1 if warning else 0
+        if arguments.companion is not None:
+            return register_companion(workspace, today, arguments.companion)
         return register_forecasts(workspace, today, arguments.source_directory)
     if arguments.command == "resolve":
         return resolve_forecasts(workspace, today)

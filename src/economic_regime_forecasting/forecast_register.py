@@ -111,11 +111,26 @@ class RegisteredForecast:
     resolves_on: str
     configuration_hash: str
     package_version: str
+    forecaster: str | None = None
+    """Whose claim this is, when one run registers several: the shipped method, or a
+    reference forecaster registered beside it (the condition chain R2, the
+    model-sample climatology R1). Absent on lines written before 2026-09-29, which
+    read as their ``source`` (delegated decision P2-6)."""
 
     @property
-    def key(self) -> tuple[str, int, str, str]:
-        """Identity of a claim: this indicator, this horizon, this run."""
-        return (self.indicator, self.horizon_years, self.data_as_of, self.configuration_hash)
+    def claimant(self) -> str:
+        return self.forecaster or self.source
+
+    @property
+    def key(self) -> tuple[str, int, str, str, str]:
+        """Identity of a claim: this indicator, this horizon, this run, this forecaster."""
+        return (
+            self.indicator,
+            self.horizon_years,
+            self.data_as_of,
+            self.configuration_hash,
+            self.claimant,
+        )
 
     @property
     def resolution_date(self) -> date:
@@ -132,6 +147,11 @@ def _add_years(start: date, years: int) -> date:
         return start.replace(year=start.year + years)
     except ValueError:
         return start.replace(year=start.year + years, day=28)
+
+
+def resolution_date_for(data_as_of: date, horizon_years: int) -> str:
+    """When a claim made on data as of ``data_as_of`` comes due."""
+    return _add_years(data_as_of, horizon_years).isoformat()
 
 
 def read_register(path: Path = REGISTER_FILE) -> list[RegisteredForecast]:
@@ -198,23 +218,63 @@ def forecasts_from_submission(
 
     data_as_of = date.fromisoformat(str(manifest["data_as_of"]))
     table = pd.read_csv(submission_csv)
+    under_the_successor_rule = manifest.get("governing_rule") == "0007"
 
     for record in table.to_dict("records"):
         horizon_years = int(record["horizon_years"])
+        forecaster: str | None = None
+        if under_the_successor_rule:
+            # Rule 0007's grid names its parts. The method's number is the blend when
+            # the run blends, the regime model's otherwise, and the benchmark a claim
+            # is scored against is R1, the base rate 0007 ships.
+            blending = pd.notna(record["blend_probability"])
+            method = float(
+                record["blend_probability"] if blending else record["regime_model_probability"]
+            )
+            base_rate = float(record["model_sample_base_rate"])
+            forecaster = "blend of regime model and condition chain" if blending else "regime model"
+        else:
+            method = float(record["model_probability"])
+            base_rate = float(record["climatological_base_rate"])
         yield RegisteredForecast(
             indicator=str(record["indicator"]),
             question=str(record["question"]),
             horizon_years=horizon_years,
             probability=float(record["probability"]),
             source=str(record["source"]),
-            model_probability=float(record["model_probability"]),
-            climatological_base_rate=float(record["climatological_base_rate"]),
+            model_probability=method,
+            climatological_base_rate=base_rate,
             data_as_of=data_as_of.isoformat(),
             made_on=made_on.isoformat(),
             resolves_on=_add_years(data_as_of, horizon_years).isoformat(),
             configuration_hash=str(manifest["configuration_hash"]),
             package_version=str(manifest["package_version"]),
+            forecaster=forecaster,
         )
+
+
+def register_forecasts(
+    forecasts: Iterable[RegisteredForecast], register_file: Path = REGISTER_FILE
+) -> tuple[int, int]:
+    """Append every forecast not already recorded. Returns (written, skipped)."""
+    existing = {entry.key for entry in read_register(register_file)}
+    written, skipped = [], 0
+    for forecast in forecasts:
+        if forecast.key in existing:
+            skipped += 1
+            continue
+        existing.add(forecast.key)
+        written.append(_as_line(forecast))
+    return _append(register_file, written), skipped
+
+
+def _as_line(forecast: RegisteredForecast) -> dict[str, object]:
+    """One register line. ``forecaster`` is written only when set, so a line for a
+    claim that needs no name reads exactly as lines always have."""
+    line = asdict(forecast)
+    if line["forecaster"] is None:
+        del line["forecaster"]
+    return line
 
 
 def register(
@@ -231,15 +291,9 @@ def register(
     is a new claim and is appended alongside the old one — the record keeps both,
     because which one you believed at the time is exactly what is being tested.
     """
-    existing = {entry.key for entry in read_register(register_file)}
-    written, skipped = [], 0
-    for forecast in forecasts_from_submission(submission_csv, manifest_json, made_on):
-        if forecast.key in existing:
-            skipped += 1
-            continue
-        existing.add(forecast.key)
-        written.append(asdict(forecast))
-    return _append(register_file, written), skipped
+    return register_forecasts(
+        forecasts_from_submission(submission_csv, manifest_json, made_on), register_file
+    )
 
 
 def days_since_last_round(today: date, path: Path = REGISTER_FILE) -> int | None:
@@ -292,7 +346,13 @@ def resolve(
     """
     entries = read_register(register_file)
     already = {
-        (r["indicator"], r["horizon_years"], r["data_as_of"], r["configuration_hash"])
+        (
+            r["indicator"],
+            r["horizon_years"],
+            r["data_as_of"],
+            r["configuration_hash"],
+            r.get("forecaster") or r["source"],
+        )
         for r in read_resolutions(resolutions_file)
     }
     _series_registry, indicators = load_registries()
@@ -333,6 +393,7 @@ def resolve(
                 "probability": entry.probability,
                 "climatological_base_rate": entry.climatological_base_rate,
                 "source": entry.source,
+                "forecaster": entry.claimant,
                 "brier": round((entry.probability - realised) ** 2, 6),
                 "brier_climatology": round((entry.climatological_base_rate - realised) ** 2, 6),
             }

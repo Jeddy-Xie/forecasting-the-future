@@ -128,9 +128,28 @@ write records `shipped_under_authorisation` (reason, who, when) in the manifest.
 
 ### The monthly forward round
 
-`forecasts/README.md` describes it. The flags it uses: `forecast submit --destination DIR`
-writes a grid somewhere nothing ships from, `forecast register --from DIR` records one,
-and `forecast register --check` exits 1 when no round has been made for 45 days.
+`forecasts/README.md` describes it. The flags it uses:
+- `forecast submit --destination DIR` writes a grid somewhere nothing ships from;
+- `forecast register --from DIR` records one;
+- `forecast register --companion condition-chain` and `--companion model-sample-climatology`
+  record the reference forecasters R2 and R1 beside the shipped grid, from the current run's
+  artifacts;
+- `forecast register --check` exits 1 when no round has been made for 45 days.
+
+### Which rule a submission ships under
+
+`forecast submit` ships under rule 0007 by default:
+- per horizon, 0007's verdict decides between the method's probability and R1;
+- the grid names every number beside the shipped one, including the blend, the regime model, the
+  chain, both base rates and both rules' verdicts;
+- the manifest records `governing_rule`.
+
+`--rule 0001` takes the path every submission before 2026-09-29 took. On the artifacts that
+produced the 2026-09-29 submission it reproduces that file byte for byte
+(`research/derivations/golden_submit_under_rule_0001.py`).
+
+Under 0007, `submit` refuses, with exit 2 and before any authorisation is consumed, when today's
+fitted regime structure differs from the one the backtest chose and scored.
 
 ### One-off analyses
 
