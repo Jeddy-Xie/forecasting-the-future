@@ -142,3 +142,18 @@ The delegated adjudication of the stress test (claude-fable-5-1, delegated by Je
 **adopted, provisionally**, classified FACTUAL. The falsifier's forward rule is applied at 2027-07-01,
 2028-07-01 and 2029-07-01 to two chains against one, both now registered forward.
 
+## Correction, 2026-09-29: the matched-cell evidence pointed the wrong way
+
+The bullet above saying "the confound now has evidence, and it points away from the two-clocks story" is
+wrong. It is left standing, and corrected here.
+
+- **What was wrong.** Its "0.0225 nats per month WORSE" set a full-sample likelihood for the factorial
+  2x3 against a burn-in likelihood for the single chain.
+- **On the same burn-in panel,** the six-cell factorial models score −2.6867 (2x3) and −2.6708 (3x2),
+  against the single chain's −3.0801. They are about 0.4 nats per month better.
+- **Experiment 0006 then tested it forecast by forecast, and read STRUCTURE HELPS.** At the single
+  chain's six cells, two chains (3x2, chosen by the sweep's own rule) beat one by +0.0587 at one year,
+  90% [+0.0216, +0.0934], on the same code.
+- **What the evidence now says.** The adopted gain is the two-chain structure, not the sixteen cells.
+  The 3x2 model's one-year skill is within 0.0001 of the 4x4 default's, on 27 free parameters against
+  58. `research/experiments-drafts/0006-structure-at-matched-granularity.RESULT.md` has the numbers.

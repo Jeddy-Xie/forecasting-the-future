@@ -753,3 +753,17 @@ deleted the cross-block covariance while gaining +0.0590 bounds what restoring i
 A1 is the right in-repo yardstick for a transition-matrix change; that the growth chain's switch count
 scales with the inverse half-life; and that a family of one is defensible only when one hypothesis is
 genuinely looked at. Each is reasoning from measured inputs, not a result.
+
+## Correction, 2026-09-29
+
+The matched-cell comparison this briefing uses in four places ("0.0225 nats/month worse") mixed two panels.
+
+- **What it compared.** The factorial 2x3's full-sample held-out likelihood (−3.1026, from A4's
+  `fit_regimes` sweep) against the single chain's burn-in value (−3.0801).
+- **On the same 518-month burn-in panel,** 2x3 scores −2.6867 and 3x2 −2.6708, against −3.0801.
+  The factorial structure is about 0.4 nats per month better.
+- **Experiment 0006 then read STRUCTURE HELPS**: +0.0587, 90% [+0.0216, +0.0934].
+- **What was right.** The briefing's power analysis, and its advice to register 0006 first, stand.
+  Its predicted direction does not.
+
+Found by the 0006 arm agent, and checked by the coordinator against the cached burn-in choice files.
