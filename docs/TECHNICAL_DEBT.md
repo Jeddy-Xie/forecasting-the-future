@@ -740,3 +740,28 @@ change.
 **Shape of the fix.** Decide which side is wrong. Then, whichever way it goes, make the
 check enforceable: `scripts/layer_check.py` exits 0 today whatever it finds, so nothing
 stops the count going from seven to eight.
+
+## D17 · Withholding recession months until their announcement is itself information once the publication gap is an input
+**integrity, class B** · found 2026-09-29 by the independent look-ahead review of experiment 0008
+(`research/arms/lookahead-review-point-in-time-through-the-condition-chain.md`); recorded by delegated
+decision P2-8
+
+**What happens.** ADR 0011 dates a recession month as published at the later of the constant lag and the NBER
+announcement that settled its phase. While that only delays a value, it cannot leak. The reference chain R2 now
+starts from the last *published* condition and steps the months since. So how far back the last published month
+is has become an input, and that depends on whether the next turning point had been announced.
+- **Where it bites.** On 11 forecast dates (2003-01..07, 2010-08..09, 2021-06..07) the chain starts 15 to 21
+  months back instead of the real-time 14. A trough announced after the forecast date therefore sets where the
+  chain starts.
+- **On main,** 51 reference rows move through the 2003-03-01 refit's rates.
+
+**Size.** One-year shifts: B1 −0.000236, B3 (the adopted blend) −0.000714. Both are under 0007's 0.001 floor, and
+no verdict moves. The live grid is unaffected, because the announcement table holds only past announcements.
+
+**Fix, scheduled 2026-10-06** (P2-6):
+- Code the months after the last announced turning point provisionally by that turning point's phase, instead of
+  withholding them.
+- Implement it separately in `walk_forward.publication_dates` and in `look_ahead_audit.perturbed_snapshot`, per
+  ADR 0011's two-implementation discipline, and extend the side-by-side test to the four post-trough windows.
+- Measure it against `baselines/reference-adopted-blend`, one commit on its own, with no verdict claimed and both
+  audits run at both cutoffs.

@@ -157,3 +157,19 @@ wrong. It is left standing, and corrected here.
 - **What the evidence now says.** The adopted gain is the two-chain structure, not the sixteen cells.
   The 3x2 model's one-year skill is within 0.0001 of the 4x4 default's, on 27 free parameters against
   58. `research/experiments-drafts/0006-structure-at-matched-granularity.RESULT.md` has the numbers.
+
+## Adjudication updated, 2026-09-29
+
+The delegated adjudication recorded above (P1-7) said: "The mechanism is presumed to be granularity, not timescale
+separation, until experiment 0006 says otherwise." Delegated decision P2-3 replaces that sentence with the
+following. The classification stays FACTUAL.
+
+> Experiment 0006 (2026-09-29) read STRUCTURE HELPS. At the single chain's six cells, two chains at 3x2 beat it by
+> +0.0587 at one year, 90% [+0.0216, +0.0934], on the same code and both audits. The adopted gain is the two-chain
+> structure. The sixteen cells buy nothing measurable: the 3x2 model's one-year skill is within 0.0001 of the 4x4
+> default's on 27 parameters against 58. That is an unregistered point estimate, which experiment 0011 tests under
+> the adopted blend. Briefing 05's matched-cell arithmetic, which this adjudication cited, mixed a full-sample
+> likelihood with a burn-in one. On the same panel the factorial six-cell model is about 0.4 nats per month better,
+> and both records carry the dated correction.
+
+Experiment 0011 is scheduled for 2026-10-06, and its registration must disclose the known point estimate.

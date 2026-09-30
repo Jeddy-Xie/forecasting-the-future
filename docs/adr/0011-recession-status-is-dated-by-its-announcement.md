@@ -137,3 +137,11 @@ single dates rather than a year.
   eight rows. D14 recorded the choice between these two as the owner's; it was taken
   here under the standing instruction to resolve the open debts, and is flagged as a
   decision made rather than one deferred.
+
+## Correction, 2026-09-29
+
+The sentence above, "Being late is never a leak", is true while lateness is only a delay. It is false once how
+late a series is becomes an input, which the reference chain R2's publication gap made it on 2026-09-29.
+Withholding recession months until the next announcement then moves where the chain starts, on 11 forecast
+dates, by an amount under 0007's materiality floor. Recorded as debt D17 (delegated decision P2-8), with its fix
+scheduled for 2026-10-06. The rule this ADR adopted still stands; its justification needed this qualification.
