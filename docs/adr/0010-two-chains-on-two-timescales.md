@@ -109,3 +109,36 @@ same question the backtest does.
   the owner's shipping token.
 - Reverting is a branch revert plus a baseline recapture. Nothing outside `.cache/`
   and the committed baseline depends on the new default.
+
+## Measured again, 2026-09-29
+
+The +0.0590 above is a **pre-D14** comparison: both runs predate ADR 0011. D14 then moved the default's
+one-year skill by −0.0071, while `baselines/main.json` was deliberately left pre-D14. So
+`forecast baseline compare --against main --paired` on current code reads +0.0519: the adoption gain
+with D14's shift folded in. Read that way, the number is misleading.
+
+Measured on the same code, against the single chain re-run on current code
+(`baselines/main-single-chain-d14`, captured for experiment 0006), the gain holds:
+
+| horizon | series-start benchmark | 90% | 98.33% | model-sample benchmark (R1) |
+|---|---:|---|---|---:|
+| 1 year | **+0.0588** | [+0.0272, +0.0875] | [+0.0146, +0.1017] | +0.0646 |
+| 5 years | +0.0457 | [+0.0239, +0.0934] | [+0.0122, +0.1265] | +0.0517 |
+| 10 years | +0.1826 | [+0.0780, +0.2197] | [+0.0634, +0.3438] | +0.1886 |
+
+Two caveats this record should have carried from the start:
+
+- **Four by four sits at the top of its candidate range.** Each chain was swept over one to four
+  states, and both chose four. That is the same boundary caveat ADR 0008 raised for the single chain's
+  six of one to six: the range may be binding. It is deliberately not widened. A third configuration
+  change would confound experiment 0006, which holds the joint count at six.
+- **The adoption does not make the model better than a forecaster without regimes.**
+  - The regime-free condition chain (ADR 0012) beats this model at one year by 0.0582.
+  - The model is never better than the chain at any horizon from one month to ten years
+    (measurement 0010).
+  - What was adopted is a measured gain over the single chain, which the chain beats by more.
+
+The delegated adjudication of the stress test (claude-fable-5-1, delegated by Jeddy Xie, 2026-09-29):
+**adopted, provisionally**, classified FACTUAL. The falsifier's forward rule is applied at 2027-07-01,
+2028-07-01 and 2029-07-01 to two chains against one, both now registered forward.
+
