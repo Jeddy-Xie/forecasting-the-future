@@ -1,0 +1,94 @@
+code imported from /Users/jpmorgan/Projects/forecasting-the-future-arms/observe-what-is-forecast/src/economic_regime_forecasting/__init__.py
+arm configuration 0f6dc425a85b4a22, reference reference-0008
+
+1. R1 differs between the runs on 11629 of 11730 rows; mean absolute difference 0.0237
+   arm (against the reference's R1) minus reference (against its own R1):
+paired comparison against baseline 'diagnostic' (fec79a040f9ca6f9, 391 forecast dates from 1994-03-01) and this run (0f6dc425a85b4a22, 391 from 1994-03-01)
+statistic: the pre-registered verdict's mean Brier skill score over its fixed set of scoreable indicators, this run minus the baseline, on the resolved forecasts both runs made
+benchmark: the model-sample climatology (model_sample_climatology_probability)
+interval: 90% and 96.67% moving-block bootstrap of forecast dates, blocks as long as the horizon in months, every indicator on a date kept together, one draw of dates per resample applied to both runs and read at every level; 10000 resamples, seed 20260908
+
+resolved forecasts (indicator, forecast date, horizon): 9702 in both, 0 only in the baseline, 0 only in this run
+the two runs resolved the same forecasts; skill here is against the model-sample climatology, so it is not the number 0001's verdict reports
+
+horizon     in both  only baseline  only this run  baseline skill  this run skill  difference  90% interval        96.67% interval     independent obs  resamples
+----------  -------  -------------  -------------  --------------  --------------  ----------  ------------------  ------------------  ---------------  ---------
+12 months   3754     0              0              +0.1786         +0.1470         -0.0316     [-0.0650, +0.0036]  [-0.0751, +0.0127]  31.5             9953
+60 months   3274     0              0              +0.0690         +0.0387         -0.0302     [-0.0499, +0.0051]  [-0.0577, +0.0136]  5.5              7495
+120 months  2674     0              0              -0.2109         -0.3249         -0.1140     [-0.1758, -0.0565]  [-0.2675, -0.0486]  2.2              5443
+
+brier skill score by indicator, this run minus the baseline (point estimates; the interval belongs to the mean above):
+indicator                                                   12 months  60 months  120 months
+----------------------------------------------------------  ---------  ---------  ----------
+consumer_price_inflation_above_five_percent_within_horizon  -0.1960    -0.0777    +0.0757
+consumer_price_inflation_above_three_percent_at_horizon     -0.0441    +0.0216    -0.0167
+economy_in_recession_at_horizon_date                        +0.0032    -0.0043    +0.0022
+economy_in_recession_within_horizon                         -0.0621    +0.0716    -0.6586
+federal_funds_rate_above_four_percent_at_horizon            -0.2276    +0.0251    -0.0027
+federal_funds_rate_below_one_percent_within_horizon         -0.0354    -0.2851    -0.4204
+industrial_production_growth_above_two_percent_at_horizon   -0.0260    +0.0185    -0.0152
+treasury_yield_curve_inverted_within_horizon                +0.0627    +0.0812    -0.1512
+unemployment_rate_above_five_percent_at_horizon             +0.1681    -0.1145    -0.1156
+unemployment_rate_above_seven_percent_within_horizon        +0.0415    -0.0387    -0.1437
+
+2. arm minus its own R2 (condition_chain_probability), model-sample benchmark:
+paired comparison against baseline 'diagnostic' (0f6dc425a85b4a22, 391 forecast dates from 1994-03-01) and this run (0f6dc425a85b4a22, 391 from 1994-03-01)
+statistic: the pre-registered verdict's mean Brier skill score over its fixed set of scoreable indicators, this run minus the baseline, on the resolved forecasts both runs made
+benchmark: the model-sample climatology (model_sample_climatology_probability)
+interval: 90% and 96.67% moving-block bootstrap of forecast dates, blocks as long as the horizon in months, every indicator on a date kept together, one draw of dates per resample applied to both runs and read at every level; 10000 resamples, seed 20260908
+
+resolved forecasts (indicator, forecast date, horizon): 9702 in both, 0 only in the baseline, 0 only in this run
+the two runs resolved the same forecasts; skill here is against the model-sample climatology, so it is not the number 0001's verdict reports
+
+horizon     in both  only baseline  only this run  baseline skill  this run skill  difference  90% interval        96.67% interval     independent obs  resamples
+----------  -------  -------------  -------------  --------------  --------------  ----------  ------------------  ------------------  ---------------  ---------
+12 months   3754     0              0              +0.2522         +0.1698         -0.0824     [-0.1348, -0.0316]  [-0.1509, -0.0177]  31.5             9953
+60 months   3274     0              0              +0.0699         +0.0573         -0.0125     [-0.1597, +0.0998]  [-0.1909, +0.1318]  5.5              7495
+120 months  2674     0              0              +0.0154         -0.3285         -0.3440     [-0.4782, -0.1241]  [-1.0097, -0.1044]  2.2              5443
+
+brier skill score by indicator, this run minus the baseline (point estimates; the interval belongs to the mean above):
+indicator                                                   12 months  60 months  120 months
+----------------------------------------------------------  ---------  ---------  ----------
+consumer_price_inflation_above_five_percent_within_horizon  -0.0639    +0.2173    +0.0813
+consumer_price_inflation_above_three_percent_at_horizon     +0.0986    +0.1507    +0.0982
+economy_in_recession_at_horizon_date                        -0.0209    +0.0137    +0.0259
+economy_in_recession_within_horizon                         -0.3538    -0.1938    -2.2652
+federal_funds_rate_above_four_percent_at_horizon            -0.3285    +0.1942    +0.1194
+federal_funds_rate_below_one_percent_within_horizon         +0.0049    -0.0617    -0.1481
+industrial_production_growth_above_two_percent_at_horizon   -0.1023    +0.0164    -0.0054
+treasury_yield_curve_inverted_within_horizon                +0.0507    -0.3537    -1.0089
+unemployment_rate_above_five_percent_at_horizon             -0.1165    -0.0554    -0.0441
+unemployment_rate_above_seven_percent_within_horizon        +0.0080    -0.0529    -0.0967
+
+2. reference minus its own R2 (condition_chain_probability), model-sample benchmark:
+paired comparison against baseline 'diagnostic' (fec79a040f9ca6f9, 391 forecast dates from 1994-03-01) and this run (fec79a040f9ca6f9, 391 from 1994-03-01)
+statistic: the pre-registered verdict's mean Brier skill score over its fixed set of scoreable indicators, this run minus the baseline, on the resolved forecasts both runs made
+benchmark: the model-sample climatology (model_sample_climatology_probability)
+interval: 90% and 96.67% moving-block bootstrap of forecast dates, blocks as long as the horizon in months, every indicator on a date kept together, one draw of dates per resample applied to both runs and read at every level; 10000 resamples, seed 20260908
+
+resolved forecasts (indicator, forecast date, horizon): 9702 in both, 0 only in the baseline, 0 only in this run
+the two runs resolved the same forecasts; skill here is against the model-sample climatology, so it is not the number 0001's verdict reports
+
+horizon     in both  only baseline  only this run  baseline skill  this run skill  difference  90% interval        96.67% interval     independent obs  resamples
+----------  -------  -------------  -------------  --------------  --------------  ----------  ------------------  ------------------  ---------------  ---------
+12 months   3754     0              0              +0.2477         +0.1786         -0.0691     [-0.1148, -0.0292]  [-0.1295, -0.0166]  31.5             9953
+60 months   3274     0              0              +0.0885         +0.0690         -0.0195     [-0.1727, +0.0791]  [-0.2112, +0.1078]  5.5              7495
+120 months  2674     0              0              +0.0324         -0.2109         -0.2434     [-0.3271, -0.0719]  [-0.8443, -0.0603]  2.2              5443
+
+brier skill score by indicator, this run minus the baseline (point estimates; the interval belongs to the mean above):
+indicator                                                   12 months  60 months  120 months
+----------------------------------------------------------  ---------  ---------  ----------
+consumer_price_inflation_above_five_percent_within_horizon  +0.0955    +0.2321    -0.0318
+consumer_price_inflation_above_three_percent_at_horizon     +0.0964    +0.0659    +0.0590
+economy_in_recession_at_horizon_date                        -0.0247    +0.0204    +0.0258
+economy_in_recession_within_horizon                         -0.2904    -0.2628    -1.6315
+federal_funds_rate_above_four_percent_at_horizon            -0.1230    +0.1409    +0.0863
+federal_funds_rate_below_one_percent_within_horizon         +0.0647    +0.1360    +0.0771
+industrial_production_growth_above_two_percent_at_horizon   -0.0781    -0.0054    +0.0046
+treasury_yield_curve_inverted_within_horizon                -0.0169    -0.4224    -0.6980
+unemployment_rate_above_five_percent_at_horizon             -0.3521    -0.0206    -0.0099
+unemployment_rate_above_seven_percent_within_horizon        -0.0629    -0.0794    +0.0053
+
+3. pooled Brier skill against R1 (model-sample), per horizon
+   arm: 12 months +0.2068, 60 months +0.1091, 120 months +0.1242
+   reference: 12 months +0.2111, 60 months +0.1311, 120 months +0.2212
