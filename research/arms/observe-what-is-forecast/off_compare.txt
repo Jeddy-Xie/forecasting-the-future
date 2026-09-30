@@ -1,0 +1,9 @@
+imported from /Users/jpmorgan/Projects/forecasting-the-future-arms/observe-what-is-forecast/src/economic_regime_forecasting/__init__.py
+configuration hash with the setting off: fec79a040f9ca6f9
+baseline 'reference-0008' (fec79a040f9ca6f9, 391 forecast dates from 1994-03-01) against this run (fec79a040f9ca6f9, 391 from 1994-03-01)
+387 IDENTICAL  0 NUMERICAL  0 MOVED  0 REMOVED  0 ADDED
+a difference is NUMERICAL up to 1e-09 in absolute value and MOVED above it; every categorical difference is MOVED
+
+387 further field(s) not shown: 387 IDENTICAL. Pass --tolerance-band all to see them.
+
+nothing moved.

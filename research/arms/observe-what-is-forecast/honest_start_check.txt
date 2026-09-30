@@ -1,0 +1,13 @@
+code imported from /Users/jpmorgan/Projects/forecasting-the-future-arms/observe-what-is-forecast/src/economic_regime_forecasting/__init__.py
+setting observe_the_unemployment_rate_and_the_term_spread = True; configuration hash 0f6dc425a85b4a22
+series the model observes: ['INDPRO', 'CPIAUCSL', 'TB3MS', 'UNRATE', 'GS10']
+panel-length first forecast date (find_first_forecast_date): 1977-03-01
+find_first_fully_point_in_time_date: 1994-03-01
+backtest_schedule: 391 forecast dates from 1994-03 to 2026-09, 33 refits
+forecast dates in the schedule using the publication-lag fallback (any series): 0
+assert_every_forecast_date_is_fully_point_in_time: passed
+UNRATE policies over the 391 forecast dates: ['archival_vintage']
+UNRATE archival vintage with the fewest observations: 553 months as of 1994-03-01 (1948-01-01 .. 1994-01-01); usable needs 240
+widest schedule 595 forecast dates from 1977-03 to 2026-09, 50 refits: 204 dates fall back, first 1977-03-01, last 1994-02-01; of them UNRATE falls back on 0
+burn-in observation matrix as of 1994-03-01: 455 months from 1956-03 to 1994-01, as of 1994-03-01 ('growth', 'inflation', 'rates', 'unemployment_rate', 'ten_year_minus_three_month_term_spread')
+cache misses (network reached): 0

@@ -1,0 +1,3 @@
+check-gates exit 0
+baseline compare exit 0
+paired exit 0
