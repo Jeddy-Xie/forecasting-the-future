@@ -320,3 +320,23 @@ def test_the_forecast_grid_reads_as_percentages_by_horizon() -> None:
     grid = forecast_display_table(forecasts)
     assert list(grid.columns) == ["1 year", "10 year"]
     assert grid.loc["a", "1 year"] == pytest.approx(8.3)
+
+
+def test_the_every_horizon_figure_draws_both_forecasters_and_shades_what_is_uninformative() -> None:
+    rows = [
+        {
+            "horizon_in_months": horizon,
+            "forecaster": forecaster,
+            "benchmark": "model-sample",
+            "mean_skill": 0.3 - 0.002 * horizon,
+            "lower_bound": 0.2 - 0.002 * horizon,
+            "upper_bound": 0.4 - 0.002 * horizon,
+            "informative": horizon <= 60,
+        }
+        for horizon in range(1, 121)
+        for forecaster in ("regime model", "condition chain")
+    ]
+    figure = figures.plot_skill_at_every_horizon(pd.DataFrame(rows))
+    labels = [line.get_label() for line in figure.axes[0].get_lines()]
+    assert "regime model" in labels and "condition chain" in labels
+    assert len(figure.axes[0].patches) >= 1

@@ -496,3 +496,54 @@ def plot_skill_by_horizon(verdicts: pd.DataFrame) -> Figure:
     axes.legend(frameon=False, fontsize=9, labelcolor=NEUTRAL_INK)
     figure.tight_layout()
     return figure
+
+
+def plot_skill_at_every_horizon(
+    skill_table: pd.DataFrame, benchmark: str = "model-sample"
+) -> Figure:
+    """Measurement 0010: the model's and the chain's skill at every month, with bands.
+
+    Horizons whose effective sample falls below 5.5 independent observations are
+    shaded: the curve is drawn there, but nothing is read from it.
+    """
+    figure, axes = _new_figure(9.0, 4.4)
+    table = skill_table[skill_table["benchmark"] == benchmark]
+    colours = {"regime model": POSITIVE_COLOUR, "condition chain": NEUTRAL_INK}
+    for forecaster, colour in colours.items():
+        rows = table[table["forecaster"] == forecaster].sort_values("horizon_in_months")
+        if rows.empty:
+            continue
+        months = rows["horizon_in_months"].to_numpy()
+        axes.fill_between(
+            months,
+            rows["lower_bound"].to_numpy(),
+            rows["upper_bound"].to_numpy(),
+            color=colour,
+            alpha=0.15,
+            linewidth=0,
+        )
+        axes.plot(
+            months, rows["mean_skill"].to_numpy(), color=colour, linewidth=2.0, label=forecaster
+        )
+    uninformative = table.loc[~table["informative"].astype(bool), "horizon_in_months"]
+    if not uninformative.empty:
+        axes.axvspan(
+            float(uninformative.min()) - 0.5,
+            float(uninformative.max()) + 0.5,
+            color=RECESSION_SHADE,
+            alpha=0.6,
+            linewidth=0,
+            label="fewer than 5.5 independent observations",
+        )
+    axes.axhline(0.0, color=NEUTRAL_INK, linewidth=1.0)
+    for marker in (12, 60, 120):
+        axes.axvline(marker, color=GRID_INK, linewidth=1.0, linestyle=":")
+    _style(
+        axes,
+        f"Skill at every horizon against the {benchmark} climatology, 90 percent bands",
+        ylabel="mean Brier skill score",
+        xlabel="horizon in months",
+    )
+    axes.legend(frameon=False, fontsize=9, labelcolor=NEUTRAL_INK)
+    figure.tight_layout()
+    return figure
