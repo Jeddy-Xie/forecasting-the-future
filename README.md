@@ -19,23 +19,37 @@ A negative result, correctly measured, is the deliverable when the thesis fails.
 
 ## What it found
 
-A walk-forward run of 19,740 forecasts from 1971 to 2026, scored against a rule
-committed before the first backtest ran:
+The default model fits two regime chains, one for growth and one for inflation with interest rates:
+sixteen joint regimes. It was walked forward over 391 monthly forecast dates from 1994-03, the first
+month every input is on a genuine point-in-time vintage. It is scored by two rules.
 
-| horizon | verdict | skill against climatology | 90% interval |
-|---|---|---:|---|
-| 1 year | **ship the model** | +0.232 | [+0.158, +0.301] |
-| 5 years | ship the base rate | +0.102 | [−0.013, +0.197] |
-| 10 years | ship the base rate | −0.221 | [−2.744, −0.014] |
+- **0001** was committed before the first backtest ran, and is frozen.
+- **0007** has governed new claims since 2026-09-29. It uses a fairer benchmark, a calibration test
+  sized for this sample, and a forecaster with no regimes as the bar to clear.
 
-Five persistent regimes, including a recognisable stagflation state and a
-zero-rate state, neither put there by hand. The transition matrix's second
-eigenvalue modulus is 0.983, a 41 month half life, which puts the information
-horizon at five years. Almost all the one-year skill is in questions of the form
-"does this happen at any point between now and then"; questions about where a
-slow-moving level sits in one particular month are close to a coin flip.
+| horizon | 0001 | skill vs climatology | 0007 | skill vs the model's own sample |
+|---|---|---:|---|---:|
+| 1 year | **ship the model** | +0.267 [+0.165, +0.365] | ship the base rate | +0.179 [+0.102, +0.258] |
+| 5 years | ship the base rate | +0.119 | ship the base rate | +0.069 |
+| 10 years | ship the base rate | −0.162 | ship the base rate | −0.211 |
 
-Full numbers and the reasoning in `docs/RESULTS.md`.
+What that means:
+
+- **The regimes carry information for about two and a half years.** Measured month by month, the model
+  beats the historical average for 29 months, and for 39 against 0001's more generous benchmark.
+- **A forecaster without regimes does at least as well.** A two-state Markov chain on each indicator's
+  own monthly condition beats the model at one year (−0.058, 98.33% [−0.112, −0.009]), and is never
+  worse at any horizon.
+- **Regimes help where the model observes the question, and not elsewhere.** They add skill on
+  inflation and the zero lower bound, which the model observes. They add none on unemployment or
+  recession dating, which it does not. Against a fair benchmark its recession skill is below zero.
+- **What ships.** Under 0001, one year ships the model and five and ten years ship the base rate. Under
+  0007 every horizon would ship the base rate. The model is also overconfident: its calibration slope
+  is 0.61.
+- **Experiment 0008** tests three ways to keep what regimes add while taking what the chain has.
+
+Full numbers and the reasoning are in `docs/RESULTS.md`. The month-by-month curve is in
+`research/reports/skill-at-every-horizon/`. The rule change and why are in ADR 0012.
 
 ## The honest finding this repository is built to produce
 
@@ -45,6 +59,13 @@ distribution and the model's long-run stationary distribution decays like
 unconditional base rate, carrying no information about today. This repository
 measures that horizon rather than hiding it, calls it the **information horizon**,
 and ships the climatological base rate for any horizon beyond it.
+
+It turned out to need a second honest finding.
+- **Skill against a base rate does not show that regimes are the reason for it.**
+  - Much of the skill is persistence: whether the condition holds now.
+  - A chain that knows only that, and nothing about regimes, forecasts as well or better.
+- **So the repository scores that chain beside every forecast**, and asks every new claim to beat it
+  (ADR 0012).
 
 ## Repository map
 
@@ -79,6 +100,9 @@ Inside the package:
 | `docs/adr/` | why each non-obvious decision was made, one numbered record each |
 | `proving/experiments/0001-.../experiment.json` | the decision rule, committed before the first backtest ran |
 | `docs/RESULTS.md` | every headline number, regenerated rather than typed |
+| `proving/experiments/0007-.../experiment.json` | the successor rule every new claim is read by |
+| `forecasts/` | forecasts registered forward, monthly, and scored as they resolve |
+| `research/ledger/delegated-decisions/` | decisions the owner delegated, with their reasons, verbatim |
 | `docs/TECHNICAL_DEBT.md` | proposed fixes that were **not** made, and what each would change |
 | `notebooks/04_report.ipynb` | the write-up, including what this method cannot do |
 | `CLAUDE.md` | the rules that bind anyone, human or agent, working in this repository |
