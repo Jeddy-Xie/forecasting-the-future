@@ -189,6 +189,22 @@ exit 2 if the cache holds a different configuration. Two builds are byte-identic
 `tests/test_research_paper.py` fails if `paper/generated/` is stale, or if any decimal typed into the
 paper appears in no committed record. `paper/README.md` has the details and the arXiv checklist.
 
+### The project page
+
+`site/` is the public front page, published to
+[GitHub Pages](https://jeddy-xie.github.io/forecasting-the-future/) by `.github/workflows/pages.yml`
+on every push to `main` that touches it. The workflow computes nothing: it copies `site/` and the
+paper. The page's charts are drawn in the browser from `site/data.json`, which one command writes:
+
+```bash
+poetry run forecast page-assets   # site/data.json and site/assets/*.png, from the committed record
+```
+
+It reads the same records as `paper-assets` and refuses in the same cases. `tests/test_project_page.py`
+fails if `site/data.json` is stale, if the page's visible text states a decimal that no committed record
+contains, or if the page links to a file that would not be deployed. To preview it, serve the directory
+over HTTP (`python3 -m http.server -d site`); opening the file directly cannot load the data.
+
 ### The reference forecasters beside every forecast
 
 Every backtest row carries two forecasts that are not the model's, so every claim can be measured

@@ -42,6 +42,7 @@ from economic_regime_forecasting import (
     forecast_register,
     look_ahead_audit,
     pipeline_gates,
+    project_page,
     regression_baseline,
     research_paper,
 )
@@ -1622,6 +1623,29 @@ def paper_assets(workspace: Workspace) -> int:
     return 0
 
 
+def page_assets(workspace: Workspace) -> int:
+    """Write the project page's data and images to `site/`.
+
+    The same committed records as `paper-assets`, checked the same way; the regime
+    image also reads the cached backtest, whose configuration must be the approved one.
+    """
+    try:
+        records = research_paper.read_committed_records(
+            regression_baseline.read_baseline_forecasts(research_paper.BLEND_BASELINE),
+            regression_baseline.read_baseline_forecasts(research_paper.MODEL_ALONE_BASELINE),
+            shipping_approval.CONFIGURATION_HASH_APPROVED_FOR_SHIPPING,
+        )
+        written = project_page.write_page_assets(
+            records, workspace.artifacts.read_table(ARTIFACTS.backtest_results)
+        )
+    except (research_paper.PaperAssetError, CacheError) as error:
+        print(f"page-assets: {error}", file=sys.stderr)
+        return 2
+    for path in written:
+        print(f"wrote {_display_path(path)}")
+    return 0
+
+
 def _require_the_gate_run_is_reproduced(workspace: Workspace, results: pd.DataFrame) -> None:
     """The every-horizon walk must equal the gate run where the two overlap.
 
@@ -1927,6 +1951,10 @@ def build_parser() -> argparse.ArgumentParser:
         "paper-assets",
         help="the research paper's figures, tables and named numbers, from the record",
     )
+    subparsers.add_parser(
+        "page-assets",
+        help="the project page's data and images, from the record",
+    )
     return parser
 
 
@@ -2113,6 +2141,8 @@ def main(argv: list[str] | None = None) -> int:
         return skill_by_horizon(workspace, today, arguments.longest_horizon)
     if arguments.command == "paper-assets":
         return paper_assets(workspace)
+    if arguments.command == "page-assets":
+        return page_assets(workspace)
     if arguments.command == "check-gates":
         return check_gates(workspace, today)
     if arguments.command == "compare-variants":

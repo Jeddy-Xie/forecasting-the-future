@@ -17,6 +17,8 @@ Owner: Jeddy Xie. Work happens directly on `main`; commits are the history.
   registries by `forecast fetch-data`. Nothing here is ever committed.
 - `proving/experiments/` — the pre-registered decision rule the evaluation obeys.
 - `docs/adr/` — numbered architecture decision records.
+- `site/` — the project page, deployed to GitHub Pages. `site/data.json` and
+  `site/assets/*.png` are written only by `forecast page-assets`.
 - `paper/` — the research paper. Its `generated/` directory is written only by
   `forecast paper-assets`; every other number in `main.tex` must appear in a
   committed record, which the suite checks.

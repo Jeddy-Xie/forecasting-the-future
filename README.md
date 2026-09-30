@@ -1,4 +1,43 @@
+<div align="center">
+
 # Forecasting the Future
+
+**When to ship the historical average: a pre-registered, point-in-time test of regime-based
+probability forecasts for the US economy**
+
+[Project page](https://jeddy-xie.github.io/forecasting-the-future/) ·
+[Paper (PDF)](paper/main.pdf) ·
+[Results](docs/RESULTS.md) ·
+[Forward register](forecasts/) ·
+[Run it yourself](docs/RUNNING.md)
+
+[![Project page](https://img.shields.io/badge/project_page-live-2a6fc9)](https://jeddy-xie.github.io/forecasting-the-future/)
+[![Paper](https://img.shields.io/badge/paper-PDF-121820)](paper/main.pdf)
+[![Tests](https://github.com/Jeddy-Xie/forecasting-the-future/actions/workflows/tests.yml/badge.svg)](https://github.com/Jeddy-Xie/forecasting-the-future/actions/workflows/tests.yml)
+[![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%E2%80%933.13-3776ab)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-5a6573)](LICENSE)
+
+</div>
+
+<p align="center">
+  <a href="https://jeddy-xie.github.io/forecasting-the-future/#horizon">
+    <img src="site/assets/skill_curves.png" alt="Brier skill against the historical average at every horizon from 1 to 120 months, for the regime model alone, the condition chain and the blend that ships" width="820">
+  </a>
+</p>
+
+<p align="center"><sub>How much of the historical average's error each forecaster removes, at every horizon from
+one month to ten years. The blend that ships beats the average for 46 months; the regime model alone for 29.
+<a href="https://jeddy-xie.github.io/forecasting-the-future/">Explore it interactively.</a></sub></p>
+
+| | |
+|---|---|
+| **The question** | How far ahead can probability forecasts of ten yes-or-no questions about the US economy beat the historical average? |
+| **The answer** | About four years for the forecast that ships, about two and a half for the regime model on its own. Past that, ship the average. |
+| **Why** | Most of the skill is persistence: knowing where the economy is now. Regimes add information on inflation and interest rates. |
+| **How it was tested** | 391 monthly forecast dates from 1994 to 2026, only data published by each date, rules committed before any result, a perturbation audit for look-ahead. |
+| **What ships** | [Today's forecasts](submission/forecasts.csv), registered forward and scored as they resolve. |
+
+## About
 
 Probability forecasts for **ten binary macroeconomic indicators** at horizons of
 **one, five and ten years**, produced by inferring which latent *economic regime*
@@ -85,6 +124,7 @@ It turned out to need a second honest finding.
 | `docs/` | operator manual, pre-registration, architecture decision records |
 | `proving/` | the pre-registered experiment whose decision rule the evaluation obeys |
 | `paper/` | the research paper; its figures and tables are generated from the committed record |
+| `site/` | the [project page](https://jeddy-xie.github.io/forecasting-the-future/); its data and images are generated from the committed record |
 | `.cache/` | all fetched and derived data. Git-ignored, rebuilt by one command |
 
 Inside the package:
@@ -104,6 +144,7 @@ Inside the package:
 | document | its one job |
 |---|---|
 | this file | the front door: what this is, and how to start |
+| [project page](https://jeddy-xie.github.io/forecasting-the-future/) | the interactive overview: every horizon, every question, thirty-two years of forecasts |
 | `paper/main.pdf` | the research paper: method, results and every table, written for non-specialists |
 | `docs/RUNNING.md` | how to operate everything, with the output each step should print |
 | `docs/adr/` | why each non-obvious decision was made, one numbered record each |

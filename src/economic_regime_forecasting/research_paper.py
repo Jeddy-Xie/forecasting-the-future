@@ -641,10 +641,19 @@ def unsourced_numbers(tex: str, records: Iterable[str]) -> list[str]:
     precision printed, with the same sign when the paper gives one. So the paper may
     print +0.240 where a record holds +0.2401, but not +0.241, and not -0.240.
     """
+    return unsourced_numbers_in_text(_paper_prose(tex), records)
+
+
+def unsourced_numbers_in_text(text: str, records: Iterable[str]) -> list[str]:
+    """The same check on plain text, with no LaTeX spans skipped.
+
+    For prose that is not LaTeX, such as the project page's visible text, where a
+    percent sign is a percent sign and not the start of a comment.
+    """
     available: dict[int, set[tuple[str, str]]] = {}
-    record_numbers = [number for text in records for number in stated_numbers(text)]
+    record_numbers = [number for record in records for number in stated_numbers(record)]
     unsourced = []
-    for stated in stated_numbers(_paper_prose(tex)):
+    for stated in stated_numbers(text):
         places = stated.places
         if places not in available:
             available[places] = set()

@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forecasting the Future · When to Ship the Historical Average</title>
+<meta name="description" content="How far ahead can probability forecasts of the US economy beat the historical average? A pre-registered, point-in-time test of regime-based forecasts for ten yes-or-no questions, by Jeddy Xie.">
+<meta name="author" content="Jeddy Xie">
+<meta property="og:type" content="website">
+<meta property="og:title" content="When to Ship the Historical Average">
+<meta property="og:description" content="A pre-registered, point-in-time test of regime-based probability forecasts for the US economy: the blend beats the historical average for about four years, and most of the skill is persistence.">
+<meta property="og:image" content="https://jeddy-xie.github.io/forecasting-the-future/assets/skill_curves.png">
+<meta property="og:url" content="https://jeddy-xie.github.io/forecasting-the-future/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#">Forecasting the Future</a>
+    <nav aria-label="Sections">
+      <a href="#findings">Findings</a>
+      <a href="#horizon">How far ahead</a>
+      <a href="#persistence">Persistence</a>
+      <a href="#explore">Explore</a>
+      <a href="#today">Today's forecasts</a>
+      <a href="#method">Method</a>
+      <a href="#paper">Paper</a>
+    </nav>
+    <a class="github" href="https://github.com/Jeddy-Xie/forecasting-the-future" aria-label="Source code on GitHub">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Research · Probability forecasting · September 2026</p>
+      <h1>When to ship the historical average</h1>
+      <p class="lede">How far ahead can probability forecasts of the US economy beat the historical average? We
+        forecast ten yes-or-no questions (recession, inflation, interest rates, unemployment, the yield curve and
+        output) from a model of economic regimes, walked it forward month by month from 1994 to 2026 on data as it
+        was published, and judged it by rules committed before any result was seen.</p>
+      <div class="actions">
+        <a class="button primary" href="paper.pdf">Read the paper (PDF)</a>
+        <a class="button" href="#horizon">Explore the results</a>
+        <a class="button" href="https://github.com/Jeddy-Xie/forecasting-the-future">View the code</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="value blend" data-bind="blendHorizon">46<small>months</small></div>
+          <div class="label">The forecast that ships beats the historical average for about four years.</div></div>
+        <div class="stat"><div class="value model" data-bind="modelHorizon">29<small>months</small></div>
+          <div class="label">The regime model on its own, for about two and a half.</div></div>
+        <div class="stat"><div class="value">+0.240</div>
+          <div class="label">One-year skill: about a quarter of the average's error removed.</div></div>
+        <div class="stat"><div class="value" data-bind="forecastDates">391</div>
+          <div class="label">Monthly forecast dates, March 1994 to September 2026.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="findings">
+    <div class="wrap">
+      <p class="kicker">What we found</p>
+      <h2>Six findings, in plain language</h2>
+      <div class="findings">
+        <div class="finding"><h3>One year ahead, the forecasts beat the average</h3>
+          <p>Across the ten questions they remove on average about a quarter of the historical average's squared error.</p></div>
+        <div class="finding"><h3>The advantage fades after about four years</h3>
+          <p>Beyond that, as far as three decades of data can tell, the historical average does as well, and it is what we ship.</p></div>
+        <div class="finding"><h3>Most of the skill is persistence</h3>
+          <p>A forecaster with no regimes, which only tracks whether each condition holds now, does at least as well as the regime model at every horizon.</p></div>
+        <div class="finding"><h3>Regimes help where the model looks</h3>
+          <p>They add information on inflation and on interest rates near zero, and nothing on unemployment or recessions, which the model never observes.</p></div>
+        <div class="finding"><h3>Turning points are met, not foreseen</h3>
+          <p>The forecasts rose once the 2021 inflation surge showed up in published data, and registered the 2001 recession only after it had ended.</p></div>
+        <div class="finding"><h3>Honesty was expensive</h3>
+          <p>Closing look-ahead leaks, and later adopting a fair benchmark, each took the one-year verdict away. Each time a pre-registered improvement earned it back.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="horizon">
+    <div class="wrap">
+      <p class="kicker">The question in the title</p>
+      <h2>How far ahead do the forecasts beat the average?</h2>
+      <p class="prose">Brier skill measures how much of the historical average's squared error a forecast removes: zero is
+        no better, one would be perfect. We scored every horizon from one month to ten years. Move across the chart to
+        read any month.</p>
+      <div class="figure">
+        <div class="readout" id="horizon-readout" aria-live="polite"></div>
+        <div class="chart" id="horizon-chart"></div>
+        <div class="toolbar">
+          <label for="horizon-month">Month <input type="range" id="horizon-month" min="1" max="120" value="12"></label>
+          <label><input type="checkbox" id="band-blend" checked> <span class="key blend"></span>blend interval</label>
+          <label><input type="checkbox" id="band-chain"> <span class="key chain"></span>chain interval</label>
+          <label><input type="checkbox" id="band-model"> <span class="key model"></span>model interval</label>
+        </div>
+      </div>
+      <p class="caption">Shaded bands are 90% intervals from a block bootstrap over forecast dates. Beyond 60 months fewer
+        than 5.5 independent observations remain, so nothing is read from the curves there. Dashed lines mark the last
+        month up to which each regime forecaster beats the average without a break.</p>
+    </div>
+  </section>
+
+  <section class="block" id="persistence">
+    <div class="wrap">
+      <p class="kicker">Where the skill comes from</p>
+      <h2>Most of it is knowing where the economy is now</h2>
+      <p class="prose">The <em>condition chain</em> knows only whether each question's condition holds today and how often
+        such conditions start and stop. It matches or beats the regime model at every horizon. The forecast that ships
+        is an equal blend of the two, adopted through a pre-registered experiment. It is never significantly better
+        than the chain alone, and it is better calibrated than the regime model.</p>
+      <div class="split">
+        <div class="figure">
+          <h3>Blend minus chain, at every horizon</h3>
+          <div class="readout" id="gap-readout" aria-live="polite"></div>
+          <div class="chart" id="gap-chart"></div>
+          <p class="caption">Above zero, the blend is better. Red ticks mark horizons where the whole 90% interval is below zero.</p>
+        </div>
+        <div class="figure">
+          <h3>One year ahead, question by question</h3>
+          <div class="readout" id="question-readout" aria-live="polite"></div>
+          <div class="chart" id="question-chart"></div>
+          <p class="caption">Skill against the historical average. Questions run from those the model observes to those it never does.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="explore">
+    <div class="wrap">
+      <p class="kicker">Explore</p>
+      <h2>Thirty-two years of one-year forecasts</h2>
+      <p class="prose">Each point is the probability the model gave, on that date, that the event would happen within the
+        following year. Shaded dates are those where it did. Pick a question, and compare the forecast that ships
+        with its two halves and with the historical average.</p>
+      <div class="figure">
+        <div class="toolbar">
+          <label for="question-select">Question <select id="question-select"></select></label>
+          <label><input type="checkbox" id="show-model"> <span class="key model"></span>regime model half</label>
+          <label><input type="checkbox" id="show-chain"> <span class="key chain"></span>chain half</label>
+          <label><input type="checkbox" id="show-average" checked> <span class="key average"></span>historical average</label>
+        </div>
+        <div class="readout" id="timeline-readout" aria-live="polite"></div>
+        <div class="chart" id="timeline-chart"></div>
+      </div>
+      <p class="caption">Forecasts from the walk-forward backtest, each made with only the data published by its date.
+        Recent dates have no outcome yet: their year has not ended.</p>
+    </div>
+  </section>
+
+  <section class="block" id="today">
+    <div class="wrap">
+      <p class="kicker">Registered forward</p>
+      <h2>Today's forecasts</h2>
+      <p class="prose">Released with the paper, from data as of 1 August 2026. At one year the blend ships; at five and ten
+        years the historical average does, because no forecaster beats it there. Every forecast is registered with its
+        date and will be scored as it resolves; the first one-year claims resolve on 1 July 2027.</p>
+      <div class="table-wrap"><table id="forecast-table"></table></div>
+    </div>
+  </section>
+
+  <section class="block" id="method">
+    <div class="wrap">
+      <p class="kicker">Method</p>
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step"><div class="n">Data</div><h3>Only what was published</h3>
+          <p>Every training panel is built as of its forecast date from archival vintages, and recession months count
+            only once the NBER announced them.</p></div>
+        <div class="step"><div class="n">Regimes</div><h3>Two hidden Markov chains</h3>
+          <p>One chain for output growth and one for inflation with interest rates: sixteen joint regimes, refitted
+            every year on data up to that date.</p></div>
+        <div class="step"><div class="n">Probabilities</div><h3>Rates per regime, projected forward</h3>
+          <p>How often each condition holds, starts and persists in each regime, combined with where the regimes are
+            headed.</p></div>
+        <div class="step"><div class="n">Rules</div><h3>Decided in advance</h3>
+          <p>Five acceptance gates, a fair benchmark, a persistence chain to beat, and a perturbation audit for
+            look-ahead.</p></div>
+      </div>
+      <figure class="image-figure">
+        <img src="assets/regime_chains.png" alt="Filtered probability of each state of the growth chain and the levels chain from 1994 to 2026, with recessions shaded." loading="lazy">
+        <figcaption class="caption">What the two regime chains inferred in real time, 1994 to 2026. Shaded bands are NBER
+          recessions. The levels chain recognised the 2021&ndash;22 inflation episode only once interest rates had risen.</figcaption>
+      </figure>
+
+      <h3 style="margin-top:48px">How honesty changed the answer</h3>
+      <p class="prose muted">One-year skill at each step. No threshold of the rule committed on 8 September was moved.</p>
+      <ol class="ledger">
+        <li><span class="date">8 Sep</span><span>Rule 0001 committed before any backtest; first run with one regime chain and forecasts from 1971.</span><span class="skill">+0.232<span>ship the model</span></span></li>
+        <li><span class="date">9 Sep</span><span>Two look-ahead paths closed: the number of regimes had been chosen on today's data, and 41% of dates had used revised prices.</span><span class="skill">+0.2128<span>ship the average</span></span></li>
+        <li><span class="date">15 Sep</span><span>A perturbation audit found the benchmark counting outcomes before they were published. Fixed.</span><span class="skill">+0.2154<span>ship the average</span></span></li>
+        <li><span class="date">20 Sep</span><span>Two regime chains adopted after a pre-registered slate of six ideas.</span><span class="skill">+0.2744<span>ship the model</span></span></li>
+        <li><span class="date">21 Sep</span><span>Recession months dated by their announcement.</span><span class="skill">+0.2673<span>ship the model</span></span></li>
+        <li><span class="date">29 Sep</span><span>A fair benchmark over the model's own sample, and a regime-free chain that beats the model.</span><span class="skill">+0.1786<span>ship the average</span></span></li>
+        <li><span class="date">29 Sep</span><span>Equal blend with the chain adopted from a pre-registered experiment.</span><span class="skill">+0.2401<span>ship the model</span></span></li>
+      </ol>
+      <p class="caption">Skill is against the average since each series began for the first five rows, and against the
+        average over the model's own sample for the last two.</p>
+    </div>
+  </section>
+
+  <section class="block" id="paper">
+    <div class="wrap">
+      <p class="kicker">Paper</p>
+      <h2>Read the full account</h2>
+      <div class="paper">
+        <a class="cover" href="paper.pdf" aria-label="Open the paper as a PDF">
+          <div class="t">When to Ship the Historical Average</div>
+          <div class="s">A Pre-Registered, Point-in-Time Test of Regime-Based Probability Forecasts for the US Economy</div>
+          <div class="a">Jeddy Xie · September 2026</div>
+          <div class="lines"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </a>
+        <div>
+          <p class="prose">Written for readers without a background in economics or forecasting: a primer on probability
+            forecasts and how to score them, the data and model, the rules committed in advance, every result, what the
+            method cannot do, and appendices with every table behind the figures. Every number in it is generated from,
+            or checked against, the committed record.</p>
+          <div class="actions">
+            <a class="button primary" href="paper.pdf">Download the PDF</a>
+            <a class="button" href="https://github.com/Jeddy-Xie/forecasting-the-future/blob/main/paper/main.tex">LaTeX source</a>
+          </div>
+          <pre class="cite" id="bibtex"><button class="copy" type="button" id="copy-bibtex">Copy</button>@misc{xie2026ship,
+  author       = {Xie, Jeddy},
+  title        = {When to Ship the Historical Average: A Pre-Registered,
+                  Point-in-Time Test of Regime-Based Probability
+                  Forecasts for the {US} Economy},
+  year         = {2026},
+  howpublished = {\url{https://jeddy-xie.github.io/forecasting-the-future/}}
+}</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="resources">
+    <div class="wrap">
+      <p class="kicker">Go deeper</p>
+      <h2>The record behind every number</h2>
+      <div class="links">
+        <a class="link-card" href="https://github.com/Jeddy-Xie/forecasting-the-future"><strong>Repository</strong><span>Code, tests, notebooks and the pipeline that produces everything here.</span></a>
+        <a class="link-card" href="https://github.com/Jeddy-Xie/forecasting-the-future/blob/main/docs/RESULTS.md"><strong>Results</strong><span>Every headline number, regenerated rather than typed, with its history.</span></a>
+        <a class="link-card" href="https://github.com/Jeddy-Xie/forecasting-the-future/tree/main/proving/experiments"><strong>Pre-registrations</strong><span>The decision rules and experiments, committed before their results.</span></a>
+        <a class="link-card" href="https://github.com/Jeddy-Xie/forecasting-the-future/tree/main/docs/adr"><strong>Decision records</strong><span>Why each non-obvious choice was made, including the corrections.</span></a>
+        <a class="link-card" href="https://github.com/Jeddy-Xie/forecasting-the-future/tree/main/forecasts"><strong>Forward register</strong><span>Dated claims about the future, scored as they resolve.</span></a>
+        <a class="link-card" href="https://github.com/Jeddy-Xie/forecasting-the-future/blob/main/docs/RUNNING.md"><strong>Run it yourself</strong><span>No API key needed; one command rebuilds the data.</span></a>
+      </div>
+      <h3 style="margin-top:40px">Data sources</h3>
+      <p class="muted small">Every series is public. Each link opens the live, interactive chart at the source.</p>
+      <div class="sources">
+        <a href="https://fred.stlouisfed.org/series/INDPRO">INDPRO</a>
+        <a href="https://fred.stlouisfed.org/series/CPIAUCSL">CPIAUCSL</a>
+        <a href="https://fred.stlouisfed.org/series/TB3MS">TB3MS</a>
+        <a href="https://fred.stlouisfed.org/series/FEDFUNDS">FEDFUNDS</a>
+        <a href="https://fred.stlouisfed.org/series/GS10">GS10</a>
+        <a href="https://fred.stlouisfed.org/series/UNRATE">UNRATE</a>
+        <a href="https://fred.stlouisfed.org/series/USREC">USREC</a>
+        <a href="https://alfred.stlouisfed.org/">ALFRED vintages</a>
+        <a href="https://www.nber.org/research/data/us-business-cycle-expansions-and-contractions">NBER cycle dates</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; 2026 Jeddy Xie · MIT licence</span>
+    <span>Configuration <code id="configuration">7647c129be85291e</code> · <a href="https://github.com/Jeddy-Xie/forecasting-the-future">Source on GitHub</a></span>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
