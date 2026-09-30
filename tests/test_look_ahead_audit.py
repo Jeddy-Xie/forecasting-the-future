@@ -207,6 +207,10 @@ def settings(tmp_path_factory: pytest.TempPathFactory) -> RunSettings:
         refit_every_n_months=12,
         forecast_horizons_in_months=(12,),
         cache=CacheLayout(tmp_path_factory.mktemp("unused_cache_layout")),
+        # Experiment 0006's restriction defaults on only on its own branch, and no pair
+        # of candidates (1, 2) multiplies to six; this fixture pins the unrestricted
+        # sweep it was written for. test_structure_at_matched_granularity.py covers on.
+        restrict_the_two_chain_sweep_to_six_joint_states=False,
     )
 
 

@@ -40,6 +40,7 @@ from economic_regime_forecasting.models.two_timescale_hidden_markov_model import
 )
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     TwoChainStateCountSweep,
+    joint_state_count_required_by_a_joint_table,
 )
 
 MAXIMUM_REGIME_SWITCHES_PER_YEAR = 2.0
@@ -339,14 +340,29 @@ def gate_two_from_tables(
                 reason="loaded from the fitted artifact",
                 runner_up_state_count=None,
             )
-        return gate_two_regime_model_of_two_chains(
-            TwoChainStateCountSweep(
-                growth_chain_sweep=chains["growth"],
-                levels_chain_sweep=chains["inflation and rates"],
+        # Experiment 0006: the run's own joint table says which pairs its sweep offered,
+        # so the rebuilt gate reads the same rows the run's gate read.
+        required = joint_state_count_required_by_a_joint_table(
+            zip(
+                sweep_table["growth_chain_states"].astype(int),
+                sweep_table["levels_chain_states"].astype(int),
+                strict=True,
             ),
-            most_likely_state_path,
-            months,
+            [item.state_count for item in chains["growth"].evaluations],
+            [item.state_count for item in chains["inflation and rates"].evaluations],
         )
+        rebuilt = TwoChainStateCountSweep(
+            growth_chain_sweep=chains["growth"],
+            levels_chain_sweep=chains["inflation and rates"],
+            joint_state_count_required=required,
+        )
+        if rebuilt.recommended_state_count.label != model.state_count.label:
+            raise ValueError(
+                f"the sweep tables choose {rebuilt.recommended_state_count.label} but the fitted "
+                f"model has {model.state_count.label} chain states; the two artifacts come from "
+                "different runs."
+            )
+        return gate_two_regime_model_of_two_chains(rebuilt, most_likely_state_path, months)
 
     if "growth_chain_states" in sweep_table.columns:
         raise ValueError(

@@ -79,6 +79,7 @@ from economic_regime_forecasting.models.two_timescale_hidden_markov_model import
     TwoChainStateCount,
 )
 from economic_regime_forecasting.models.two_timescale_state_selection import (
+    joint_state_count_the_sweep_requires,
     sweep_state_counts_for_two_chains,
 )
 from economic_regime_forecasting.reporting.tables import text_table
@@ -325,6 +326,10 @@ def _fit_two_timescale_regimes(
         restarts=settings.expectation_maximisation_restarts,
         max_iterations=settings.expectation_maximisation_max_iterations,
         tolerance=settings.expectation_maximisation_tolerance,
+        # Experiment 0006: the same restriction as the burn-in sweep, from one helper.
+        joint_state_count_required=joint_state_count_the_sweep_requires(
+            settings.restrict_the_two_chain_sweep_to_six_joint_states
+        ),
     )
     model = sweep.recommended_model
     descriptions = describe_regimes(model, standardised, natural)

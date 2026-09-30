@@ -36,6 +36,9 @@ def test_the_shipped_configuration_hashes_to_the_recorded_digest() -> None:
         # Research arm A4's switch defaults on only on its own branch; the shipped
         # run had one chain, so it is named at that value here like the other two.
         separate_chains_for_growth_and_for_inflation_with_rates=False,
+        # Experiment 0006's restriction likewise defaults on only on its own branch;
+        # the shipped run had no restriction, so it is named at that value here.
+        restrict_the_two_chain_sweep_to_six_joint_states=False,
     )
     assert shipped.configuration_hash() == SHIPPED_HASH
 
@@ -118,4 +121,7 @@ def test_the_omission_map_holds_only_the_documented_switches() -> None:
         "start_walk_forward_when_every_input_is_point_in_time",
         # Research arm A4, experiment 0002: False is main's single chain.
         "separate_chains_for_growth_and_for_inflation_with_rates",
+        # Experiment 0006: False is the unrestricted two-chain sweep; the hash test in
+        # test_structure_at_matched_granularity.py pins that it reproduces main's digest.
+        "restrict_the_two_chain_sweep_to_six_joint_states",
     }

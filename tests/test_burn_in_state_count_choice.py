@@ -85,6 +85,10 @@ def settings(tmp_path) -> RunSettings:  # type: ignore[no-untyped-def]
         expectation_maximisation_max_iterations=25,
         expectation_maximisation_tolerance=1e-4,
         cache=CacheLayout(tmp_path / "cache"),
+        # Experiment 0006's restriction defaults on only on its own branch, and no pair
+        # of candidates (1, 2) multiplies to six; this fixture pins the unrestricted
+        # sweep it was written for. test_structure_at_matched_granularity.py covers on.
+        restrict_the_two_chain_sweep_to_six_joint_states=False,
     )
 
 

@@ -579,7 +579,13 @@ def test_a_model_and_a_sweep_table_from_different_runs_are_refused() -> None:
 def test_with_the_switch_off_the_hash_is_main_reference_runs() -> None:
     """At False the switch leaves no trace in the digest, so a run with it off
     claims main's identity only because it is main's configuration."""
-    main = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: False})
+    # Experiment 0006's restriction is named at main's value too: it defaults on only
+    # on its own branch, and main's digest has no trace of it.
+    main = dataclasses.replace(
+        DEFAULT_RUN_SETTINGS,
+        **{SWITCH: False},
+        restrict_the_two_chain_sweep_to_six_joint_states=False,
+    )
     arm = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: True})
     assert main.configuration_hash() == MAIN_REFERENCE_HASH
     assert arm.configuration_hash() != MAIN_REFERENCE_HASH
@@ -717,6 +723,10 @@ def _settings(root: Path, switch: bool = True) -> RunSettings:
         forecast_horizons_in_months=(12,),
         cache=CacheLayout(root),
         **{SWITCH: switch},
+        # Experiment 0006's restriction defaults on only on its own branch, and no pair
+        # of candidates (1, 2) multiplies to six; A4's tests pin the unrestricted sweep
+        # they were written for. test_structure_at_matched_granularity.py covers on.
+        restrict_the_two_chain_sweep_to_six_joint_states=False,
     )
 
 

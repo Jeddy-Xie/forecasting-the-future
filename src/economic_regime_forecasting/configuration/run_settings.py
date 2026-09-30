@@ -134,6 +134,24 @@ class RunSettings:
     field is left out of the configuration hash, so every digest main has written
     is unchanged. This is True only on the branch ``research/two-timescale-chains``."""
 
+    restrict_the_two_chain_sweep_to_six_joint_states: bool = True
+    """Experiment 0006, "structure at matched granularity": is it the two chains, or
+    just more cells? (``research/experiments-drafts/0006-structure-at-matched-granularity.md``)
+
+    With the two chains above, the state-count sweep offers only the pairs of chain
+    counts whose product is six, so the joint state space has exactly the six cells
+    of main's single six-state chain. With candidates 1 to 4 per chain those pairs are
+    2 x 3 and 3 x 2, and the sweep's existing rule chooses between them: each chain
+    persistent and populated enough, then the higher joint held-out log likelihood.
+    The pair 1 x 1 stays in the joint table as the null the regimes-exist gate reads.
+    It applies wherever the two-chain sweep runs: the burn-in choice the backtest and
+    the look-ahead audit use, and the full-sample sweep behind gate 2 and today's
+    forecast (``models/two_timescale_state_selection.py``).
+
+    False reproduces main: each chain's count is chosen on its own block, up to 4 x 4.
+    At False the field is left out of the configuration hash. It does nothing with one
+    chain. True only on the branch ``research/structure-at-matched-granularity``."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
     def configuration_hash(self) -> str:
@@ -167,6 +185,9 @@ SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, objec
     # Research arm A4 (experiment 0002). False is main's single chain, the behaviour
     # of the code before the field existed, so the entry meets the rule below.
     "separate_chains_for_growth_and_for_inflation_with_rates": False,
+    # Experiment 0006. False is the unrestricted two-chain sweep, the behaviour of the
+    # code before the field existed, so the entry meets the rule below.
+    "restrict_the_two_chain_sweep_to_six_joint_states": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 
