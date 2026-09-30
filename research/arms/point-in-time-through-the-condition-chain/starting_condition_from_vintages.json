@@ -1,0 +1,201 @@
+{
+  "as_corrected": [
+    {
+      "difference": 0.0530895973183253,
+      "horizon_months": 12,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": 0.025760573809889727,
+          "upper_bound": 0.08512904087245642
+        },
+        {
+          "confidence_level": 0.9667,
+          "lower_bound": 0.01732655993541358,
+          "upper_bound": 0.09367540467089575
+        }
+      ],
+      "rows_in_both": 3754
+    },
+    {
+      "difference": 0.0016206005657551925,
+      "horizon_months": 60,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": -0.006465799798465903,
+          "upper_bound": 0.006805515883472888
+        },
+        {
+          "confidence_level": 0.9667,
+          "lower_bound": -0.00888150125375236,
+          "upper_bound": 0.007982884961544262
+        }
+      ],
+      "rows_in_both": 3274
+    },
+    {
+      "difference": -0.003966000659176433,
+      "horizon_months": 120,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": -0.008191515656044479,
+          "upper_bound": 0.0019573254789735563
+        },
+        {
+          "confidence_level": 0.9667,
+          "lower_bound": -0.010778499364504106,
+          "upper_bound": 0.002740550969550724
+        }
+      ],
+      "rows_in_both": 2674
+    }
+  ],
+  "as_scored": [
+    {
+      "difference": 0.05348611278922169,
+      "horizon_months": 12,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": 0.025912735878650638,
+          "upper_bound": 0.08567640250674091
+        },
+        {
+          "confidence_level": 0.9667,
+          "lower_bound": 0.017355053792609352,
+          "upper_bound": 0.09404928610160221
+        }
+      ],
+      "rows_in_both": 3754
+    },
+    {
+      "difference": 0.0016206848289905956,
+      "horizon_months": 60,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": -0.0064666156768923505,
+          "upper_bound": 0.006805420616026989
+        },
+        {
+          "confidence_level": 0.9667,
+          "lower_bound": -0.00888253299183739,
+          "upper_bound": 0.007982859016629668
+        }
+      ],
+      "rows_in_both": 3274
+    },
+    {
+      "difference": -0.003966001328490815,
+      "horizon_months": 120,
+      "intervals": [
+        {
+          "confidence_level": 0.9,
+          "lower_bound": -0.008191516196661105,
+          "upper_bound": 0.001957326199970431
+        },
+        {
+          "confidence_level": 0.9667,
+          "lower_bound": -0.010778499662786732,
+          "upper_bound": 0.0027405513519647667
+        }
+      ],
+      "rows_in_both": 2674
+    }
+  ],
+  "corrected_indicators": [
+    "consumer_price_inflation_above_three_percent_at_horizon",
+    "industrial_production_growth_above_two_percent_at_horizon"
+  ],
+  "forecast_dates_whose_starting_condition_or_month_changed": {
+    "consumer_price_inflation_above_three_percent_at_horizon": 6,
+    "industrial_production_growth_above_two_percent_at_horizon": 60
+  },
+  "one_year_shift": -0.0003965154708963914,
+  "per_indicator_one_year_corrected": [
+    {
+      "baseline_brier_skill_score": 0.501261416215437,
+      "current_brier_skill_score": 0.501261416215437,
+      "difference": 0.0,
+      "horizon_months": 12,
+      "indicator": "consumer_price_inflation_above_five_percent_within_horizon",
+      "rows_in_both": 367
+    },
+    {
+      "baseline_brier_skill_score": 0.14221321696761402,
+      "current_brier_skill_score": 0.13216712458848634,
+      "difference": -0.01004609237912768,
+      "horizon_months": 12,
+      "indicator": "consumer_price_inflation_above_three_percent_at_horizon",
+      "rows_in_both": 376
+    },
+    {
+      "baseline_brier_skill_score": -0.03273915140237049,
+      "current_brier_skill_score": 0.02630328715578134,
+      "difference": 0.05904243855815183,
+      "horizon_months": 12,
+      "indicator": "economy_in_recession_at_horizon_date",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": -0.28305634232910504,
+      "current_brier_skill_score": -0.28305634232910504,
+      "difference": 0.0,
+      "horizon_months": 12,
+      "indicator": "economy_in_recession_within_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": 0.3237450374201081,
+      "current_brier_skill_score": 0.48629260588153334,
+      "difference": 0.16254756846142526,
+      "horizon_months": 12,
+      "indicator": "federal_funds_rate_above_four_percent_at_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": 0.675166005220184,
+      "current_brier_skill_score": 0.675166005220184,
+      "difference": 0.0,
+      "horizon_months": 12,
+      "indicator": "federal_funds_rate_below_one_percent_within_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": -0.04577231405092719,
+      "current_brier_skill_score": -0.04413911150020344,
+      "difference": 0.0016332025507237447,
+      "horizon_months": 12,
+      "indicator": "industrial_production_growth_above_two_percent_at_horizon",
+      "rows_in_both": 377
+    },
+    {
+      "baseline_brier_skill_score": 0.1785580094977831,
+      "current_brier_skill_score": 0.1785580094977831,
+      "difference": 0.0,
+      "horizon_months": 12,
+      "indicator": "treasury_yield_curve_inverted_within_horizon",
+      "rows_in_both": 378
+    },
+    {
+      "baseline_brier_skill_score": -0.1101163372056655,
+      "current_brier_skill_score": 0.20760251878641445,
+      "difference": 0.31771885599207994,
+      "horizon_months": 12,
+      "indicator": "unemployment_rate_above_five_percent_at_horizon",
+      "rows_in_both": 377
+    },
+    {
+      "baseline_brier_skill_score": 0.43669986356347135,
+      "current_brier_skill_score": 0.43669986356347135,
+      "difference": 0.0,
+      "horizon_months": 12,
+      "indicator": "unemployment_rate_above_seven_percent_within_horizon",
+      "rows_in_both": 367
+    }
+  ],
+  "question": "rule 0007 class B: B1 minus reference-0008, paired, model-sample, with the starting condition of the consumer-price and industrial-production point-in-time indicators read from the archival vintage dated each forecast date",
+  "rows_whose_predicted_probability_moved": 198
+}

@@ -1,0 +1,204 @@
+{
+  "pooled_against_model_sample": [
+    {
+      "horizon_months": 12,
+      "mean_of_ratios": 0.23208205317887462,
+      "pooled": 0.27606892952205275,
+      "run": "B1",
+      "signs_agree": true
+    },
+    {
+      "horizon_months": 60,
+      "mean_of_ratios": 0.0705846912541883,
+      "pooled": 0.13350051331234292,
+      "run": "B1",
+      "signs_agree": true
+    },
+    {
+      "horizon_months": 120,
+      "mean_of_ratios": -0.21487924172028483,
+      "pooled": 0.22002367527648214,
+      "run": "B1",
+      "signs_agree": false
+    },
+    {
+      "horizon_months": 12,
+      "mean_of_ratios": 0.17859594038965293,
+      "pooled": 0.21110885134887536,
+      "run": "reference-0008",
+      "signs_agree": true
+    },
+    {
+      "horizon_months": 60,
+      "mean_of_ratios": 0.0689640064251977,
+      "pooled": 0.13107131308310727,
+      "run": "reference-0008",
+      "signs_agree": true
+    },
+    {
+      "horizon_months": 120,
+      "mean_of_ratios": -0.21091324039179402,
+      "pooled": 0.22123150453389995,
+      "run": "reference-0008",
+      "signs_agree": false
+    }
+  ],
+  "regimes_help": [
+    {
+      "benchmark": "model-sample",
+      "chain_mean_skill": 0.24774247461893442,
+      "difference": -0.015660421440059802,
+      "horizon_months": 12,
+      "interval_90": [
+        -0.05504131410482599,
+        0.027295102873689293
+      ],
+      "method_mean_skill": 0.23208205317887462,
+      "reading": "NOT SHOWN",
+      "run": "B1"
+    },
+    {
+      "benchmark": "series-start",
+      "chain_mean_skill": 0.325450515273877,
+      "difference": -0.006512080144173316,
+      "horizon_months": 12,
+      "interval_90": [
+        -0.04033381357193743,
+        0.024505291794688917
+      ],
+      "method_mean_skill": 0.31893843512970366,
+      "reading": "NOT SHOWN",
+      "run": "B1"
+    },
+    {
+      "benchmark": "model-sample",
+      "chain_mean_skill": 0.08848364299117878,
+      "difference": -0.01789895173699048,
+      "horizon_months": 60,
+      "interval_90": [
+        -0.17323793631096854,
+        0.08083771116825418
+      ],
+      "method_mean_skill": 0.0705846912541883,
+      "reading": "NOT SHOWN",
+      "run": "B1"
+    },
+    {
+      "benchmark": "series-start",
+      "chain_mean_skill": 0.13530951437057379,
+      "difference": -0.014339480361755974,
+      "horizon_months": 60,
+      "interval_90": [
+        -0.1769845302777326,
+        0.07883554513443848
+      ],
+      "method_mean_skill": 0.12097003400881781,
+      "reading": "NOT SHOWN",
+      "run": "B1"
+    },
+    {
+      "benchmark": "model-sample",
+      "chain_mean_skill": 0.03244573940681708,
+      "difference": -0.2473249811271019,
+      "horizon_months": 120,
+      "interval_90": [
+        -0.32973403781837773,
+        -0.07660252684686614
+      ],
+      "method_mean_skill": -0.21487924172028483,
+      "reading": "REGIMES DO NOT HELP",
+      "run": "B1"
+    },
+    {
+      "benchmark": "series-start",
+      "chain_mean_skill": 0.08138790252573319,
+      "difference": -0.24614718288277876,
+      "horizon_months": 120,
+      "interval_90": [
+        -0.3297439954038495,
+        -0.07656298597996013
+      ],
+      "method_mean_skill": -0.16475928035704557,
+      "reading": "REGIMES DO NOT HELP",
+      "run": "B1"
+    },
+    {
+      "benchmark": "model-sample",
+      "chain_mean_skill": 0.24774247461893442,
+      "difference": -0.06914653422928149,
+      "horizon_months": 12,
+      "interval_90": [
+        -0.11479810765376595,
+        -0.02921245236972729
+      ],
+      "method_mean_skill": 0.17859594038965293,
+      "reading": "REGIMES DO NOT HELP",
+      "run": "reference-0008"
+    },
+    {
+      "benchmark": "series-start",
+      "chain_mean_skill": 0.325450515273877,
+      "difference": -0.0581950656794214,
+      "horizon_months": 12,
+      "interval_90": [
+        -0.09606463382464715,
+        -0.026067909795524462
+      ],
+      "method_mean_skill": 0.2672554495944556,
+      "reading": "REGIMES DO NOT HELP",
+      "run": "reference-0008"
+    },
+    {
+      "benchmark": "model-sample",
+      "chain_mean_skill": 0.08848364299117878,
+      "difference": -0.019519636565981074,
+      "horizon_months": 60,
+      "interval_90": [
+        -0.172749833639464,
+        0.07905229556071423
+      ],
+      "method_mean_skill": 0.0689640064251977,
+      "reading": "NOT SHOWN",
+      "run": "reference-0008"
+    },
+    {
+      "benchmark": "series-start",
+      "chain_mean_skill": 0.13530951437057379,
+      "difference": -0.015893330286825907,
+      "horizon_months": 60,
+      "interval_90": [
+        -0.17755702249107289,
+        0.07569317351310656
+      ],
+      "method_mean_skill": 0.11941618408374788,
+      "reading": "NOT SHOWN",
+      "run": "reference-0008"
+    },
+    {
+      "benchmark": "model-sample",
+      "chain_mean_skill": 0.03244573940681708,
+      "difference": -0.2433589797986111,
+      "horizon_months": 120,
+      "interval_90": [
+        -0.3271069057846415,
+        -0.07186080468638438
+      ],
+      "method_mean_skill": -0.21091324039179402,
+      "reading": "REGIMES DO NOT HELP",
+      "run": "reference-0008"
+    },
+    {
+      "benchmark": "series-start",
+      "chain_mean_skill": 0.08138790252573319,
+      "difference": -0.24382234162565175,
+      "horizon_months": 120,
+      "interval_90": [
+        -0.3289481070679523,
+        -0.07933468115706091
+      ],
+      "method_mean_skill": -0.16243443909991856,
+      "reading": "REGIMES DO NOT HELP",
+      "run": "reference-0008"
+    }
+  ]
+}
