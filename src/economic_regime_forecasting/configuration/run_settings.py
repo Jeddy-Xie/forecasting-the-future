@@ -121,7 +121,7 @@ class RunSettings:
     the model revised consumer price index values through the publication-lag
     fallback -- 41% of the walk-forward, every month from 1971-12 to 1994-02."""
 
-    separate_chains_for_growth_and_for_inflation_with_rates: bool = True
+    separate_chains_for_growth_and_for_inflation_with_rates: bool = False
     """Research arm A4 of experiment 0002: two regime chains instead of one.
 
     One chain drives the growth column; a second, independent chain drives the
