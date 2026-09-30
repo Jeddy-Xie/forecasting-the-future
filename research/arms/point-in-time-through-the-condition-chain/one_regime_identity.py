@@ -231,6 +231,9 @@ def identity(out: Path) -> int:
         refit.loc[point_in_time, "condition_chain_probability"].to_numpy(),
         int(point_in_time.sum()),
     )
+    contrast["outcome"] = (
+        "DIFFERS, as expected" if contrast["rows_differing"] else "EQUAL, which is unexpected"
+    )
 
     cadence = _paired(
         b1.assign(predicted_probability=b1["condition_chain_probability"]),

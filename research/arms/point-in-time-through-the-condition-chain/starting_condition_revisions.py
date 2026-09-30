@@ -49,8 +49,9 @@ def main(out: Path) -> int:
         derived = workspace.registry.derived_by_name(name)
         entry = None if derived is not None else workspace.registry[name]
         revised = bool(entry is not None and entry.is_revised)
-        compared = flips = vintage_lacks_the_label = not_cached = 0
+        compared = flips = vintage_lacks_the_label = not_cached = empty_vintage = 0
         flip_dates: list[str] = []
+        lacking_dates: list[str] = []
         for stamp in schedule.forecast_dates:
             condition = walk_forward.condition_available_at(histories[indicator.name], stamp.date())
             label = pd.Timestamp(condition.index[-1])
@@ -60,10 +61,17 @@ def main(out: Path) -> int:
             if not workspace.cache.contains(request):
                 not_cached += 1
                 continue
-            vintage = workspace.cache.read(request).observations
+            vintage = workspace.cache.read(request).observations.dropna()
+            if vintage.empty:
+                empty_vintage += 1
+                continue
             as_published = indicator_outcomes.monthly_condition(indicator, vintage).dropna()
             if label not in as_published.index:
                 vintage_lacks_the_label += 1
+                lacking_dates.append(
+                    f"{stamp.date().isoformat()} starts from {label.date().isoformat()}; vintage "
+                    f"ends {pd.Timestamp(as_published.index[-1]).date().isoformat()}"
+                )
                 continue
             compared += 1
             if (float(as_published[label]) > 0.5) != (float(condition.iloc[-1]) > 0.5):
@@ -76,7 +84,9 @@ def main(out: Path) -> int:
                 "revised": revised,
                 "forecast_dates": len(schedule.forecast_dates),
                 "vintage_not_cached": not_cached,
+                "vintage_cached_but_empty": empty_vintage,
                 "vintage_lacks_the_starting_month": vintage_lacks_the_label,
+                "vintage_lacks_the_starting_month_at": lacking_dates,
                 "compared": compared,
                 "starting_condition_flips": flips,
                 "flip_forecast_dates": flip_dates,
