@@ -579,7 +579,12 @@ def test_a_model_and_a_sweep_table_from_different_runs_are_refused() -> None:
 def test_with_the_switch_off_the_hash_is_main_reference_runs() -> None:
     """At False the switch leaves no trace in the digest, so a run with it off
     claims main's identity only because it is main's configuration."""
-    main = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: False})
+    # Research arm B2's switch (experiment 0008) defaults on only on its own branch;
+    # the reference run observed the three dimensions only, so it is named off here.
+    main = dataclasses.replace(
+        DEFAULT_RUN_SETTINGS,
+        **{SWITCH: False, "observe_the_unemployment_rate_and_the_term_spread": False},
+    )
     arm = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: True})
     assert main.configuration_hash() == MAIN_REFERENCE_HASH
     assert arm.configuration_hash() != MAIN_REFERENCE_HASH

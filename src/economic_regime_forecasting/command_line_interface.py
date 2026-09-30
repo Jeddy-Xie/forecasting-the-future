@@ -28,6 +28,7 @@ import logging
 import sys
 import tempfile
 import time
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
@@ -50,6 +51,7 @@ from economic_regime_forecasting.configuration import shipping_approval
 from economic_regime_forecasting.configuration.registry import (
     BinaryIndicator,
     EconomicSeriesRegistry,
+    ModelDimension,
     load_registries,
 )
 from economic_regime_forecasting.configuration.run_settings import (
@@ -67,7 +69,11 @@ from economic_regime_forecasting.data.panel import (
 )
 from economic_regime_forecasting.evaluation import skill_by_horizon as skill_by_horizon_module
 from economic_regime_forecasting.evaluation import verdict as verdict_module
-from economic_regime_forecasting.features.observation_matrix import build_observation_matrix
+from economic_regime_forecasting.features.observation_matrix import (
+    COLUMN_NAMES,
+    DIMENSION_ORDER,
+    build_observation_matrix,
+)
 from economic_regime_forecasting.models import indicator_forecast, regime_forecast
 from economic_regime_forecasting.models.model_loading import regime_model_from_dictionary
 from economic_regime_forecasting.models.state_labelling import describe_regimes, regime_table
@@ -77,6 +83,7 @@ from economic_regime_forecasting.models.state_selection import (
 )
 from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
     TwoChainStateCount,
+    chain_columns,
 )
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     sweep_state_counts_for_two_chains,
@@ -116,7 +123,9 @@ class Workspace:
         settings.cache.create_directories()
         registry, indicators = load_registries()
         return cls(
-            registry=registry,
+            # The settings decide which columns the model observes (experiment 0008,
+            # arm B2), so every command reads one registry configured by them.
+            registry=registry.configured_for(settings),
             indicators=indicators,
             cache=SeriesCache(settings.cache.raw, settings.cache.vintage),
             artifacts=ArtifactStore(settings.cache.models),
@@ -199,7 +208,9 @@ def fetch_data(workspace: Workspace, today: date, workers: int) -> int:
     # configuration and every cell of the look-ahead comparison, and the scan that
     # computes the honest start still has the pre-1994 vintages it must look at.
     schedule = workspace.widest_backtest_schedule(today)
-    revised_inputs = [item for item in workspace.registry.model_inputs if item.is_revised]
+    revised_inputs = [
+        item for item in workspace.registry.series_observed_by_the_model if item.is_revised
+    ]
     wanted = [
         (entry, stamp.date())
         for entry in revised_inputs
@@ -279,7 +290,13 @@ def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.
     matrix = workspace.observation_matrix_as_of(today)
     settings = workspace.settings
     if settings.separate_chains_for_growth_and_for_inflation_with_rates:
-        return _fit_two_timescale_regimes(workspace, matrix.values, matrix.transformed.to_numpy())
+        return _fit_two_timescale_regimes(
+            workspace,
+            matrix.values,
+            matrix.transformed.to_numpy(),
+            column_dimensions=matrix.column_dimensions,
+            column_names=matrix.column_names,
+        )
     sweep = sweep_state_counts(
         matrix.values,
         settings.hidden_state_counts_to_search,
@@ -307,7 +324,11 @@ def fit_regimes(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.
 
 
 def _fit_two_timescale_regimes(
-    workspace: Workspace, standardised: np.ndarray, natural: np.ndarray
+    workspace: Workspace,
+    standardised: np.ndarray,
+    natural: np.ndarray,
+    column_dimensions: Sequence[ModelDimension] = DIMENSION_ORDER,
+    column_names: Sequence[str] = COLUMN_NAMES,
 ) -> tuple[int, pipeline_gates.GateReport]:
     """Gate 2 for research arm A4: the sweep run on each chain's own block.
 
@@ -315,9 +336,11 @@ def _fit_two_timescale_regimes(
     (the joint table alone cannot answer per-chain persistence or population, which
     gate 2 asks of each chain), the product of the two chosen chains as the selected
     model, and a description of every joint regime. `forecast-now` reads the chain counts back
-    off the selected model and refits both chains on today's panel.
+    off the selected model and refits both chains on today's panel. Each chain's block
+    is the columns of its dimensions, which experiment 0008's arm B2 widens.
     """
     settings = workspace.settings
+    growth_columns, levels_columns = chain_columns(column_dimensions)
     sweep = sweep_state_counts_for_two_chains(
         standardised,
         settings.hidden_state_counts_to_search,
@@ -325,9 +348,11 @@ def _fit_two_timescale_regimes(
         restarts=settings.expectation_maximisation_restarts,
         max_iterations=settings.expectation_maximisation_max_iterations,
         tolerance=settings.expectation_maximisation_tolerance,
+        growth_columns=growth_columns,
+        levels_columns=levels_columns,
     )
     model = sweep.recommended_model
-    descriptions = describe_regimes(model, standardised, natural)
+    descriptions = describe_regimes(model, standardised, natural, column_names=column_names)
 
     workspace.artifacts.write_table(ARTIFACTS.state_count_sweep, sweep.joint_table())
     workspace.artifacts.write_table(ARTIFACTS.state_count_sweep_by_chain, sweep.table())
@@ -418,7 +443,7 @@ def _missing_vintages(
     """Which archival vintages the walk-forward will ask for and the cache lacks."""
     return [
         (entry.series_id, stamp.date())
-        for entry in workspace.registry.model_inputs
+        for entry in workspace.registry.series_observed_by_the_model
         if entry.is_revised
         for stamp in schedule.forecast_dates
         if not workspace.cache.contains(

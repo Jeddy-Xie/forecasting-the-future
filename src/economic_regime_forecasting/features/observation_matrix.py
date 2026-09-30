@@ -7,13 +7,20 @@ order and no other:
 1. normalise every series to month-start timestamps;
 2. apply each series' registered transform, which is what makes vintages with
    different index bases comparable;
-3. align the three on the months all of them cover;
+3. align the columns on the months all of them cover;
 4. standardise each column with an expanding window, so no row is scaled using
    information from a later row.
 
 The column order is fixed by ``ModelDimension`` -- growth, inflation, rates --
 because state labelling later reads emission means by position, and a permuted
 column order would silently rename every regime.
+
+When the registry is configured to observe the forecast targets (research arm B2
+of experiment 0008), their columns follow the three, in registry order, and each
+carries the dimension that says which regime chain reads it. A derived difference
+is taken from its two point-in-time legs before step 2. Every column goes through
+the same four steps, so the alignment in step 3 starts the matrix where its
+shortest column starts.
 """
 
 from __future__ import annotations
@@ -27,6 +34,7 @@ import pandas as pd
 from economic_regime_forecasting.configuration.registry import (
     EconomicSeriesRegistry,
     ModelDimension,
+    ObservationColumn,
 )
 from economic_regime_forecasting.data import transforms
 from economic_regime_forecasting.data.panel import PointInTimePanel
@@ -49,7 +57,8 @@ class ObservationMatrix:
 
     as_of: date
     standardised: pd.DataFrame
-    """Rows are months, columns are growth, inflation and rates, in that order."""
+    """Rows are months, columns are growth, inflation and rates, in that order, then
+    any forecast-target columns the registry is configured to observe."""
 
     transformed: pd.DataFrame
     """The same months in their natural units, kept for interpreting regimes."""
@@ -57,6 +66,14 @@ class ObservationMatrix:
     bridged_months: tuple[pd.Timestamp, ...]
     """Months whose raw value was interpolated across a one-month hole in the
     source data. Recorded so the manifest can say which numbers were imputed."""
+
+    column_dimensions: tuple[ModelDimension, ...] = DIMENSION_ORDER
+    """The dimension of each column, in column order, which is what assigns a column
+    to a regime chain. The three dimensions unless forecast targets are observed."""
+
+    @property
+    def column_names(self) -> tuple[str, ...]:
+        return tuple(str(name) for name in self.standardised.columns)
 
     @property
     def values(self) -> np.ndarray:
@@ -85,21 +102,21 @@ def build_observation_matrix(
     minimum_periods_for_standardisation: int = transforms.MINIMUM_PERIODS_FOR_STANDARDISATION,
 ) -> ObservationMatrix:
     """Build the standardised observation matrix from a point-in-time panel."""
-    inputs = {item.model_dimension: item for item in registry.model_inputs}
+    observed = registry.observation_columns
+    names = [column.name for column in observed]
 
     columns: dict[str, pd.Series] = {}
     bridged: list[pd.Timestamp] = []
-    for dimension in DIMENSION_ORDER:
-        entry = inputs[dimension]
-        raw = transforms.to_month_start(panel[entry.name])
+    for column in observed:
+        raw = _raw_column(panel, column)
         repaired, filled = transforms.bridge_isolated_missing_months(raw)
         bridged.extend(filled)
-        columns[dimension.value] = transforms.apply_transform(repaired, entry.transform)
+        columns[column.name] = transforms.apply_transform(repaired, column.transform)
 
     transformed = pd.DataFrame(columns).dropna(how="any")
     if transformed.empty:
         raise ObservationMatrixError(
-            f"no month as of {panel.as_of.isoformat()} has all three model inputs. The binding "
+            f"no month as of {panel.as_of.isoformat()} has every model input. The binding "
             f"constraint is usually the shortest series: "
             f"{ {name: int(series.notna().sum()) for name, series in columns.items()} }"
         )
@@ -124,7 +141,22 @@ def build_observation_matrix(
 
     return ObservationMatrix(
         as_of=panel.as_of,
-        standardised=standardised[list(COLUMN_NAMES)],
-        transformed=transformed.loc[standardised.index, list(COLUMN_NAMES)],
+        standardised=standardised[names],
+        transformed=transformed.loc[standardised.index, names],
         bridged_months=tuple(sorted(set(bridged))),
+        column_dimensions=tuple(column.dimension for column in observed),
     )
+
+
+def _raw_column(panel: PointInTimePanel, column: ObservationColumn) -> pd.Series:
+    """One column's untransformed values, month-start labelled.
+
+    A difference is taken on the months both point-in-time legs cover, so it ends
+    where the later-published leg ends: its publication lag is the larger of the two.
+    """
+    if column.subtracted_series is None:
+        return transforms.to_month_start(panel[column.series])
+    return transforms.difference(
+        transforms.to_month_start(panel[column.series]),
+        transforms.to_month_start(panel[column.subtracted_series]),
+    ).rename(column.name)

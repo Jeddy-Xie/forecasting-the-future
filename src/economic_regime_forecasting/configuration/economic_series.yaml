@@ -122,9 +122,12 @@ observation_series:
     series_id: UNRATE
     description: >-
       Unemployment Rate, seasonally adjusted. Used to resolve two of the binary
-      indicators; not a model input.
+      indicators. Not a model input, except that with
+      observe_the_unemployment_rate_and_the_term_spread on (experiment 0008, arm
+      B2) it joins the growth chain as a level, read from archival vintages.
     role: labour
     model_dimension: null
+    model_dimension_when_forecast_targets_are_observed: growth
     frequency: monthly
     units: percent of labour force
     transform: level
@@ -156,6 +159,12 @@ observation_series:
     observation_start: 1854-12-01
     is_revised: true
 
+# model_dimension_when_forecast_targets_are_observed (optional) names the dimension,
+# and so the regime chain, a series joins when RunSettings'
+# observe_the_unemployment_rate_and_the_term_spread is on: growth for the growth
+# chain, inflation or rates for the inflation-and-rates chain. Off, it is ignored and
+# the observation vector is the three model_dimension series above.
+
 # Series computed from the ones above rather than fetched. Declared here so an
 # indicator can name one without any code change.
 derived_series:
@@ -165,11 +174,15 @@ derived_series:
       Ten-year Treasury yield minus the three-month bill rate. Negative values
       are an inverted yield curve. This pairing is used rather than ten-year
       minus two-year because the three-month leg extends the history back to
-      April 1953, where the two-year series begins only in June 1976.
+      April 1953, where the two-year series begins only in June 1976. With
+      observe_the_unemployment_rate_and_the_term_spread on (experiment 0008, arm
+      B2) it joins the inflation-and-rates chain as a level; both legs are
+      market data, never revised, published at a 32-day lag.
     operation: difference
     minuend: ten_year_treasury_yield
     subtrahend: three_month_treasury_bill_rate
     units: percentage points
+    model_dimension_when_forecast_targets_are_observed: rates
 
 # Deliberately excluded, with reasons, so the choice is not silently revisited:
 #   real_gross_domestic_product (GDPC1) - quarterly. Mixing it into a monthly

@@ -10,13 +10,16 @@ that half-works.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from enum import Enum
 from pathlib import Path
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import yaml
+
+if TYPE_CHECKING:
+    from economic_regime_forecasting.configuration.run_settings import RunSettings
 
 _REGISTRY_DIRECTORY: Final[Path] = Path(__file__).resolve().parent
 ECONOMIC_SERIES_FILE: Final[Path] = _REGISTRY_DIRECTORY / "economic_series.yaml"
@@ -103,6 +106,10 @@ class EconomicSeries:
     publication_lag_days: int
     observation_start: date
     is_revised: bool
+    model_dimension_when_forecast_targets_are_observed: ModelDimension | None = None
+    """Research arm B2 of experiment 0008: the dimension, and so the chain, this series
+    joins when a run observes what it forecasts. ``None`` for every series that is
+    either a model input already or never one."""
 
     @property
     def is_model_input(self) -> bool:
@@ -119,6 +126,33 @@ class DerivedSeries:
     minuend: str
     subtrahend: str
     units: str
+    model_dimension_when_forecast_targets_are_observed: ModelDimension | None = None
+    """As for a fetched series. A difference of two series in the same units enters
+    the model as a level, the way the indicator resolving on it reads it."""
+
+
+@dataclass(frozen=True)
+class ObservationColumn:
+    """One column of the observation matrix: its name, the chain that reads it, and
+    the fetched series it is built from.
+
+    The three dimension columns are named by their dimension -- growth, inflation,
+    rates -- exactly as they always have been. A column added when forecast targets
+    are observed is named by its series."""
+
+    name: str
+    dimension: ModelDimension
+    transform: Transform
+    series: str
+    """The fetched series the column reads; for a difference, the minuend."""
+    subtracted_series: str | None = None
+    """For a derived difference, the fetched series subtracted from ``series``."""
+
+    @property
+    def fetched_series(self) -> tuple[str, ...]:
+        if self.subtracted_series is None:
+            return (self.series,)
+        return (self.series, self.subtracted_series)
 
 
 @dataclass(frozen=True)
@@ -152,6 +186,10 @@ class EconomicSeriesRegistry:
 
     series: tuple[EconomicSeries, ...]
     derived: tuple[DerivedSeries, ...]
+    forecast_targets_are_observed: bool = False
+    """Whether the observation matrix carries the forecast-target columns as well as the
+    three dimensions (research arm B2, experiment 0008). Set only by
+    :meth:`configured_for`, from ``RunSettings``; the registry as loaded is False."""
 
     def __post_init__(self) -> None:
         names = [item.name for item in self.series] + [item.name for item in self.derived]
@@ -191,6 +229,95 @@ class EconomicSeriesRegistry:
                 "in economic_series.yaml."
             )
         return tuple(by_dimension[dimension] for dimension in ModelDimension)
+
+    @property
+    def forecast_target_columns(self) -> tuple[ObservationColumn, ...]:
+        """The columns declared for when forecast targets are observed, fetched series
+        first and then derived ones, each in registry order. Declared, whether or not
+        this registry observes them."""
+        columns: list[ObservationColumn] = []
+        for item in self.series:
+            dimension = item.model_dimension_when_forecast_targets_are_observed
+            if dimension is not None:
+                columns.append(
+                    ObservationColumn(
+                        name=item.name,
+                        dimension=dimension,
+                        transform=item.transform,
+                        series=item.name,
+                    )
+                )
+        for derived in self.derived:
+            dimension = derived.model_dimension_when_forecast_targets_are_observed
+            if dimension is not None:
+                columns.append(
+                    ObservationColumn(
+                        name=derived.name,
+                        dimension=dimension,
+                        transform=Transform.LEVEL,
+                        series=derived.minuend,
+                        subtracted_series=derived.subtrahend,
+                    )
+                )
+        return tuple(columns)
+
+    @property
+    def observation_columns(self) -> tuple[ObservationColumn, ...]:
+        """Every column of the observation matrix, in order: growth, inflation and rates,
+        then the forecast-target columns when this registry observes them."""
+        dimensions = tuple(
+            ObservationColumn(
+                name=entry.model_dimension.value,
+                dimension=entry.model_dimension,
+                transform=entry.transform,
+                series=entry.name,
+            )
+            for entry in self.model_inputs
+            if entry.model_dimension is not None
+        )
+        if not self.forecast_targets_are_observed:
+            return dimensions
+        return dimensions + self.forecast_target_columns
+
+    @property
+    def series_observed_by_the_model(self) -> tuple[EconomicSeries, ...]:
+        """Every fetched series the observation matrix reads, each once, in column order.
+
+        Exactly ``model_inputs`` unless forecast targets are observed. This is the list
+        a point-in-time panel is assembled from, fetched as archival vintages, and
+        scanned for the publication-lag fallback, so a series that joins the model is
+        held to the same honest-start rule as the three that were always there.
+        """
+        names: list[str] = []
+        for column in self.observation_columns:
+            for name in column.fetched_series:
+                if name not in names:
+                    names.append(name)
+        return tuple(self[name] for name in names)
+
+    def configured_for(self, settings: RunSettings) -> EconomicSeriesRegistry:
+        """This registry as a run with ``settings`` observes it.
+
+        Every function that takes both a registry and the settings calls this first, so
+        the settings are the one source of truth for which columns the model reads, and
+        a registry configured for one run cannot silently serve another. Idempotent.
+        """
+        observe = settings.observe_the_unemployment_rate_and_the_term_spread
+        if (
+            observe
+            and self.forecast_target_columns
+            and not settings.separate_chains_for_growth_and_for_inflation_with_rates
+        ):
+            raise RegistryError(
+                "observe_the_unemployment_rate_and_the_term_spread adds "
+                f"{[column.name for column in self.forecast_target_columns]} to the growth chain "
+                "and the inflation-and-rates chain, and this configuration has one chain "
+                "(separate_chains_for_growth_and_for_inflation_with_rates is False). Turn one "
+                "of the two settings off or the other on."
+            )
+        if observe == self.forecast_targets_are_observed:
+            return self
+        return replace(self, forecast_targets_are_observed=observe)
 
     def validate_against(self, indicators: Sequence[BinaryIndicator]) -> None:
         """Check every indicator names a real series and a coherent rule.
@@ -265,8 +392,19 @@ def load_economic_series_registry(path: Path = ECONOMIC_SERIES_FILE) -> Economic
                     _require(entry, "observation_start", f"series {name!r}")
                 ),
                 is_revised=bool(_require(entry, "is_revised", f"series {name!r}")),
+                model_dimension_when_forecast_targets_are_observed=_forecast_target_dimension(
+                    entry, f"series {name!r}"
+                ),
             )
         )
+        if series[-1].is_model_input and (
+            series[-1].model_dimension_when_forecast_targets_are_observed is not None
+        ):
+            raise RegistryError(
+                f"series {name!r} is a model input already (model_dimension "
+                f"{dimension_value!r}), so it cannot also join the model when forecast targets "
+                "are observed. Remove model_dimension_when_forecast_targets_are_observed."
+            )
 
     derived: list[DerivedSeries] = []
     for entry in document.get("derived_series") or []:
@@ -285,6 +423,9 @@ def load_economic_series_registry(path: Path = ECONOMIC_SERIES_FILE) -> Economic
                 minuend=_require(entry, "minuend", f"derived series {name!r}"),
                 subtrahend=_require(entry, "subtrahend", f"derived series {name!r}"),
                 units=_require(entry, "units", f"derived series {name!r}"),
+                model_dimension_when_forecast_targets_are_observed=_forecast_target_dimension(
+                    entry, f"derived series {name!r}"
+                ),
             )
         )
 
@@ -334,6 +475,19 @@ def load_binary_indicators(path: Path = BINARY_INDICATORS_FILE) -> tuple[BinaryI
     if duplicates:
         raise RegistryError(f"indicator names must be unique; repeated: {sorted(duplicates)}")
     return tuple(indicators)
+
+
+def _forecast_target_dimension(entry: Mapping[str, Any], context: str) -> ModelDimension | None:
+    value = entry.get("model_dimension_when_forecast_targets_are_observed")
+    if value is None:
+        return None
+    try:
+        return ModelDimension(value)
+    except ValueError as error:
+        raise RegistryError(
+            f"{context} declares model_dimension_when_forecast_targets_are_observed {value!r}; "
+            f"it must be one of {[dimension.value for dimension in ModelDimension]}."
+        ) from error
 
 
 def _as_date(value: Any) -> date:

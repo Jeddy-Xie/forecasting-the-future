@@ -134,6 +134,31 @@ class RunSettings:
     field is left out of the configuration hash, so every digest main has written
     is unchanged. This is True only on the branch ``research/two-timescale-chains``."""
 
+    observe_the_unemployment_rate_and_the_term_spread: bool = True
+    """Research arm B2 of experiment 0008, "observe what is forecast".
+
+    Four of the ten questions resolve on the unemployment rate or on recession dating,
+    and neither enters the model. With this on, the growth chain also observes the
+    unemployment rate (UNRATE, a level, archival vintages, 36-day lag) and the
+    inflation-and-rates chain also observes the ten-year minus three-month term spread
+    (GS10 minus TB3MS, both market data and never revised, 32-day lag). Each is
+    standardised on the same expanding window as every other column. Which series join
+    which chain is declared in ``economic_series.yaml`` under
+    ``model_dimension_when_forecast_targets_are_observed``; each chain's state count is
+    still chosen by the burn-in sweep.
+
+    It assigns columns to the two chains, so it needs
+    ``separate_chains_for_growth_and_for_inflation_with_rates``; with one chain the
+    registry refuses rather than silently ignoring it.
+
+    The spread's ten-year leg begins in 1953-04, so every column's aligned history, and
+    with it the expanding standardisation and the model's sample, starts there rather
+    than in 1948-01.
+
+    False reproduces main exactly, the three columns growth, inflation and rates. At
+    False the field is left out of the configuration hash. This is True only on the
+    branch ``research/observe-what-is-forecast``."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
     def configuration_hash(self) -> str:
@@ -167,6 +192,9 @@ SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, objec
     # Research arm A4 (experiment 0002). False is main's single chain, the behaviour
     # of the code before the field existed, so the entry meets the rule below.
     "separate_chains_for_growth_and_for_inflation_with_rates": False,
+    # Research arm B2 (experiment 0008). False is main's three observation columns,
+    # the behaviour of the code before the field existed, so the entry meets the rule.
+    "observe_the_unemployment_rate_and_the_term_spread": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 

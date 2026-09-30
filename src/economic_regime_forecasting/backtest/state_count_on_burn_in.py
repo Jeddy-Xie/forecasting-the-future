@@ -42,7 +42,10 @@ from economic_regime_forecasting.models.state_selection import (
     StateSelectionError,
     sweep_state_counts,
 )
-from economic_regime_forecasting.models.two_timescale_hidden_markov_model import TwoChainStateCount
+from economic_regime_forecasting.models.two_timescale_hidden_markov_model import (
+    TwoChainStateCount,
+    chain_columns,
+)
 from economic_regime_forecasting.models.two_timescale_state_selection import (
     sweep_state_counts_for_two_chains,
 )
@@ -238,6 +241,7 @@ def choose_state_count_on_burn_in_window(
     The choice, not the models, is cached: six fits cost around ninety seconds,
     and the key covers everything that could change the answer.
     """
+    registry = registry.configured_for(settings)
     cache_name = _cache_name(settings, first_forecast_date)
     if artifacts is not None and artifacts.has(cache_name):
         return BurnInStateCountChoice.from_manifest(artifacts.read_json(cache_name))
@@ -258,7 +262,9 @@ def choose_state_count_on_burn_in_window(
 
     if settings.separate_chains_for_growth_and_for_inflation_with_rates:
         # Research arm A4: the same rule on each chain's own block, on the same
-        # burn-in panel, so the boundary assertion above covers both.
+        # burn-in panel, so the boundary assertion above covers both. Each block is
+        # the columns of its dimensions, which arm B2 of experiment 0008 widens.
+        growth_columns, levels_columns = chain_columns(matrix.column_dimensions)
         two_chains = sweep_state_counts_for_two_chains(
             matrix.values,
             settings.hidden_state_counts_to_search,
@@ -266,6 +272,8 @@ def choose_state_count_on_burn_in_window(
             restarts=settings.expectation_maximisation_restarts,
             max_iterations=settings.expectation_maximisation_max_iterations,
             tolerance=settings.expectation_maximisation_tolerance,
+            growth_columns=growth_columns,
+            levels_columns=levels_columns,
         )
         choice = BurnInStateCountChoice(
             state_count=two_chains.recommended_state_count,

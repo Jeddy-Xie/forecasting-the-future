@@ -63,10 +63,15 @@ def assemble_point_in_time_panel(
 ) -> PointInTimePanel:
     """Build the panel an observer would have had on ``as_of``.
 
-    ``names`` defaults to the three series forming the model's observation
-    vector, which is the only panel a fit ever needs.
+    ``names`` defaults to every series the model's observation vector reads -- the
+    three dimension series, plus the forecast targets when the registry is
+    configured to observe them -- which is the only panel a fit ever needs.
     """
-    wanted = list(names) if names is not None else [item.name for item in registry.model_inputs]
+    wanted = (
+        list(names)
+        if names is not None
+        else [item.name for item in registry.series_observed_by_the_model]
+    )
     observed = {name: vintage.observe(registry[name], as_of, cache) for name in wanted}
     return PointInTimePanel(as_of=as_of, series=observed)
 

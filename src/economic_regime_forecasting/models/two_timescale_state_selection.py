@@ -68,6 +68,10 @@ class TwoChainStateCountSweep:
 
     growth_chain_sweep: StateCountSweep
     levels_chain_sweep: StateCountSweep
+    growth_columns: tuple[int, ...] = GROWTH_COLUMNS
+    """The observation columns the growth chain was swept on."""
+    levels_columns: tuple[int, ...] = LEVELS_COLUMNS
+    """The observation columns the inflation-and-rates chain was swept on."""
 
     @property
     def recommended_state_count(self) -> TwoChainStateCount:
@@ -82,6 +86,8 @@ class TwoChainStateCountSweep:
         return TwoTimescaleHiddenMarkovModel(
             growth_chain=self.growth_chain_sweep.recommended_model,
             levels_chain=self.levels_chain_sweep.recommended_model,
+            growth_columns=self.growth_columns,
+            levels_columns=self.levels_columns,
         )
 
     @property
@@ -157,13 +163,23 @@ def sweep_state_counts_for_two_chains(
     restarts: int = 20,
     max_iterations: int = 500,
     tolerance: float = 1e-6,
+    growth_columns: Sequence[int] = GROWTH_COLUMNS,
+    levels_columns: Sequence[int] = LEVELS_COLUMNS,
 ) -> TwoChainStateCountSweep:
-    """Run the existing selection rule on each chain's own block."""
+    """Run the existing selection rule on each chain's own block.
+
+    ``growth_columns`` and ``levels_columns`` are the blocks, as
+    ``two_timescale_hidden_markov_model.chain_columns`` reads them off the matrix.
+    """
     observations = np.atleast_2d(np.asarray(observations, dtype="float64"))
     candidates = candidate_state_counts_per_chain(state_counts)
+    growth_block = tuple(int(column) for column in growth_columns)
+    levels_block = tuple(int(column) for column in levels_columns)
     return TwoChainStateCountSweep(
+        growth_columns=growth_block,
+        levels_columns=levels_block,
         growth_chain_sweep=sweep_state_counts(
-            observations[:, list(GROWTH_COLUMNS)],
+            observations[:, list(growth_block)],
             candidates,
             seed=seed,
             restarts=restarts,
@@ -171,7 +187,7 @@ def sweep_state_counts_for_two_chains(
             tolerance=tolerance,
         ),
         levels_chain_sweep=sweep_state_counts(
-            observations[:, list(LEVELS_COLUMNS)],
+            observations[:, list(levels_block)],
             candidates,
             seed=seed + LEVELS_CHAIN_SEED_OFFSET,
             restarts=restarts,

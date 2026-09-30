@@ -64,11 +64,23 @@ by growth mean, levels states by inflation mean then rates mean. The product
 numbering ``g * K_l + l`` is then also the order ``state_labelling.canonical_order``
 gives the product, so joint regime 0 is the weakest growth with the lowest
 inflation, at every refit.
+
+Which columns each chain reads
+------------------------------
+By dimension, never by position: the growth chain reads every column whose
+dimension is growth, the levels chain every inflation or rates column
+(:func:`chain_columns`). Main's matrix has three columns, so that is growth, then
+inflation and rates, and a model built on them serialises exactly as it always has.
+Research arm B2 of experiment 0008 appends the unemployment rate (growth) and the
+term spread (rates), so the growth chain reads columns 0 and 3 and the levels chain
+1, 2 and 4, and the model records that assignment. Growth and inflation stay the
+first two columns, so the product ordering above still holds.
 """
 
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import Any, Self
 
 import numpy as np
@@ -94,6 +106,38 @@ LEVELS_COLUMNS: tuple[int, ...] = (
     DIMENSION_ORDER.index(ModelDimension.RATES),
 )
 """The observation columns the levels chain drives: inflation, then rates."""
+
+LEVELS_DIMENSIONS: frozenset[ModelDimension] = frozenset(
+    {ModelDimension.INFLATION, ModelDimension.RATES}
+)
+"""The dimensions the levels chain reads; every growth column is the growth chain's."""
+
+
+def chain_columns(
+    column_dimensions: Sequence[ModelDimension],
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Which observation columns each chain reads, from each column's dimension.
+
+    On main's three columns this is ``(GROWTH_COLUMNS, LEVELS_COLUMNS)`` exactly.
+    """
+    growth = tuple(
+        position
+        for position, dimension in enumerate(column_dimensions)
+        if dimension is ModelDimension.GROWTH
+    )
+    levels = tuple(
+        position
+        for position, dimension in enumerate(column_dimensions)
+        if dimension in LEVELS_DIMENSIONS
+    )
+    if not growth or not levels or len(growth) + len(levels) != len(column_dimensions):
+        raise HiddenMarkovModelError(
+            f"the columns' dimensions {[dimension.value for dimension in column_dimensions]} "
+            "do not split into a growth chain and an inflation-and-rates chain: each chain "
+            "needs at least one column, and every column must belong to one of them"
+        )
+    return growth, levels
+
 
 MAXIMUM_STATES_PER_CHAIN = 4
 """Experiment 0002, arm A4: each chain's count is chosen from candidates 1 to 4, so
@@ -160,25 +204,37 @@ class TwoTimescaleHiddenMarkovModel(GaussianHiddenMarkovModel):
         growth_chain: GaussianHiddenMarkovModel,
         levels_chain: GaussianHiddenMarkovModel,
         fit_report: FitReport | None = None,
+        growth_columns: Sequence[int] = GROWTH_COLUMNS,
+        levels_columns: Sequence[int] = LEVELS_COLUMNS,
     ) -> None:
-        if growth_chain.dimension_count != len(GROWTH_COLUMNS):
+        growth_columns = tuple(int(column) for column in growth_columns)
+        levels_columns = tuple(int(column) for column in levels_columns)
+        dimensions = len(growth_columns) + len(levels_columns)
+        if sorted(growth_columns + levels_columns) != list(range(dimensions)):
             raise HiddenMarkovModelError(
-                f"the growth chain must model {len(GROWTH_COLUMNS)} column, not "
+                f"the growth chain's columns {list(growth_columns)} and the levels chain's "
+                f"{list(levels_columns)} must share out the {dimensions} observation columns "
+                "between them, each column exactly once"
+            )
+        if growth_chain.dimension_count != len(growth_columns):
+            raise HiddenMarkovModelError(
+                f"the growth chain must model {len(growth_columns)} column, not "
                 f"{growth_chain.dimension_count}"
             )
-        if levels_chain.dimension_count != len(LEVELS_COLUMNS):
+        if levels_chain.dimension_count != len(levels_columns):
             raise HiddenMarkovModelError(
-                f"the levels chain must model {len(LEVELS_COLUMNS)} columns, not "
+                f"the levels chain must model {len(levels_columns)} columns, not "
                 f"{levels_chain.dimension_count}"
             )
         self.growth_chain = growth_chain
         self.levels_chain = levels_chain
+        self.growth_columns: tuple[int, ...] = growth_columns
+        self.levels_columns: tuple[int, ...] = levels_columns
 
         growth_states = growth_chain.state_count
         levels_states = levels_chain.state_count
-        dimensions = len(GROWTH_COLUMNS) + len(LEVELS_COLUMNS)
-        growth_index = list(GROWTH_COLUMNS)
-        levels_index = list(LEVELS_COLUMNS)
+        growth_index = list(growth_columns)
+        levels_index = list(levels_columns)
 
         # Joint state g * K_l + l: the growth parameters repeat K_l times in a row,
         # the levels parameters cycle K_g times. The same order numpy.kron uses.
@@ -188,12 +244,12 @@ class TwoTimescaleHiddenMarkovModel(GaussianHiddenMarkovModel):
 
         # Block-diagonal: each block's covariance on its own columns, zero between them.
         covariances = np.zeros((growth_states * levels_states, dimensions, dimensions))
-        growth_rows, growth_columns = np.ix_(growth_index, growth_index)
-        levels_rows, levels_columns = np.ix_(levels_index, levels_index)
-        covariances[:, growth_rows, growth_columns] = np.repeat(
+        growth_rows, growth_block = np.ix_(growth_index, growth_index)
+        levels_rows, levels_block = np.ix_(levels_index, levels_index)
+        covariances[:, growth_rows, growth_block] = np.repeat(
             growth_chain.covariances, levels_states, axis=0
         )
-        covariances[:, levels_rows, levels_columns] = np.tile(
+        covariances[:, levels_rows, levels_block] = np.tile(
             levels_chain.covariances, (growth_states, 1, 1)
         )
 
@@ -235,8 +291,12 @@ class TwoTimescaleHiddenMarkovModel(GaussianHiddenMarkovModel):
             raise HiddenMarkovModelError(
                 f"observations have {dimensions} dimensions, the model has {self.dimension_count}"
             )
-        growth = self.growth_chain.log_emission_probabilities(observations[:, list(GROWTH_COLUMNS)])
-        levels = self.levels_chain.log_emission_probabilities(observations[:, list(LEVELS_COLUMNS)])
+        growth = self.growth_chain.log_emission_probabilities(
+            observations[:, list(self.growth_columns)]
+        )
+        levels = self.levels_chain.log_emission_probabilities(
+            observations[:, list(self.levels_columns)]
+        )
         joint: np.ndarray = (growth[:, :, None] + levels[:, None, :]).reshape(months, -1)
         return joint
 
@@ -246,14 +306,20 @@ class TwoTimescaleHiddenMarkovModel(GaussianHiddenMarkovModel):
         """The two chains, each serialised as the single-chain model it is.
 
         Deliberately without the product-space arrays, so the single-chain loader
-        fails on this payload instead of silently reading it as one chain.
+        fails on this payload instead of silently reading it as one chain. The column
+        assignment is written only when it is not main's three columns, so every
+        model main has written serialises byte for byte as it did.
         """
-        return {
+        payload: dict[str, Any] = {
             "model_class": MODEL_CLASS,
             "growth_chain": self.growth_chain.to_dictionary(),
             "levels_chain": self.levels_chain.to_dictionary(),
             "fit_report": _fit_report_to_dictionary(self.fit_report),
         }
+        if (self.growth_columns, self.levels_columns) != (GROWTH_COLUMNS, LEVELS_COLUMNS):
+            payload["growth_columns"] = list(self.growth_columns)
+            payload["levels_columns"] = list(self.levels_columns)
+        return payload
 
     @classmethod
     def from_dictionary(cls, payload: dict[str, Any]) -> Self:
@@ -266,6 +332,8 @@ class TwoTimescaleHiddenMarkovModel(GaussianHiddenMarkovModel):
             growth_chain=GaussianHiddenMarkovModel.from_dictionary(payload["growth_chain"]),
             levels_chain=GaussianHiddenMarkovModel.from_dictionary(payload["levels_chain"]),
             fit_report=_fit_report_from_dictionary(payload.get("fit_report")),
+            growth_columns=tuple(payload.get("growth_columns", GROWTH_COLUMNS)),
+            levels_columns=tuple(payload.get("levels_columns", LEVELS_COLUMNS)),
         )
 
 
@@ -310,6 +378,8 @@ def fit(
     restarts: int = 20,
     max_iterations: int = 500,
     tolerance: float = 1e-6,
+    growth_columns: Sequence[int] = GROWTH_COLUMNS,
+    levels_columns: Sequence[int] = LEVELS_COLUMNS,
 ) -> TwoTimescaleHiddenMarkovModel:
     """Fit both chains jointly by expectation maximisation over the product space.
 
@@ -319,13 +389,19 @@ def fit(
     likelihood wins. Convergence is judged on the joint likelihood with the same
     relative tolerance as every other fit. The chains are canonicalised before the
     product is formed.
+
+    ``growth_columns`` and ``levels_columns`` say which observation columns each
+    chain reads; :func:`chain_columns` derives them from the columns' dimensions.
     """
     observations = np.atleast_2d(np.asarray(observations, dtype="float64"))
     months, dimensions = observations.shape
-    if dimensions != len(GROWTH_COLUMNS) + len(LEVELS_COLUMNS):
+    growth_columns = tuple(int(column) for column in growth_columns)
+    levels_columns = tuple(int(column) for column in levels_columns)
+    if dimensions != len(growth_columns) + len(levels_columns):
         raise HiddenMarkovModelError(
-            f"a two-chain fit needs the {len(GROWTH_COLUMNS) + len(LEVELS_COLUMNS)} observation "
-            f"columns growth, inflation and rates; got {dimensions}"
+            f"a two-chain fit needs the {len(growth_columns) + len(levels_columns)} observation "
+            f"columns its two chains read (growth {list(growth_columns)}, inflation and rates "
+            f"{list(levels_columns)}); got {dimensions}"
         )
     joint_state_count = growth_chain_state_count * levels_chain_state_count
     if months <= joint_state_count:
@@ -339,8 +415,8 @@ def fit(
             "undefined. Drop or impute them before fitting, deliberately."
         )
 
-    growth_observations = observations[:, list(GROWTH_COLUMNS)]
-    levels_observations = observations[:, list(LEVELS_COLUMNS)]
+    growth_observations = observations[:, list(growth_columns)]
+    levels_observations = observations[:, list(levels_columns)]
     growth_generator = np.random.default_rng(seed)
     levels_generator = np.random.default_rng(seed + LEVELS_CHAIN_SEED_OFFSET)
     pooled_growth = _pooled_covariance(growth_observations)
@@ -367,6 +443,8 @@ def fit(
                 levels_generator,
                 pooled_levels,
             ),
+            growth_columns=growth_columns,
+            levels_columns=levels_columns,
         )
         candidate, log_likelihood, iterations, converged = run_expectation_maximisation(
             candidate, observations, max_iterations, tolerance, pooled_growth, pooled_levels
@@ -394,6 +472,8 @@ def fit(
     return TwoTimescaleHiddenMarkovModel(
         growth_chain=canonicalise(best_model.growth_chain),
         levels_chain=canonicalise(best_model.levels_chain),
+        growth_columns=growth_columns,
+        levels_columns=levels_columns,
         fit_report=FitReport(
             log_likelihood=best_log_likelihood,
             iterations=best_iterations,
@@ -513,17 +593,19 @@ def _maximisation_step(
 
     return TwoTimescaleHiddenMarkovModel(
         growth_chain=hidden_markov.chain_from_responsibilities(
-            observations[:, list(GROWTH_COLUMNS)],
+            observations[:, list(model.growth_columns)],
             responsibilities.sum(axis=2),
             counts.sum(axis=(1, 3)),
             pooled_growth,
             chain_name="growth",
         ),
         levels_chain=hidden_markov.chain_from_responsibilities(
-            observations[:, list(LEVELS_COLUMNS)],
+            observations[:, list(model.levels_columns)],
             responsibilities.sum(axis=1),
             counts.sum(axis=(0, 2)),
             pooled_levels,
             chain_name="inflation and rates",
         ),
+        growth_columns=model.growth_columns,
+        levels_columns=model.levels_columns,
     )

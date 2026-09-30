@@ -401,6 +401,7 @@ def fit_regime_model(
     Fitted models are cached to disk under a key covering the date, the number of
     states, the seed and the configuration, so a re-run costs a file read.
     """
+    registry = registry.configured_for(settings)
     matrix = build_observation_matrix(
         assemble_point_in_time_panel(registry, as_of, cache), registry
     )
@@ -425,6 +426,7 @@ def fit_regime_model(
         # starting point and inherit each other's local optimum.
         seed = settings.random_seed + as_of.year * 100 + as_of.month
         if isinstance(state_count, TwoChainStateCount):
+            growth_columns, levels_columns = two_timescale.chain_columns(matrix.column_dimensions)
             model = two_timescale.fit(
                 matrix.values,
                 growth_chain_state_count=state_count.growth_chain_state_count,
@@ -433,6 +435,8 @@ def fit_regime_model(
                 restarts=settings.expectation_maximisation_restarts,
                 max_iterations=settings.expectation_maximisation_max_iterations,
                 tolerance=settings.expectation_maximisation_tolerance,
+                growth_columns=growth_columns,
+                levels_columns=levels_columns,
             )
         else:
             model = canonicalise(
@@ -513,6 +517,9 @@ def run_walk_forward(
     ``condition_chain_cadence`` says when the reference chain's rates are learned;
     the default is rule 0007's R2. See ``ConditionChainCadence``.
     """
+    # The settings decide which columns the model observes, so the pre-flight below
+    # scans every series the fits will read (experiment 0008, arm B2).
+    registry = registry.configured_for(settings)
     # One pre-flight, before anything is fitted, so a schedule that breaks the
     # promise fails in seconds rather than fifteen minutes. This covers every path
     # that produces a results frame, because this is the only function that builds
@@ -688,7 +695,7 @@ def _assert_every_vintage_is_cached(
     download. This asks the cache first and says what to run instead.
     """
     absent: list[str] = []
-    for entry in registry.model_inputs:
+    for entry in registry.series_observed_by_the_model:
         if not cache.contains(federal_reserve_client.build_request(entry.series_id)):
             absent.append(f"{entry.series_id} (current vintage)")
         if not entry.is_revised:
@@ -718,7 +725,9 @@ def forecast_dates_using_the_publication_lag_fallback(
     check into a forty-minute surprise.
 
     One definition of "which policy" serves both the honest-start finder and the
-    pre-flight assertion, so the two cannot drift apart.
+    pre-flight assertion, so the two cannot drift apart. It scans every series the
+    registry's observation matrix reads, so a series that joins the model under
+    experiment 0008's arm B2 -- the unemployment rate -- is held to the same rule.
     """
     _assert_every_vintage_is_cached(registry, cache, candidate_dates)
     fallback_key = VintagePolicy.PUBLICATION_LAG_FALLBACK.value
@@ -749,6 +758,7 @@ def find_first_fully_point_in_time_date(
     The scan steps a month at a time, unlike ``find_first_forecast_date``, which
     steps a year: panel length is monotone in the date and fallback usage is not.
     """
+    registry = registry.configured_for(settings)
     candidates = pd.date_range(
         start=pd.Timestamp(earliest_candidate), end=pd.Timestamp(last_forecast_date), freq="MS"
     )
@@ -817,6 +827,7 @@ def find_first_forecast_date(
     point-in-time panel, stepping forward a year at a time until one is long
     enough.
     """
+    registry = registry.configured_for(settings)
     candidate = earliest_candidate
     while candidate <= latest_candidate:
         matrix = build_observation_matrix(

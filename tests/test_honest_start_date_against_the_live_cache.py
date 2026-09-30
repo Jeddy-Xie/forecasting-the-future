@@ -41,6 +41,13 @@ HONEST_START = date(1994, 3, 1)
 SHIPPED_START = date(1971, 12, 1)
 AS_OF = date(2026, 9, 1)
 
+B2_SWITCH = "observe_the_unemployment_rate_and_the_term_spread"
+"""Research arm B2's switch (experiment 0008), on by default only on its own branch.
+Every test below that pins a fact about main's configuration names it off, as they
+already name A4's switch; the arm's own live facts are pinned in
+`tests/test_observe_what_is_forecast.py`. The honest start through
+`backtest_schedule` is the same 1994-03 with it on, so that test is unchanged."""
+
 
 @pytest.fixture(scope="module")
 def live_workspace() -> interface.Workspace:
@@ -51,10 +58,12 @@ def test_the_finder_returns_the_measured_boundary_on_the_live_cache(
     live_workspace: interface.Workspace,
 ) -> None:
     """AC5. The one place 1994-03-01 is asserted against real data."""
+    import dataclasses
+
     result = find_first_fully_point_in_time_date(
         live_workspace.registry,
         live_workspace.cache,
-        DEFAULT_RUN_SETTINGS,
+        dataclasses.replace(DEFAULT_RUN_SETTINGS, **{B2_SWITCH: False}),
         earliest_candidate=SHIPPED_START,
         last_forecast_date=date(2026, 9, 1),
     )
@@ -77,7 +86,9 @@ def test_the_shipped_start_survives_with_the_switch_off(
     import dataclasses
 
     shipped_settings = dataclasses.replace(
-        DEFAULT_RUN_SETTINGS, start_walk_forward_when_every_input_is_point_in_time=False
+        DEFAULT_RUN_SETTINGS,
+        start_walk_forward_when_every_input_is_point_in_time=False,
+        **{B2_SWITCH: False},
     )
     workspace = interface.Workspace.open(shipped_settings)
     schedule = workspace.backtest_schedule(AS_OF)
@@ -92,12 +103,13 @@ def test_the_widest_schedule_ignores_the_start_policy_under_both_settings(
     every one of the 658 forecast dates the shipped run holds."""
     import dataclasses
 
-    honest_widest = live_workspace.widest_backtest_schedule(AS_OF)
+    main_settings = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{B2_SWITCH: False})
+    honest_widest = interface.Workspace.open(main_settings).widest_backtest_schedule(AS_OF)
     assert honest_widest.forecast_dates[0] == pd.Timestamp(SHIPPED_START)
     assert len(honest_widest.forecast_dates) == 658
 
     shipped_settings = dataclasses.replace(
-        DEFAULT_RUN_SETTINGS, start_walk_forward_when_every_input_is_point_in_time=False
+        main_settings, start_walk_forward_when_every_input_is_point_in_time=False
     )
     shipped_widest = interface.Workspace.open(shipped_settings).widest_backtest_schedule(AS_OF)
     assert shipped_widest.forecast_dates[0] == pd.Timestamp(SHIPPED_START)
@@ -113,7 +125,9 @@ def test_the_burn_in_choice_reproduces_the_measured_sweep_at_1994_03(
     import dataclasses
 
     main_settings = dataclasses.replace(
-        DEFAULT_RUN_SETTINGS, separate_chains_for_growth_and_for_inflation_with_rates=False
+        DEFAULT_RUN_SETTINGS,
+        separate_chains_for_growth_and_for_inflation_with_rates=False,
+        **{B2_SWITCH: False},
     )
     choice = choose_state_count_on_burn_in_window(
         live_workspace.registry,
@@ -140,6 +154,7 @@ def test_the_burn_in_choice_reproduces_the_measured_sweep_at_1971_12(
         DEFAULT_RUN_SETTINGS,
         start_walk_forward_when_every_input_is_point_in_time=False,
         separate_chains_for_growth_and_for_inflation_with_rates=False,
+        **{B2_SWITCH: False},
     )
     choice = choose_state_count_on_burn_in_window(
         live_workspace.registry,

@@ -36,6 +36,9 @@ def test_the_shipped_configuration_hashes_to_the_recorded_digest() -> None:
         # Research arm A4's switch defaults on only on its own branch; the shipped
         # run had one chain, so it is named at that value here like the other two.
         separate_chains_for_growth_and_for_inflation_with_rates=False,
+        # Research arm B2's (experiment 0008) likewise: the shipped run observed the
+        # three dimensions only.
+        observe_the_unemployment_rate_and_the_term_spread=False,
     )
     assert shipped.configuration_hash() == SHIPPED_HASH
 
@@ -111,11 +114,15 @@ def test_the_omission_map_holds_only_the_documented_switches() -> None:
     """A guard against a field being added to the map silently: the map's docstring
     says every entry is permanent and append-only, so its current membership is worth
     pinning even though this test must be revisited (by a reviewed, additive change,
-    never a silent edit) each time a legitimate entry is added. It holds three today:
-    the two look-ahead switches, and the two-chain model adopted in ADR 0010."""
+    never a silent edit) each time a legitimate entry is added. It holds three on main:
+    the two look-ahead switches, and the two-chain model adopted in ADR 0010. On the
+    branch research/observe-what-is-forecast it holds a fourth, experiment 0008's arm
+    B2, added by exactly that kind of change."""
     assert set(SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE) == {
         "select_state_count_on_a_burn_in_window",
         "start_walk_forward_when_every_input_is_point_in_time",
         # Research arm A4, experiment 0002: False is main's single chain.
         "separate_chains_for_growth_and_for_inflation_with_rates",
+        # Research arm B2, experiment 0008: False is main's three observation columns.
+        "observe_the_unemployment_rate_and_the_term_spread",
     }

@@ -19,6 +19,7 @@ growth environment the model found.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -46,7 +47,19 @@ SHORT_WORDS: dict[str, tuple[str, str, str]] = {
 
 The long form reads well in a sentence and badly on a chart, where a five-item
 legend of thirty-character strings forces the reader to look away from the data
-for every band. The compact form is what charts label directly."""
+for every band. The compact form is what charts label directly.
+
+A column outside these three -- a forecast target the model observes under
+experiment 0008's arm B2 -- is described as low, moderate or high by its own name
+(``_words_for``)."""
+
+
+def _words_for(name: str) -> tuple[str, str, str]:
+    """The three words for a column, its own name spelled out when it has none."""
+    if name in SHORT_WORDS:
+        return SHORT_WORDS[name]
+    readable = name.replace("_", " ")
+    return (f"low {readable}", f"moderate {readable}", f"high {readable}")
 
 
 @dataclass(frozen=True)
@@ -59,13 +72,15 @@ class RegimeDescription:
     natural_means: tuple[float, ...]
     population_share: float
     expected_duration_in_months: float
+    column_names: tuple[str, ...] = COLUMN_NAMES
+    """The observation columns the means are in, in order."""
 
     @property
     def compact_label(self) -> str:
         """A short name a chart can print beside the data instead of in a legend."""
         parts = []
-        for name, mean in zip(COLUMN_NAMES, self.standardised_means, strict=True):
-            low, middle, high = SHORT_WORDS[name]
+        for name, mean in zip(self.column_names, self.standardised_means, strict=True):
+            low, middle, high = _words_for(name)
             parts.append(
                 low
                 if mean < -STANDARD_DEVIATION_CUT
@@ -82,7 +97,7 @@ class RegimeDescription:
             "short_regime": self.compact_label,
         }
         for name, standardised, natural in zip(
-            COLUMN_NAMES, self.standardised_means, self.natural_means, strict=True
+            self.column_names, self.standardised_means, self.natural_means, strict=True
         ):
             row[f"{name}_standardised"] = standardised
             row[f"{name}_natural"] = natural
@@ -142,18 +157,25 @@ def _describe_dimension(name: str, standardised_mean: float) -> str:
         if standardised_mean > STANDARD_DEVIATION_CUT:
             return "high inflation"
         return "moderate inflation"
+    if name == "rates":
+        if standardised_mean < -STANDARD_DEVIATION_CUT:
+            return "low rates"
+        if standardised_mean > STANDARD_DEVIATION_CUT:
+            return "high rates"
+        return "neutral rates"
+    low, middle, high = _words_for(name)
     if standardised_mean < -STANDARD_DEVIATION_CUT:
-        return "low rates"
+        return low
     if standardised_mean > STANDARD_DEVIATION_CUT:
-        return "high rates"
-    return "neutral rates"
+        return high
+    return middle
 
 
-def label_for(standardised_means: np.ndarray) -> str:
+def label_for(standardised_means: np.ndarray, column_names: Sequence[str] = COLUMN_NAMES) -> str:
     """A readable name for a state, from the sign and size of its emission means."""
     parts = [
         _describe_dimension(name, float(mean))
-        for name, mean in zip(COLUMN_NAMES, standardised_means, strict=True)
+        for name, mean in zip(column_names, standardised_means, strict=True)
     ]
     return ", ".join(parts)
 
@@ -162,6 +184,7 @@ def describe_regimes(
     model: GaussianHiddenMarkovModel,
     standardised_observations: np.ndarray,
     natural_observations: np.ndarray,
+    column_names: Sequence[str] = COLUMN_NAMES,
 ) -> list[RegimeDescription]:
     """Name every state and attach the numbers a reader needs to judge it.
 
@@ -184,11 +207,12 @@ def describe_regimes(
         descriptions.append(
             RegimeDescription(
                 state=state,
-                label=label_for(model.means[state]),
+                label=label_for(model.means[state], column_names),
                 standardised_means=tuple(float(value) for value in model.means[state]),
                 natural_means=tuple(float(value) for value in natural_mean),
                 population_share=float(population[state]),
                 expected_duration_in_months=float(durations[state]),
+                column_names=tuple(column_names),
             )
         )
     return descriptions
