@@ -174,9 +174,10 @@ The digest answers exactly one question: *would two runs produce the same
 numbers?* A field added after a run was published, set to the behaviour that was
 in force before the field existed, changes no number -- so it must not change the
 digest. Without this rule, adding a setting would silently re-label every result
-already on the record: `submission/manifest.json`, thirty entries in
-`forecasts/register.jsonl` and fifty-six cached fits under `.cache/models/` all
-carry `9f95b12dba40d138`, and the numbers they describe did not move.
+already on the record. When the first entries were added, `submission/manifest.json`,
+thirty entries in `forecasts/register.jsonl` and fifty-six cached fits under
+`.cache/models/` all carried `9f95b12dba40d138`, and the numbers they describe did not
+move. The register still holds those thirty, which is why the map can never shrink.
 
 **This map is append-only and every entry is permanent.** Removing an entry, or
 changing the value one maps to, retroactively changes the digest of runs already

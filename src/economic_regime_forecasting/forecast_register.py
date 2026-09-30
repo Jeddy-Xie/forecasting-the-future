@@ -1,9 +1,9 @@
 """Forecasts made about the actual future, and the scoring of them once it arrives.
 
-The walk-forward backtest scores 19,740 retrodictions. That measures the method
-against history. It does not measure this model against the future, and the two
-are different claims: a Brier skill score of +0.232 computed over 1971-2026 and
-the same number computed forward from 2026 are not the same evidence.
+The walk-forward backtest scores retrodictions. That measures the method against
+history. It does not measure a model against the future, and the two are different
+claims: a Brier skill score computed over 1994-2026 and the same number computed
+forward from 2026 are not the same evidence.
 
 ``submission/forecasts.csv`` already holds real claims about 2027, 2031 and 2036.
 Nothing scores them, and nothing ever will, because nothing records *when* they

@@ -203,9 +203,9 @@ Omitting `--subject` sweeps every frozen file **except** the two outward-facing
 ones (`SHIPPING_GLOBS`: `submission/forecasts.csv`, `submission/manifest.json`).
 The command prints what it withheld. Shipping is opt-in, by name — see below.
 
-**Shipping the submission is the same door.** Since ADR 0008 the pipeline default
-is the honest configuration, which is not the one that produced
-`submission/forecasts.csv`. So the routine pipeline step is
+**Shipping the submission is the same door.** The submission was produced by
+`9f95b12dba40d138` until 2026-09-29, when the default was re-shipped through this
+door (ADR 0012). Either way, the routine pipeline step is
 `poetry run forecast submit --verify-only`, which writes nothing and prints the
 approved, live and producing configuration hashes; plain `forecast submit`
 refuses with exit 2 unless the run *is* the approved configuration or a token

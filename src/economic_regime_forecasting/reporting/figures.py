@@ -251,7 +251,7 @@ def plot_regime_map(display_table: pd.DataFrame) -> Figure:
     axes.margins(0.34)
     _style(
         axes,
-        "The five regimes, placed by what they felt like",
+        "The regimes, placed by what they felt like",
         ylabel="output growth, percent a year",
         xlabel="inflation, percent a year",
     )
