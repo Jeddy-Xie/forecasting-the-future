@@ -17,6 +17,9 @@ Owner: Jeddy Xie. Work happens directly on `main`; commits are the history.
   registries by `forecast fetch-data`. Nothing here is ever committed.
 - `proving/experiments/` — the pre-registered decision rule the evaluation obeys.
 - `docs/adr/` — numbered architecture decision records.
+- `paper/` — the research paper. Its `generated/` directory is written only by
+  `forecast paper-assets`; every other number in `main.tex` must appear in a
+  committed record, which the suite checks.
 
 ## Rules that bind every session here
 - **No look-ahead, ever.** Every function that assembles a training panel takes
@@ -50,6 +53,7 @@ Owner: Jeddy Xie. Work happens directly on `main`; commits are the history.
 - Data: `poetry run forecast fetch-data`
 - Gates: `poetry run forecast check-gates`
 - Everything, in order: `./scripts/run_full_pipeline.sh`
+- The paper: `./scripts/build_paper.sh` (after `check-gates`; needs `tectonic`)
 
 ## Compact instructions
 When compacting, always preserve: which of the five gates have passed, the list

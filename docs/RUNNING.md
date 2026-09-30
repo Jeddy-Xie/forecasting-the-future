@@ -171,6 +171,24 @@ artifacts (`skill_by_horizon*.parquet`, `skill_by_horizon_summary.json`). Run `c
 The reading rule was registered before the first run: `research/experiments-drafts/0010-skill-at-every-horizon.md`.
 It changes no verdict.
 
+### The research paper
+
+`paper/main.tex` is the project's write-up in arXiv form. Its figures, tables and named numbers are
+generated, never typed:
+
+```bash
+poetry run forecast paper-assets   # writes paper/generated/ from the committed record (~20 s)
+./scripts/build_paper.sh           # the same, then typesets paper/main.pdf (needs tectonic)
+```
+
+`paper-assets` reads the blend's and the regime model alone's committed baselines, measurement
+0010's tables and `submission/`, and checks them against one another: the blend must be exactly half
+the model plus half the chain on every row, and 0010's one-year skill must equal what the baselines
+give. The regime figure also reads the cached backtest, so run `check-gates` first; it refuses with
+exit 2 if the cache holds a different configuration. Two builds are byte-identical.
+`tests/test_research_paper.py` fails if `paper/generated/` is stale, or if any decimal typed into the
+paper appears in no committed record. `paper/README.md` has the details and the arXiv checklist.
+
 ### The reference forecasters beside every forecast
 
 Every backtest row carries two forecasts that are not the model's, so every claim can be measured

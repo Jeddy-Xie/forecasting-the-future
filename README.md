@@ -53,7 +53,8 @@ What that means:
 - **Every number here is in sample.** The forward register, monthly since 2026-09-29, is the only
   out-of-sample test. Its first one-year claims resolve on 2027-07-01.
 
-Full numbers and the reasoning are in `docs/RESULTS.md`. The rule change is in ADR 0012, the blend in ADR 0013,
+The research paper, `paper/main.pdf`, tells the whole story for a reader without an economics
+background. Full numbers and the reasoning are in `docs/RESULTS.md`. The rule change is in ADR 0012, the blend in ADR 0013,
 and the month-by-month curve in `research/reports/skill-at-every-horizon/`. Decisions made on the owner's behalf
 are recorded, with their reasons, in `research/ledger/delegated-decisions/`.
 
@@ -83,6 +84,7 @@ It turned out to need a second honest finding.
 | `tests/` | the test suite, named after the requirements it pins |
 | `docs/` | operator manual, pre-registration, architecture decision records |
 | `proving/` | the pre-registered experiment whose decision rule the evaluation obeys |
+| `paper/` | the research paper; its figures and tables are generated from the committed record |
 | `.cache/` | all fetched and derived data. Git-ignored, rebuilt by one command |
 
 Inside the package:
@@ -102,6 +104,7 @@ Inside the package:
 | document | its one job |
 |---|---|
 | this file | the front door: what this is, and how to start |
+| `paper/main.pdf` | the research paper: method, results and every table, written for non-specialists |
 | `docs/RUNNING.md` | how to operate everything, with the output each step should print |
 | `docs/adr/` | why each non-obvious decision was made, one numbered record each |
 | `proving/experiments/0001-.../experiment.json` | the decision rule, committed before the first backtest ran |

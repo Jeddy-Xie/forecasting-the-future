@@ -43,6 +43,7 @@ from economic_regime_forecasting import (
     look_ahead_audit,
     pipeline_gates,
     regression_baseline,
+    research_paper,
 )
 from economic_regime_forecasting.backtest import schedule as schedule_module
 from economic_regime_forecasting.backtest import state_count_on_burn_in, walk_forward
@@ -60,7 +61,7 @@ from economic_regime_forecasting.configuration.run_settings import (
 )
 from economic_regime_forecasting.data import audit as audit_module
 from economic_regime_forecasting.data import federal_reserve_client, indicator_outcomes
-from economic_regime_forecasting.data.cache import ArtifactStore, SeriesCache
+from economic_regime_forecasting.data.cache import ArtifactStore, CacheError, SeriesCache
 from economic_regime_forecasting.data.panel import (
     assemble_point_in_time_panel,
     load_final_series,
@@ -1594,6 +1595,33 @@ def skill_by_horizon(workspace: Workspace, today: date, longest_horizon: int) ->
     return 0
 
 
+def paper_assets(workspace: Workspace) -> int:
+    """Write the research paper's figures, tables and named numbers to `paper/generated/`.
+
+    Read from committed records (the blend's and the model alone's baselines,
+    measurement 0010's tables, the submission) and from the walk-forward's cached
+    artifacts, whose configuration must be the approved one. Fits nothing and
+    bootstraps nothing; `research_paper` says where every number comes from.
+    """
+    try:
+        records = research_paper.read_committed_records(
+            regression_baseline.read_baseline_forecasts(research_paper.BLEND_BASELINE),
+            regression_baseline.read_baseline_forecasts(research_paper.MODEL_ALONE_BASELINE),
+            shipping_approval.CONFIGURATION_HASH_APPROVED_FOR_SHIPPING,
+        )
+        written = research_paper.write_paper_assets(
+            records,
+            workspace.artifacts.read_table(ARTIFACTS.backtest_results),
+            workspace.artifacts.read_table(ARTIFACTS.regime_descriptions),
+        )
+    except (research_paper.PaperAssetError, CacheError) as error:
+        print(f"paper-assets: {error}", file=sys.stderr)
+        return 2
+    for path in written:
+        print(f"wrote {_display_path(path)}")
+    return 0
+
+
 def _require_the_gate_run_is_reproduced(workspace: Workspace, results: pd.DataFrame) -> None:
     """The every-horizon walk must equal the gate run where the two overlap.
 
@@ -1895,6 +1923,10 @@ def build_parser() -> argparse.ArgumentParser:
         default=skill_by_horizon_module.LONGEST_HORIZON_IN_MONTHS,
         help="the longest horizon scored, in months (default: 120)",
     )
+    subparsers.add_parser(
+        "paper-assets",
+        help="the research paper's figures, tables and named numbers, from the record",
+    )
     return parser
 
 
@@ -2079,6 +2111,8 @@ def main(argv: list[str] | None = None) -> int:
         return artifacts(workspace, today)
     if arguments.command == "skill-by-horizon":
         return skill_by_horizon(workspace, today, arguments.longest_horizon)
+    if arguments.command == "paper-assets":
+        return paper_assets(workspace)
     if arguments.command == "check-gates":
         return check_gates(workspace, today)
     if arguments.command == "compare-variants":
