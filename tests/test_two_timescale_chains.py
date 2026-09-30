@@ -578,9 +578,18 @@ def test_a_model_and_a_sweep_table_from_different_runs_are_refused() -> None:
 
 def test_with_the_switch_off_the_hash_is_main_reference_runs() -> None:
     """At False the switch leaves no trace in the digest, so a run with it off
-    claims main's identity only because it is main's configuration."""
-    main = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: False})
-    arm = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: True})
+    claims main's identity only because it is main's configuration.
+
+    On the branch ``research/equal-blend-with-the-chain`` the default also carries
+    experiment 0008's arm B3, so that switch is held at its shipped value (False) on
+    both sides: what is pinned here is A4's switch alone, exactly as before."""
+    others_at_their_shipped_values = {"blend_the_model_equally_with_the_condition_chain": False}
+    main = dataclasses.replace(
+        DEFAULT_RUN_SETTINGS, **{SWITCH: False, **others_at_their_shipped_values}
+    )
+    arm = dataclasses.replace(
+        DEFAULT_RUN_SETTINGS, **{SWITCH: True, **others_at_their_shipped_values}
+    )
     assert main.configuration_hash() == MAIN_REFERENCE_HASH
     assert arm.configuration_hash() != MAIN_REFERENCE_HASH
     assert getattr(DEFAULT_RUN_SETTINGS, SWITCH) is True

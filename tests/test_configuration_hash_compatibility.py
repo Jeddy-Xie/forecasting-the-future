@@ -36,6 +36,9 @@ def test_the_shipped_configuration_hashes_to_the_recorded_digest() -> None:
         # Research arm A4's switch defaults on only on its own branch; the shipped
         # run had one chain, so it is named at that value here like the other two.
         separate_chains_for_growth_and_for_inflation_with_rates=False,
+        # Research arm B3's switch (experiment 0008) likewise defaults on only on its
+        # own branch; the shipped run issued the model's probability alone.
+        blend_the_model_equally_with_the_condition_chain=False,
     )
     assert shipped.configuration_hash() == SHIPPED_HASH
 
@@ -112,10 +115,15 @@ def test_the_omission_map_holds_only_the_documented_switches() -> None:
     says every entry is permanent and append-only, so its current membership is worth
     pinning even though this test must be revisited (by a reviewed, additive change,
     never a silent edit) each time a legitimate entry is added. It holds three today:
-    the two look-ahead switches, and the two-chain model adopted in ADR 0010."""
+    the two look-ahead switches, and the two-chain model adopted in ADR 0010.
+
+    On the branch ``research/equal-blend-with-the-chain`` it holds a fourth, research
+    arm B3's blend (experiment 0008), whose False is the model's probability alone."""
     assert set(SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE) == {
         "select_state_count_on_a_burn_in_window",
         "start_walk_forward_when_every_input_is_point_in_time",
         # Research arm A4, experiment 0002: False is main's single chain.
         "separate_chains_for_growth_and_for_inflation_with_rates",
+        # Research arm B3, experiment 0008: False issues the model's probability alone.
+        "blend_the_model_equally_with_the_condition_chain",
     }
