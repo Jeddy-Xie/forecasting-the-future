@@ -19,37 +19,43 @@ A negative result, correctly measured, is the deliverable when the thesis fails.
 
 ## What it found
 
-The default model fits two regime chains, one for growth and one for inflation with interest rates:
-sixteen joint regimes. It was walked forward over 391 monthly forecast dates from 1994-03, the first
-month every input is on a genuine point-in-time vintage. It is scored by two rules.
+The model that runs and ships is an **equal-weight blend** of two forecasters:
+- a two-chain regime model, one chain for growth and one for inflation with interest rates, sixteen joint
+  regimes;
+- a regime-free chain on each indicator's own monthly condition.
 
-- **0001** was committed before the first backtest ran, and is frozen.
-- **0007** has governed new claims since 2026-09-29. It uses a fairer benchmark, a calibration test
-  sized for this sample, and a forecaster with no regimes as the bar to clear.
+It was walked forward over 391 monthly forecast dates from 1994-03, the first month every input is on a genuine
+point-in-time vintage. It is scored by two rules:
+- **0001**, committed before the first backtest ran and frozen;
+- **0007**, which has governed new claims and re-ships since 2026-09-29. It uses a fairer benchmark, a
+  calibration test sized for this sample, and the regime-free chain as the bar to clear.
 
-| horizon | 0001 | skill vs climatology | 0007 | skill vs the model's own sample |
-|---|---|---:|---|---:|
-| 1 year | **ship the model** | +0.267 [+0.165, +0.365] | ship the base rate | +0.179 [+0.102, +0.258] |
-| 5 years | ship the base rate | +0.119 | ship the base rate | +0.069 |
-| 10 years | ship the base rate | −0.162 | ship the base rate | −0.211 |
+| horizon | 0001 | 0007 | skill vs the model's own sample | what ships |
+|---|---|---|---:|---|
+| 1 year | ship the model | **ship the model** | +0.240 [+0.172, +0.311] | the blend |
+| 5 years | ship the base rate | ship the base rate | +0.097 | the base rate |
+| 10 years | ship the base rate | ship the base rate | −0.055 | the base rate |
 
 What that means:
 
-- **The regimes carry information for about two and a half years.** Measured month by month, the model
-  beats the historical average for 29 months, and for 39 against 0001's more generous benchmark.
-- **A forecaster without regimes does at least as well.** A two-state Markov chain on each indicator's
-  own monthly condition beats the model at one year (−0.058, 98.33% [−0.112, −0.009]), and is never
-  worse at any horizon.
-- **Regimes help where the model observes the question, and not elsewhere.** They add skill on
-  inflation and the zero lower bound, which the model observes. They add none on unemployment or
-  recession dating, which it does not. Against a fair benchmark its recession skill is below zero.
-- **What ships.** Under 0001, one year ships the model and five and ten years ship the base rate. Under
-  0007 every horizon would ship the base rate. The model is also overconfident: its calibration slope
-  is 0.61.
-- **Experiment 0008** tests three ways to keep what regimes add while taking what the chain has.
+- **Most of the skill is persistence, not regimes.** A chain that knows only whether each condition holds now
+  beat the regime model alone at one year (−0.058, 98.33% [−0.112, −0.009]), and was never worse at any
+  horizon.
+- **The blend is what the evidence supports.** It is the regime model plus that chain, experiment 0008's
+  confirmed arm: +0.0615 over the regime model at one year, 96.67% [+0.034, +0.096]. It is not shown to beat
+  the chain alone.
+- **Where regimes help.** Inflation and the zero lower bound, which the model observes. Not unemployment or
+  recession dating.
+- **How far the information reaches.** Measured month by month, the blend carries skill for about 46 months
+  against a fair benchmark, and the regime model alone for 29. Past that, ship the base rate.
+- **The two chains earn their keep through structure, not their count** (experiment 0006). A six-cell version
+  matches the sixteen-cell one on half the parameters. Experiment 0011 will test it.
+- **Every number here is in sample.** The forward register, monthly since 2026-09-29, is the only
+  out-of-sample test. Its first one-year claims resolve on 2027-07-01.
 
-Full numbers and the reasoning are in `docs/RESULTS.md`. The month-by-month curve is in
-`research/reports/skill-at-every-horizon/`. The rule change and why are in ADR 0012.
+Full numbers and the reasoning are in `docs/RESULTS.md`. The rule change is in ADR 0012, the blend in ADR 0013,
+and the month-by-month curve in `research/reports/skill-at-every-horizon/`. Decisions made on the owner's behalf
+are recorded, with their reasons, in `research/ledger/delegated-decisions/`.
 
 ## The honest finding this repository is built to produce
 

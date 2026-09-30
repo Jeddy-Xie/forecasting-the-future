@@ -24,7 +24,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-CONFIGURATION_HASH_APPROVED_FOR_SHIPPING = "fec79a040f9ca6f9"
+CONFIGURATION_HASH_APPROVED_FOR_SHIPPING = "7647c129be85291e"
 """The configuration approved to ship.
 
 `submission/forecasts.csv` is the only artifact that leaves this repository, and
@@ -34,10 +34,13 @@ docs/adr/.
 
 - **Until 2026-09-29** this was `9f95b12dba40d138`, the configuration Jeddy
   approved on 2026-09-08. It carried two look-ahead paths, closed by ADR 0008.
-- **Since 2026-09-29** it is the two-chain default, re-shipped under 0001 by
-  delegated decision P1-9 (claude-fable-5-1, delegated by Jeddy Xie; ADR 0012).
-  That is not the owner's own approval, and he may reverse it.
-- **The next re-ship is governed by rule 0007.**"""
+- **First re-ship, 2026-09-29:** `fec79a040f9ca6f9`, the two-chain model alone,
+  under 0001, by delegated decision P1-9 (ADR 0012).
+- **Second re-ship, the same day:** `7647c129be85291e`, the blend of that model
+  with the regime-free condition chain (experiment 0008's arm B3), under rule
+  0007, by delegated decision P2-2 (ADR 0013).
+- Both decisions are claude-fable-5-1's, delegated by Jeddy Xie. Neither is the
+  owner's own approval, and he may reverse either."""
 
 # ruff's S105 fires on any name containing "TOKEN". This is a repository-relative
 # file path, not a credential; the token it points at is a countersigned decision

@@ -1,7 +1,9 @@
 {
-  "configuration_hash": "fec79a040f9ca6f9",
+  "base_rate_definition": "R1: expanding publication-aware climatology over the model's own sample",
+  "configuration_hash": "7647c129be85291e",
   "data_as_of": "2026-08-01",
   "generated_on": "2026-09-29",
+  "governing_rule": "0007",
   "indicator_count": 10,
   "package_version": "1.0.0",
   "pre_registration": "proving/experiments/0001-regime-conditional-forecast-skill/experiment.json",
@@ -14,10 +16,21 @@
   "second_largest_eigenvalue_modulus": 0.9825732364652465,
   "shipped_under_authorisation": {
     "by": "claude-fable-5-1 (delegated by Jeddy Xie, 2026-09-29)",
-    "minted_at": "2026-09-30T01:51:00+00:00",
-    "reason": "delegated re-ship: the committed submission was produced by 9f95b12dba40d138, a configuration with two known look-ahead paths (ADR 0008); the default is the honest configuration"
+    "minted_at": "2026-09-30T04:38:11+00:00",
+    "reason": "delegated re-ship under rule 0007: experiment 0008 adopted arm B3, the equal blend with the condition chain; 0007 reads SHIP MODEL at one year and R1 at five and ten"
   },
+  "successor_rule": "proving/experiments/0007-successor-evaluation-rule/experiment.json",
   "verdict_by_horizon": {
+    "10_year": "SHIP BASE RATE",
+    "1_year": "SHIP MODEL",
+    "5_year": "SHIP BASE RATE"
+  },
+  "verdict_by_horizon_0001": {
+    "10_year": "SHIP BASE RATE",
+    "1_year": "SHIP MODEL",
+    "5_year": "SHIP BASE RATE"
+  },
+  "verdict_by_horizon_0007": {
     "10_year": "SHIP BASE RATE",
     "1_year": "SHIP MODEL",
     "5_year": "SHIP BASE RATE"

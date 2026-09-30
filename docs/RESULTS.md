@@ -6,23 +6,49 @@ typed:
 - `forecast skill-by-horizon` for the curve;
 - `forecast baseline compare` for the paired differences.
 
-The run is the default configuration, `fec79a040f9ca6f9`: two regime chains (ADR 0010), recession status
-dated by its announcement (ADR 0011). It has 391 monthly forecast dates from 1994-03 to 2026-09, and 9,702
-of its 11,730 forecasts have resolved. The second part, **History**, keeps the tables that were
-published for earlier configurations, unchanged, with the corrections that retired them.
+The run is the default configuration, **`7647c129be85291e`**, since 2026-09-29 (ADR 0013):
+- the two-chain regime model (ADR 0010), with recession status dated by its announcement (ADR 0011);
+- **blended in equal weight with R2**, the regime-free chain on each indicator's own condition. This is
+  experiment 0008's adopted arm B3.
 
-**What ships.** Since 2026-09-29 `submission/forecasts.csv` comes from this run: one year ships the
-model, five and ten years the base rate, as 0001 computes it. The re-ship was a delegated decision
-(P1-9), not the owner's own. It ships with this disclosure, also in `submission/README.md`:
+It has 391 monthly forecast dates from 1994-03 to 2026-09, and 9,702 of its 11,730 forecasts have resolved.
+The second part, **History**, keeps the tables published for earlier configurations, unchanged, with the
+corrections that retired them.
 
-- On 2026-09-25 a regime-free two-rate condition chain was measured beating this model at one year:
-  −0.0582, 98.33% [−0.1119, −0.0089], reproduced from committed code.
-- Against a climatology restricted to the model's own sample, its recession indicators score below
-  zero.
-- Both it and the single chain are registered forward.
-- The next re-ship is governed by rule 0007.
+**What ships.** Since the second re-ship of 2026-09-29, `submission/forecasts.csv` comes from this run under
+**rule 0007**: one year ships the blend, and five and ten years ship R1. The re-ship was a delegated decision
+(P2-2), not the owner's own. It ships with this disclosure, also in `submission/README.md`:
 
-## The verdict, under both rules
+- **Where the blend comes from.** It is experiment 0008's arm B3: CONFIRMED_IN_SAMPLE, +0.0615 over the model
+  at one year, 96.67% [+0.0341, +0.0961]. Every 0007 gate passes at one year.
+- **Five and ten years ship R1**, because the blend fails 0007's skill gate there.
+- **The blend is not shown to beat the chain alone** at one year (−0.0077, 90% [−0.0284, +0.0116]), and the
+  chain beats it at ten years.
+- **Everything is in sample.** The forward register, first resolving 2027-07-01, is the only out-of-sample test.
+- **Under the frozen 0001** the same run reads SHIP MODEL at one year and the base rate at five and ten.
+- **Two small class-B approximations are recorded:** revised condition values (+0.0007) and the recession
+  announcement boundary (−0.0007). Both are scheduled for correction on 2026-10-06.
+
+## The verdict for what ships: the blend, under both rules
+
+| horizon | 0001 | skill, series-start | 90% | 0007 | skill, R1 | 90% | 0007 fails |
+|---|---|---:|---|---|---:|---|---|
+| 1 year | **ship model** | +0.3201 | [+0.2219, +0.4134] | **ship model** | +0.2401 | [+0.1715, +0.3113] | none |
+| 5 years | ship base rate | +0.1447 | [+0.0050, +0.2311] | ship base rate (R1) | +0.0970 | [−0.0120, +0.1691] | skill, calibration, robustness |
+| 10 years | ship base rate | −0.0062 | [−0.0477, +0.0891] | ship base rate (R1) | −0.0548 | [−0.0928, +0.0194] | skill, honesty, the chain |
+
+- **0007's one-year gates on the blend:**
+  - calibration slope 0.870 [0.603, 1.198], where 1 is calibrated;
+  - robustness 4 of 4;
+  - blend minus chain −0.0077 [−0.0284, +0.0116], so the chain does not beat it.
+- **At five years 0001 fails only calibration.**
+- **Measurement 0010 on the blend:** it carries skill against R1 for 46 months, against 29 for the model alone.
+
+The tables below describe **the two-chain model alone**, `fec79a040f9ca6f9`: the half of the blend that has
+regimes. It shipped from the first to the second re-ship of 2026-09-29, and is still registered forward as a
+companion.
+
+## The two-chain model alone, under both rules
 
 Two rules are printed side by side, and neither replaces the other:
 - **0001**, frozen before the first backtest ran, is the rule the pipeline's gate answers to. It scores
@@ -69,6 +95,9 @@ Measurement 0010, registered before it ran, scores every month from 1 to 120. Th
   fewer than 5.5 independent observations.
 - **The model is never better than the chain.** It is worse at 1–16 and 103–120 months, and the two
   cannot be told apart in between.
+- **The blend that ships carries skill for 46 months against R1.** That is from 0010's second run
+  (`research/reports/skill-at-every-horizon/adopted-blend/`). It is significantly worse than the chain at
+  only 1–8 and 114–120 months, and never significantly better.
 
 ## Where the regimes help, and where they do not
 
@@ -117,17 +146,29 @@ On the backtest's own dates it first falls to 0.05 at 120 months, which is why 0
 gate fails by a hair (0.0499). The two-chain gain over the single chain holds on current code:
 +0.0588, 98.33% [+0.0146, +0.1017] (ADR 0010, measured again).
 
-## Research in progress
+## Research this session
 
-- **Experiment 0008**, registered before any arm ran, tests three ways of keeping what regimes add
-  while taking what the chain has. Its control reproduces the reference exactly.
-  - B1: point-in-time questions through the joint regime-by-condition chain.
-  - B2: observe unemployment and the term spread.
-  - B3: an equal blend with the chain.
-  - Its results are in `research/experiments-drafts/0008-condition-aware-regime-forecasts.RESULT.md`
-    once they report.
-- **Experiment 0006**: is the two-chain gain structure or granularity? It runs against a same-code
-  single-chain anchor.
+**Experiment 0008** tested three ways of keeping what regimes add while taking what the chain has. The control
+reproduced the reference exactly, and every arm's audits passed at both cutoffs.
+
+| arm | one year vs the two-chain model, R1 | 96.67% | verdict |
+|---|---:|---|---|
+| B1: point-in-time through the regime × condition chain | +0.0535 | [+0.0174, +0.0940] | CONFIRMED_IN_SAMPLE; not adopted (0007 calibration) |
+| B2: observe unemployment and the term spread | −0.0088 | [−0.0515, +0.0340] | HARMFUL at ten years |
+| B3: equal blend with R2 | **+0.0615** | [+0.0341, +0.0961] | CONFIRMED_IN_SAMPLE; **adopted** |
+
+**Experiment 0006** read STRUCTURE HELPS. At six joint cells, two chains beat one by +0.0587, 90% [+0.0216,
++0.0934]. The six-cell 3x2 model matches the 16-cell default at one year on 27 parameters against 58.
+Experiment 0011 will test it under the blend.
+
+**Scheduled:**
+
+| date | work |
+|---|---|
+| 2026-10-06 | the D5 and D17 integrity fixes; register experiment 0011 |
+| 2026-10-13 | register experiment 0009 (back to 1972) |
+| 2026-10-21 | the pass-three decision brief |
+| 2026-11-01 | the monthly round |
 
 ---
 

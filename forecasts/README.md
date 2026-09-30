@@ -25,25 +25,31 @@ were made or when they came due.
 
 ## What is on the register
 
-| rounds | configuration | what it is |
-|---|---|---|
-| 2026-09-09 | `9f95b12dba40d138` | the original shipped configuration, with two look-ahead paths since closed (ADR 0008) |
-| 2026-09-29 | `fec79a040f9ca6f9` | the two-chain default, shipped since 2026-09-29 under 0001 |
-| 2026-09-29 | `ad7fcc1affd0746a` | the single chain, beside it, so the two-chain adoption can be falsified forward |
+| round made | configuration | forecaster | what it is |
+|---|---|---|---|
+| 2026-09-09 | `9f95b12dba40d138` | (source) | the original shipped configuration, with two look-ahead paths since closed (ADR 0008) |
+| 2026-09-29 | `fec79a040f9ca6f9` | (source) | the two-chain regime model alone, shipped between the two re-ships of 2026-09-29 |
+| 2026-09-29 | `ad7fcc1affd0746a` | (source) | the single-chain model |
+| 2026-09-29 | `7647c129be85291e` | blend of regime model and condition chain | **shipped**, under rule 0007 (ADR 0013) |
+| 2026-09-29 | `7647c129be85291e` | condition_chain | R2, the regime-free chain |
+| 2026-09-29 | `7647c129be85291e` | model_sample_climatology | R1, the base rate 0007 ships |
 
-The single chain's grid is written with `forecast submit --destination
-forecasts/companions/single-chain-ad7fcc1affd0746a`. It ships the base rate at every horizon under
-0001. Its `model_probability` column is the single chain's own forecast, and it is that column the
-adoption's forward test compares (ADR 0010).
+`forecaster` names whose claim a line is, because one run can register several. Lines written before
+2026-09-29 have none and read as their `source`. A line made under rule 0007 carries:
+- the method's probability in `model_probability`;
+- R1 in `climatological_base_rate`.
+
+**Which forward comparison each claim serves:**
+- **The blend against R2:** does the shipped method beat the chain it contains?
+- **The regime model alone against the single chain:** the two-chain adoption's falsifier (ADR 0010), read at
+  2027-07-01, 2028-07-01 and 2029-07-01.
+- **The regime model alone against R2:** do regimes help?
+- **Anything against R1:** skill against a fair base rate.
 
 **Read this before using the one-year rows.**
-
-- One-year rows ship the model under the frozen 2026-09-08 rule.
-- On 2026-09-25 a review measured a regime-free two-rate condition chain beating this model at one year
-  on the same sample: −0.0582, 98.33% [−0.1119, −0.0089], reproduced from committed code.
-- Against a climatology restricted to the model's own sample, its recession indicators score below zero.
-- The chain and that fair climatology join the register from the next monthly round.
-- The next re-ship is governed by rule 0007.
+- The blend is experiment 0008's arm B3, confirmed in sample.
+- It is not shown to beat the chain alone at one year, and the chain beats it at ten.
+- Everything shipped is in sample. This register is the only test that is not.
 
 ## Operating it
 
@@ -59,13 +65,15 @@ holdout evidence lost for good.
 
 1. `forecast check-gates` (as of that day), so the grid is today's.
 2. `forecast register` records the shipped grid in `submission/`.
-3. `forecast register --from forecasts/companions/<name>` records each companion
-   configuration beside it. Such a grid is written by `forecast submit --destination
-   forecasts/companions/<name>`, run in a workspace whose settings are that
-   configuration. Nothing is shipped from there, so no authorisation is needed. The
-   first companion is the single chain, `ad7fcc1affd0746a`, which the two-chain
-   adoption's falsifier needs forward beside the default.
-4. `forecast resolve`.
+3. `forecast register --companion condition-chain` and `--companion model-sample-climatology` record R2 and
+   R1 from the same run.
+4. `forecast register --from forecasts/companions/<name>` records each companion configuration. Such a grid is
+   written by `forecast submit --rule 0001 --destination forecasts/companions/<name>`, run in a workspace whose
+   settings are that configuration. Nothing is shipped from there, so no authorisation is needed. The companions
+   are:
+   - the regime model alone, `fec79a040f9ca6f9`;
+   - the single chain, `ad7fcc1affd0746a`.
+5. `forecast resolve`.
 
 Nothing schedules this, so it is checked instead. `forecast register --check` exits 1,
 and `check-gates` and `submit --verify-only` print a warning, once the newest round is
