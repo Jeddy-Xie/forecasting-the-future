@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the paper below."
+title: "Forecasting the Future"
+abstract: >-
+  Probability forecasts for ten binary US macroeconomic questions at horizons from one month to
+  ten years, from a two-chain hidden Markov model over economic regimes blended with a
+  persistence chain, evaluated walk-forward on point-in-time data under pre-registered rules.
+authors:
+  - family-names: Xie
+    given-names: Jeddy
+repository-code: "https://github.com/Jeddy-Xie/forecasting-the-future"
+url: "https://jeddy-xie.github.io/forecasting-the-future/"
+license: MIT
+keywords:
+  - probability forecasting
+  - hidden Markov models
+  - regime switching
+  - Brier skill score
+  - forecast evaluation
+  - pre-registration
+preferred-citation:
+  type: report
+  title: >-
+    When to Ship the Historical Average: A Pre-Registered, Point-in-Time Test of Regime-Based
+    Probability Forecasts for the US Economy
+  authors:
+    - family-names: Xie
+      given-names: Jeddy
+  year: 2026
+  month: 9
+  url: "https://jeddy-xie.github.io/forecasting-the-future/paper.pdf"
+  repository-code: "https://github.com/Jeddy-Xie/forecasting-the-future"
