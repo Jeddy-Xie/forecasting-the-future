@@ -1,22 +1,141 @@
 # Results
 
-> **Re-shipped 2026-09-29.** `submission/forecasts.csv` now comes from the two-chain default,
-> `fec79a040f9ca6f9`, re-shipped under the frozen 2026-09-08 rule (0001) by delegated decision P1-9
-> (claude-fable-5-1, delegated by Jeddy Xie). One-year rows ship the model; five and ten years ship the
-> base rate.
->
-> - **A forecaster without regimes beats it.** On 2026-09-25 a review measured a regime-free two-rate
->   condition chain beating this model at one year on the same sample. Reproduced from committed code:
->   −0.0582, 98.33% [−0.1119, −0.0089].
-> - **Its recession skill is below zero against a fair benchmark.** Against a climatology restricted to
->   the model's own sample, its recession indicators score below zero.
-> - **Registered forward.** Both this model and the single chain are registered forward beside the
->   submission.
-> - **The next re-ship is governed by rule 0007** (ADR 0012), under which the one-year horizon would
->   ship the base rate too.
->
-> The tables below still describe the older shipped configuration `9f95b12dba40d138`, and are rewritten
-> around the current default in the same session.
+Every number in the first part of this page comes from committed code, and is regenerated rather than
+typed:
+- `forecast check-gates` for the verdicts;
+- `forecast skill-by-horizon` for the curve;
+- `forecast baseline compare` for the paired differences.
+
+The run is the default configuration, `fec79a040f9ca6f9`: two regime chains (ADR 0010), recession status
+dated by its announcement (ADR 0011). It has 391 monthly forecast dates from 1994-03 to 2026-09, and 9,702
+of its 11,730 forecasts have resolved. The second part, **History**, keeps the tables that were
+published for earlier configurations, unchanged, with the corrections that retired them.
+
+**What ships.** Since 2026-09-29 `submission/forecasts.csv` comes from this run: one year ships the
+model, five and ten years the base rate, as 0001 computes it. The re-ship was a delegated decision
+(P1-9), not the owner's own. It ships with this disclosure, also in `submission/README.md`:
+
+- On 2026-09-25 a regime-free two-rate condition chain was measured beating this model at one year:
+  −0.0582, 98.33% [−0.1119, −0.0089], reproduced from committed code.
+- Against a climatology restricted to the model's own sample, its recession indicators score below
+  zero.
+- Both it and the single chain are registered forward.
+- The next re-ship is governed by rule 0007.
+
+## The verdict, under both rules
+
+Two rules are printed side by side, and neither replaces the other:
+- **0001**, frozen before the first backtest ran, is the rule the pipeline's gate answers to. It scores
+  skill against a climatology over every outcome since each source series began: 1854 for recession
+  dating.
+- **Rule 0007** (ADR 0012) governs every new claim and every re-ship from 2026-09-29 on. It scores skill
+  against R1, the same average restricted to the model's own sample. It tests calibration with a test
+  sized for this sample, and requires the model not to be beaten by R2, a regime-free chain on each
+  indicator's own condition.
+
+| horizon | 0001 | skill, series-start | 90% | 0007 | skill, R1 | 90% | 0007 fails |
+|---|---|---:|---|---|---:|---|---|
+| 1 year | **ship model** | +0.2673 | [+0.1652, +0.3649] | ship base rate | +0.1786 | [+0.1020, +0.2578] | calibration, the chain |
+| 5 years | ship base rate | +0.1194 | [−0.1086, +0.2507] | ship base rate | +0.0690 | [−0.1209, +0.1905] | skill, calibration, robustness |
+| 10 years | ship base rate | −0.1624 | [−0.2577, +0.0305] | ship base rate | −0.2109 | [−0.3006, −0.0398] | skill, robustness, honesty, the chain |
+
+**0001's gates at one year.**
+- Calibration error: 0.0893 at one year, 0.1549 at five, 0.0943 at ten.
+- Robustness: skill is positive in 4 of 4 sub-periods at one year (+0.055, +0.079, +0.401, +0.182).
+- Honesty: the distance to the stationary distribution is 0.4575 at one year.
+
+**0007's calibration test at one year** fits a slope of 0.613 [0.429, 0.825], where 1 is calibrated. The
+model is overconfident, and the regime-free chain beats it by 0.069 [0.029, 0.115] against R1.
+
+## Skill at every horizon, and where to ship the average
+
+Measurement 0010, registered before it ran, scores every month from 1 to 120. The full tables are in
+`research/reports/skill-at-every-horizon/`, and the reading is in
+`research/experiments-drafts/0010-skill-at-every-horizon.RESULT.md`.
+
+| months | model, R1 | chain, R1 | model minus chain, 90% |
+|---:|---:|---:|---|
+| 1 | +0.290 | +0.532 | −0.243 [−0.358, −0.181] |
+| 6 | +0.236 | +0.367 | −0.130 [−0.192, −0.084] |
+| 12 | +0.179 | +0.248 | −0.069 [−0.115, −0.029] |
+| 24 | +0.135 | +0.144 | −0.009 [−0.062, +0.043] |
+| 36 | +0.109 | +0.105 | +0.004 [−0.075, +0.075] |
+| 60 | +0.069 | +0.088 | −0.020 [−0.173, +0.079] |
+| 120 | −0.211 | +0.032 | −0.243 [−0.327, −0.072] |
+
+- **The regime model carries skill for 29 months against R1**, and 39 against the series-start benchmark.
+  Beyond that, as far as this sample can say, the historical average does as well.
+- **The regime-free chain carries skill at every horizon measured.** Beyond 60 months that rests on
+  fewer than 5.5 independent observations.
+- **The model is never better than the chain.** It is worse at 1–16 and 103–120 months, and the two
+  cannot be told apart in between.
+
+## Where the regimes help, and where they do not
+
+One year, skill against R1 (ADR 0012):
+
+| question | the model sees it? | model | chain |
+|---|---|---:|---:|
+| inflation above 5%, any time | input | **+0.501** | +0.406 |
+| inflation above 3%, at the horizon | input | **+0.142** | +0.046 |
+| funds rate below 1%, any time | through the bill rate | **+0.675** | +0.610 |
+| funds rate above 4%, at the horizon | through the bill rate | +0.324 | **+0.447** |
+| yield curve inverted, any time | one leg | +0.179 | **+0.195** |
+| output growth above 2%, at the horizon | input | −0.046 | **+0.032** |
+| unemployment above 7%, any time | no | +0.437 | **+0.500** |
+| unemployment above 5%, at the horizon | no | −0.110 | **+0.242** |
+| recession, any time | no | −0.283 | **+0.007** |
+| recession, in the horizon month | no | −0.033 | **−0.008** |
+
+The regimes earn their keep where the model's inputs are the question. They lose where the question is
+about something the model never observes, and where the answer is mostly whether the condition holds
+now, which the point-in-time composition ignores.
+
+By composition path, one year, mean skill:
+
+| path | series-start | R1 |
+|---|---:|---:|
+| any time within the horizon | +0.402 | +0.302 |
+| point in time | +0.133 | +0.055 |
+
+## The regimes and the information horizon
+
+These are today's fit, on the full panel.
+
+| chain | states | second eigenvalue | expected visits |
+|---|---:|---:|---|
+| growth | 4 | 0.946 | 6.0 to 13.4 months |
+| inflation and rates | 4 | 0.983 | 23.1 to 42.9 months |
+| joint | 16 | 0.983 | a half-life of 39 months |
+
+The distance from a projected regime distribution to the stationary one is:
+- **one year:** 0.486;
+- **five years:** 0.121;
+- **ten years:** 0.033.
+
+On the backtest's own dates it first falls to 0.05 at 120 months, which is why 0001's ten-year honesty
+gate fails by a hair (0.0499). The two-chain gain over the single chain holds on current code:
++0.0588, 98.33% [+0.0146, +0.1017] (ADR 0010, measured again).
+
+## Research in progress
+
+- **Experiment 0008**, registered before any arm ran, tests three ways of keeping what regimes add
+  while taking what the chain has. Its control reproduces the reference exactly.
+  - B1: point-in-time questions through the joint regime-by-condition chain.
+  - B2: observe unemployment and the term spread.
+  - B3: an equal blend with the chain.
+  - Its results are in `research/experiments-drafts/0008-condition-aware-regime-forecasts.RESULT.md`
+    once they report.
+- **Experiment 0006**: is the two-chain gain structure or granularity? It runs against a same-code
+  single-chain anchor.
+
+---
+
+# History, as it was recorded
+
+Everything below was published for earlier configurations. It is kept as it was, and the corrections
+that retired it are inside it. The headline tables describe `9f95b12dba40d138`, which shipped from
+2026-09-08 to 2026-09-29. Their one-year verdict did not survive the two look-ahead fixes (ADR 0008).
 
 Everything here is produced by `forecast check-gates` and is regenerated, not
 typed. The numbers come from a walk-forward run of 19,740 forecasts issued
@@ -51,7 +170,7 @@ Recomputed on the shipped run behind these tables, it changes no verdict:
 The tables are left as published and the submission is not regenerated. Whether
 to re-ship is Jeddy's call.
 
-## The verdict
+### The verdict
 
 The decision rule was committed before the first backtest ran
 (`proving/experiments/0001-regime-conditional-forecast-skill/experiment.json`).
@@ -70,7 +189,7 @@ with blocks as long as the horizon.
 This is what the pre-registration said to expect, written down in advance: *"One
 year passes. Five years is marginal. Ten years fails."*
 
-## The regimes
+### The regimes
 
 Five, found rather than imposed. The model was fitted on continuous standardised
 growth, inflation and interest rates; the labels are read off the fitted emission
@@ -92,7 +211,7 @@ changes 30 times, about once every two and a half years.
 Five states beat one on both criteria: held-out log likelihood per month −2.48
 against −4.30, information criterion 3,394 against 5,635.
 
-## The information horizon
+### The information horizon
 
 The transition matrix's second largest eigenvalue modulus is **0.983**, a half
 life of 41 months. The distance between a projected regime distribution and the
@@ -116,7 +235,7 @@ margin is a fifth of a percentage point. Nothing rests on which side of it the
 number falls: the ten-year horizon ships the base rate anyway, on skill and
 robustness.
 
-## Where the skill actually is
+### Where the skill actually is
 
 Mean skill by composition path, which is the most useful cut in the whole run:
 
@@ -143,7 +262,7 @@ The best and worst one-year indicators say the same thing:
 | unemployment rate above five percent at horizon | −0.056 | 0.383 |
 | industrial production growth above two percent at horizon | −0.125 | 0.423 |
 
-## Where the method breaks, precisely
+### Where the method breaks, precisely
 
 The ten-year any-time figure of −0.579 is not noise, and it is worth naming its
 cause. The path composition computes the probability that a condition never holds
@@ -160,13 +279,13 @@ That is a real limitation of the hazard formulation at long horizons, and it is
 the reason the ten-year horizon ships the base rate rather than a number that
 looks like a forecast.
 
-## What ships
+### What ships
 
 `submission/forecasts.csv` carries the shipped probability, the source, and both
 candidates so the choice is auditable. One-year rows come from the regime model;
 five and ten-year rows are the climatological base rate.
 
-## Stability across sub-periods
+### Stability across sub-periods
 
 The robustness gate asks whether skill survives being cut into four disjoint
 chronological blocks. Where an indicator's outcome never varies inside a block its
@@ -181,7 +300,7 @@ do vary, with the count reported.
 | fourth | +0.312 (10) | +0.122 (9) | −0.177 (8) |
 | positive | 4 of 4 | 3 of 4 | 1 of 4 |
 
-## The cost of the two look-ahead paths
+### The cost of the two look-ahead paths
 
 Two paths by which whole-sample information reached a walk-forward decision were
 closed on 2026-09-09 (ADR 0008): the number of regimes was chosen on the panel as
@@ -259,7 +378,7 @@ change. `forecast submit` now **refuses** to regenerate it unless the run is the
 approved configuration or a single-use, named authorisation is present, and the
 routine pipeline step is `forecast submit --verify-only`, which writes nothing.
 
-## Three corrections, all disclosed
+### Three corrections, all disclosed
 
 **The calibration standard error** initially treated overlapping monthly forecasts
 as independent, which made it about three and a half times too small at one year.
