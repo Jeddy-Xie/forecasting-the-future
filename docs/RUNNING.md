@@ -115,6 +115,12 @@ hook that denies hand edits to `submission/` — so mint it immediately before t
 submit, or an editor will consume it first and the refusal will come back. The
 write records `shipped_under_authorisation` (reason, who, when) in the manifest.
 
+### The monthly forward round
+
+`forecasts/README.md` describes it. The flags it uses: `forecast submit --destination DIR`
+writes a grid somewhere nothing ships from, `forecast register --from DIR` records one,
+and `forecast register --check` exits 1 when no round has been made for 45 days.
+
 ### One-off analyses
 
 `forecast compare-variants` runs all four cells of the look-ahead 2x2 — shipped,

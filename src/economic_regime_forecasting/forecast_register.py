@@ -52,6 +52,12 @@ REGISTER_DIRECTORY = PROJECT_ROOT / "forecasts"
 REGISTER_FILE = REGISTER_DIRECTORY / "register.jsonl"
 RESOLUTIONS_FILE = REGISTER_DIRECTORY / "resolutions.jsonl"
 
+REGISTRATION_CADENCE_DAYS = 45
+"""A round is due on the first of every month (delegated decision P1-8). Nothing
+schedules it, so the pipeline checks instead: a register whose newest round is
+older than this is stale, because every month not registered is holdout evidence
+lost for good. Forty-five days leaves a fortnight's slack on a monthly cadence."""
+
 
 class HorizonScore(TypedDict):
     """One horizon's live scoring."""
@@ -234,6 +240,30 @@ def register(
         existing.add(forecast.key)
         written.append(asdict(forecast))
     return _append(register_file, written), skipped
+
+
+def days_since_last_round(today: date, path: Path = REGISTER_FILE) -> int | None:
+    """Days since the newest registration round was made; None if there is none."""
+    entries = read_register(path)
+    if not entries:
+        return None
+    newest = max(date.fromisoformat(entry.made_on) for entry in entries)
+    return (today - newest).days
+
+
+def staleness_warning(today: date, path: Path = REGISTER_FILE) -> str | None:
+    """A sentence to print when the register has gone longer than a round without
+    one, or None when it is current."""
+    days = days_since_last_round(today, path)
+    if days is None:
+        return "the forecast register is empty: no claim about the future has been recorded"
+    if days > REGISTRATION_CADENCE_DAYS:
+        return (
+            f"the newest registration round is {days} days old, past the "
+            f"{REGISTRATION_CADENCE_DAYS}-day limit on a monthly cadence. Run the monthly round "
+            "(forecasts/README.md): every month not registered is holdout evidence lost for good"
+        )
+    return None
 
 
 # ---------------------------------------------------------------- resolution

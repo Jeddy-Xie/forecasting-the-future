@@ -643,11 +643,20 @@ def verify_submission(workspace: Workspace, today: date) -> int:
         )
     else:
         print("\nThis run is the approved configuration; `forecast submit` would ship it.")
+    _warn_if_the_register_is_stale(today)
     return 0
 
 
-def submit(workspace: Workspace, today: date) -> int:
-    """Write the final grid, shipping the base rate where a gate failed."""
+def submit(workspace: Workspace, today: date, destination: Path | None = None) -> int:
+    """Write the final grid, shipping the base rate where a gate failed.
+
+    ``destination`` other than the repository's own ``submission/`` writes the same
+    grid and manifest somewhere nothing is shipped from, and so needs no
+    authorisation: that is how a configuration that is not shipped is still
+    registered forward beside the one that is (delegated decision P1-8). Resolved
+    at call time, so the module's ``SUBMISSION_DIRECTORY`` is read when it is used.
+    """
+    destination = SUBMISSION_DIRECTORY if destination is None else destination
     settings = workspace.settings
     forecasts = workspace.artifacts.read_table(ARTIFACTS.current_forecasts)
     verdicts = workspace.artifacts.read_table(ARTIFACTS.verdicts)
@@ -659,7 +668,7 @@ def submit(workspace: Workspace, today: date) -> int:
     # submission, or a run that already is the approved configuration -- and the
     # consumed authorisation when a token let an unapproved run through.
     authorisation = shipping_approval.authorise_shipping(
-        destination=SUBMISSION_DIRECTORY,
+        destination=destination,
         repo_root=PROJECT_ROOT,
         live_configuration_hash=settings.configuration_hash(),
         producing_configuration_hash=_hash_that_produced_the_artifacts(results),
@@ -695,8 +704,8 @@ def submit(workspace: Workspace, today: date) -> int:
         )
 
     submission = pd.DataFrame(rows).sort_values(["indicator", "horizon_years"])
-    SUBMISSION_DIRECTORY.mkdir(parents=True, exist_ok=True)
-    submission.to_csv(SUBMISSION_DIRECTORY / "forecasts.csv", index=False)
+    destination.mkdir(parents=True, exist_ok=True)
+    submission.to_csv(destination / "forecasts.csv", index=False)
 
     manifest = {
         "generated_on": today.isoformat(),
@@ -732,7 +741,7 @@ def submit(workspace: Workspace, today: date) -> int:
         # Present only when a token let an unapproved run through, so a manifest
         # produced by the approved configuration keeps exactly today's schema.
         manifest["shipped_under_authorisation"] = authorisation.as_manifest_entry()
-    (SUBMISSION_DIRECTORY / "manifest.json").write_text(
+    (destination / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
 
@@ -744,7 +753,7 @@ def submit(workspace: Workspace, today: date) -> int:
             f"\nshipped under authorisation by {authorisation.by} "
             f"({authorisation.minted_at}): {authorisation.reason}"
         )
-    print(f"\nwritten to {_display_path(SUBMISSION_DIRECTORY)}/")
+    print(f"\nwritten to {_display_path(destination)}/")
     return 0
 
 
@@ -946,7 +955,14 @@ def check_gates(workspace: Workspace, today: date) -> int:
     _write_gate_reports(workspace, reports)
     _write_run_summary(workspace)
     print(f"\n{'=' * 78}\nAll five gates passed.")
+    _warn_if_the_register_is_stale(today)
     return 0
+
+
+def _warn_if_the_register_is_stale(today: date) -> None:
+    warning = forecast_register.staleness_warning(today)
+    if warning is not None:
+        print(f"\nWARNING: {warning}")
 
 
 def _write_gate_reports(workspace: Workspace, reports: list[pipeline_gates.GateReport]) -> None:
@@ -1422,6 +1438,16 @@ def build_parser() -> argparse.ArgumentParser:
             "and whether the committed submission still records the approved one"
         ),
     )
+    submit_parser.add_argument(
+        "--destination",
+        type=Path,
+        default=None,
+        help=(
+            "write the grid and manifest here instead of submission/. Nothing is shipped from "
+            "anywhere else, so no authorisation is needed; used to register a configuration "
+            "forward beside the shipped one"
+        ),
+    )
     # `baseline` is the first subcommand with subcommands of its own. Three verbs
     # that all act on the same committed files belong under one name; three
     # top-level commands sharing a prefix would be the same thing spelled worse.
@@ -1532,6 +1558,25 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    register_parser = subparsers.add_parser(
+        "register", help="record the shipped forecasts as dated, resolvable claims"
+    )
+    register_parser.add_argument(
+        "--from",
+        dest="source_directory",
+        type=Path,
+        default=None,
+        help="register the grid and manifest in this directory (default: submission/)",
+    )
+    register_parser.add_argument(
+        "--check",
+        action="store_true",
+        help=(
+            "write nothing; exit 1 if the newest registration round is older than "
+            f"{forecast_register.REGISTRATION_CADENCE_DAYS} days"
+        ),
+    )
+
     for name, help_text in (
         ("audit-data", "gate 1: measure the data against the registry"),
         ("fit-regimes", "gate 2: sweep the number of regimes and fit"),
@@ -1539,7 +1584,6 @@ def build_parser() -> argparse.ArgumentParser:
         ("backtest", "gate 4: walk the method through history"),
         ("evaluate", "gate 5: apply the pre-registered decision rule"),
         ("check-gates", "run all five gates in order"),
-        ("register", "record the shipped forecasts as dated, resolvable claims"),
         ("resolve", "score every registered forecast whose date has passed"),
         ("compare-variants", "the 2x2 of the two look-ahead fixes, against one decision rule"),
         ("artifacts", "every generated file in one table, with the command that wrote it"),
@@ -1559,12 +1603,13 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def register_forecasts(workspace: Workspace, today: date) -> int:
-    """Record what `forecast submit` shipped as dated claims about the future."""
+def register_forecasts(workspace: Workspace, today: date, source: Path | None = None) -> int:
+    """Record what `forecast submit` wrote as dated claims about the future."""
+    source = SUBMISSION_DIRECTORY if source is None else source
     try:
         written, skipped = forecast_register.register(
-            SUBMISSION_DIRECTORY / "forecasts.csv",
-            SUBMISSION_DIRECTORY / "manifest.json",
+            source / "forecasts.csv",
+            source / "manifest.json",
             today,
         )
     except forecast_register.RegisterError as error:
@@ -1658,7 +1703,7 @@ def main(argv: list[str] | None = None) -> int:
         if arguments.verify_only:
             return verify_submission(workspace, today)
         try:
-            return submit(workspace, today)
+            return submit(workspace, today, arguments.destination)
         except shipping_approval.SubmissionNotApprovedError as error:
             # A traceback is not a message. An exit code of 2 with that text is,
             # matching how `register_forecasts` prints a `RegisterError`.
@@ -1673,7 +1718,11 @@ def main(argv: list[str] | None = None) -> int:
     if arguments.command == "compare-variants":
         return compare_variants(workspace, today)
     if arguments.command == "register":
-        return register_forecasts(workspace, today)
+        if arguments.check:
+            warning = forecast_register.staleness_warning(today)
+            print(warning if warning else "the forecast register is current")
+            return 1 if warning else 0
+        return register_forecasts(workspace, today, arguments.source_directory)
     if arguments.command == "resolve":
         return resolve_forecasts(workspace, today)
     if arguments.command == "audit-look-ahead":

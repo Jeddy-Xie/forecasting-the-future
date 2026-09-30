@@ -469,17 +469,34 @@ def git_commit_of(repository_root: Path = PROJECT_ROOT) -> str | None:
     Informational only, and ``None`` outside a checkout. Nothing in a comparison
     reads it, so a missing answer costs nothing and is not worth a subprocess.
     """
-    head = repository_root / ".git" / "HEAD"
+    git_directory = repository_root / ".git"
+    # In a linked worktree `.git` is a file pointing at the worktree's own git
+    # directory, which holds HEAD; branch refs live in the common directory it
+    # names. Every research arm runs in one, so this is not a corner case.
+    common_directory = git_directory
+    if git_directory.is_file():
+        pointer = git_directory.read_text(encoding="utf-8").strip()
+        if not pointer.startswith("gitdir:"):
+            return None
+        git_directory = Path(pointer.removeprefix("gitdir:").strip())
+        commondir = git_directory / "commondir"
+        common_directory = (
+            (git_directory / commondir.read_text(encoding="utf-8").strip()).resolve()
+            if commondir.is_file()
+            else git_directory
+        )
+    head = git_directory / "HEAD"
     if not head.is_file():
         return None
     text = head.read_text(encoding="utf-8").strip()
     if not text.startswith("ref:"):
         return text or None
     reference = text.removeprefix("ref:").strip()
-    direct = repository_root / ".git" / reference
-    if direct.is_file():
-        return direct.read_text(encoding="utf-8").strip() or None
-    packed = repository_root / ".git" / "packed-refs"
+    for directory in (git_directory, common_directory):
+        direct = directory / reference
+        if direct.is_file():
+            return direct.read_text(encoding="utf-8").strip() or None
+    packed = common_directory / "packed-refs"
     if packed.is_file():
         for line in packed.read_text(encoding="utf-8").splitlines():
             if line.startswith(("#", "^")):
