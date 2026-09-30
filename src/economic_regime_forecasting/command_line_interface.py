@@ -349,7 +349,13 @@ def _fit_two_timescale_regimes(
 
 
 def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates.GateReport]:
-    """Gate 3. The current probability grid, with its evidence attached."""
+    """Gate 3. The current probability grid, with its evidence attached.
+
+    With ``blend_the_model_equally_with_the_condition_chain`` (experiment 0008, arm
+    B3) each ``probability`` is the equal blend of the model and the reference chain,
+    and the grid carries ``model_probability`` and ``condition_chain_probability``
+    beside it. The evidence columns still describe the model.
+    """
     settings = workspace.settings
     matrix = workspace.observation_matrix_as_of(today)
     selected = regime_model_from_dictionary(workspace.artifacts.read_json(ARTIFACTS.selected_model))
@@ -374,11 +380,31 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
         workspace.artifacts,
     )
     filtered = fitted.model.filtered_state_probabilities(matrix.values)
+    blend = settings.blend_the_model_equally_with_the_condition_chain
 
     rows = []
     for indicator in workspace.indicators:
         condition = walk_forward.condition_available_at(histories[indicator.name], today)
         holds_now = bool(condition.iloc[-1] > 0.5) if not condition.empty else False
+        # Experiment 0008, arm B3: today's grid blends the model with the reference
+        # chain, learned and composed exactly as the backtest's R2 column is at a
+        # forecast date: from conditions published by today, in the model's sample.
+        chain_by_horizon = (
+            walk_forward.condition_chain_at_every_horizon(
+                indicator,
+                condition,
+                pd.Timestamp(today),
+                walk_forward.condition_chain_rates(
+                    indicator,
+                    condition,
+                    pd.Timestamp(matrix.dates[0]),
+                    settings.conditional_rate_shrinkage_strength,
+                ),
+                max(settings.forecast_horizons_in_months),
+            )
+            if blend
+            else None
+        )
         for horizon in settings.forecast_horizons_in_months:
             composed = indicator_forecast.forecast_indicator(
                 indicator,
@@ -388,7 +414,17 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
                 horizon,
                 holds_now,
             )
-            rows.append({**composed.as_row(), "question": indicator.question})
+            row = {**composed.as_row(), "question": indicator.question}
+            if chain_by_horizon is not None:
+                # The issued number is the blend; both halves are kept beside it. The
+                # columns exist only when blending, so main's grid keeps its schema.
+                chain_probability = float(chain_by_horizon[horizon - 1])
+                row["model_probability"] = composed.probability
+                row["condition_chain_probability"] = chain_probability
+                row["probability"] = indicator_forecast.blend_equally_with_the_condition_chain(
+                    composed.probability, chain_probability
+                )
+            rows.append(row)
 
     forecasts = pd.DataFrame(rows)
     mixing = regime_forecast.measure_mixing(

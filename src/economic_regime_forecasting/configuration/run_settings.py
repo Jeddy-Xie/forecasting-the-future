@@ -132,7 +132,33 @@ class RunSettings:
 
     False reproduces main exactly, one chain over all three columns. At False the
     field is left out of the configuration hash, so every digest main has written
-    is unchanged. This is True only on the branch ``research/two-timescale-chains``."""
+    is unchanged. The default since 2026-09-20 (ADR 0010)."""
+
+    blend_the_model_equally_with_the_condition_chain: bool = True
+    """Research arm B3 of experiment 0008 (``B3-equal-blend-with-the-chain``).
+
+    Every issued probability becomes ``0.5 * model + 0.5 * chain``, at every
+    indicator and horizon, where the chain is rule 0007's reference forecaster R2:
+    the regime-free two-state Markov chain on the indicator's own monthly
+    condition, re-estimated at every forecast date from conditions published by
+    then (``backtest.walk_forward.condition_chain_rates``) and composed at one
+    regime from the last published condition, stepping the publication gap
+    (``models.indicator_forecast.compose_through_the_condition_chain_at_every_horizon``).
+    The weight is 0.5, fixed by the registration and never fitted, so it is a
+    constant (``indicator_forecast.CONDITION_CHAIN_BLEND_WEIGHT``) rather than a
+    setting. The model itself is unchanged, and so are the backtest's
+    ``condition_chain_probability`` column (the reference), its
+    ``effective_sample_size`` and ``distance_to_stationary`` (which describe the
+    model). A missing chain value raises rather than falling back to the model.
+
+    Applied in ``backtest.walk_forward.run_walk_forward``, and so in everything that
+    walks forward (the backtest, the look-ahead audit, skill by horizon), and in
+    ``command_line_interface.forecast_now`` for today's grid.
+
+    False reproduces main exactly: the issued probability is the model's alone. At
+    False the field is left out of the configuration hash, so every digest main has
+    written is unchanged. The default since 2026-09-29, adopted from experiment 0008
+    by delegated decision P2-1 (ADR 0013)."""
 
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
@@ -167,6 +193,10 @@ SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, objec
     # Research arm A4 (experiment 0002). False is main's single chain, the behaviour
     # of the code before the field existed, so the entry meets the rule below.
     "separate_chains_for_growth_and_for_inflation_with_rates": False,
+    # Research arm B3 (experiment 0008). False issues the model's probability alone,
+    # the behaviour of the code before the field existed, so the entry meets the rule
+    # below.
+    "blend_the_model_equally_with_the_condition_chain": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 

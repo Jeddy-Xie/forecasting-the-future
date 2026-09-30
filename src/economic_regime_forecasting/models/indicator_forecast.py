@@ -405,6 +405,42 @@ SINGLE_REGIME_TRANSITION_MATRIX: np.ndarray = _read_only(np.ones((1, 1)))
 SINGLE_REGIME_DISTRIBUTION: np.ndarray = _read_only(np.ones(1))
 
 
+CONDITION_CHAIN_BLEND_WEIGHT: float = 0.5
+"""Experiment 0008, arm B3: the weight on each of the model and the chain.
+
+Fixed by the registration and never fitted: an equal blend of two complementary
+forecasters needs no estimated weight, and a fitted one would be a hyperparameter
+chosen after seeing the sample."""
+
+
+def blend_equally_with_the_condition_chain(
+    model_probability: float, condition_chain_probability: float
+) -> float:
+    """``0.5 * model + 0.5 * chain``: the forecast experiment 0008's arm B3 issues.
+
+    The chain is the regime-free reference forecaster R2 of rule 0007, composed
+    through :func:`compose_through_the_condition_chain_at_every_horizon` at one
+    regime. Both inputs must already be probabilities. A missing or out-of-range
+    chain value raises instead of falling back to the model's number alone, because
+    a silent fallback would score a row of the arm as a row of main. Nothing is
+    clipped: the mean of two probabilities is one already.
+    """
+    for label, value in (
+        ("model", model_probability),
+        ("reference chain", condition_chain_probability),
+    ):
+        if not np.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ForecastCompositionError(
+                f"cannot blend with a {label} probability of {value!r}: the equal blend needs "
+                "both the model's and the reference chain's probability at every indicator and "
+                "horizon, and refuses to fall back to either one alone"
+            )
+    return float(
+        CONDITION_CHAIN_BLEND_WEIGHT * model_probability
+        + (1.0 - CONDITION_CHAIN_BLEND_WEIGHT) * condition_chain_probability
+    )
+
+
 def forecast_indicator(
     indicator: BinaryIndicator,
     model: GaussianHiddenMarkovModel,

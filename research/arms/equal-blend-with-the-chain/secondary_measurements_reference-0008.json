@@ -1,0 +1,157 @@
+{
+  "label": "reference-0008",
+  "configuration_hash": [
+    "fec79a040f9ca6f9"
+  ],
+  "rows": 11730,
+  "seed": 20260908,
+  "resamples": 10000,
+  "against_r1": [
+    {
+      "horizon_months": 12,
+      "mean_skill_against_r1": 0.17859594038965293,
+      "skill_interval_90": [
+        0.1020375118210973,
+        0.2577921056899527
+      ],
+      "pooled_skill_against_r1": 0.21110885134887536,
+      "pooled_and_mean_agree_in_sign": true,
+      "resolved_rows": 3754,
+      "gate_skill": true,
+      "gate_robustness": true,
+      "gate_honesty": true
+    },
+    {
+      "horizon_months": 60,
+      "mean_skill_against_r1": 0.0689640064251977,
+      "skill_interval_90": [
+        -0.12089220974622687,
+        0.19053264581277177
+      ],
+      "pooled_skill_against_r1": 0.13107131308310727,
+      "pooled_and_mean_agree_in_sign": true,
+      "resolved_rows": 3274,
+      "gate_skill": false,
+      "gate_robustness": false,
+      "gate_honesty": true
+    },
+    {
+      "horizon_months": 120,
+      "mean_skill_against_r1": -0.21091324039179402,
+      "skill_interval_90": [
+        -0.30061581009537014,
+        -0.03977483833235902
+      ],
+      "pooled_skill_against_r1": 0.22123150453389995,
+      "pooled_and_mean_agree_in_sign": false,
+      "resolved_rows": 2674,
+      "gate_skill": false,
+      "gate_robustness": false,
+      "gate_honesty": false
+    }
+  ],
+  "minus_the_chain": [
+    {
+      "benchmark": "model-sample",
+      "horizon_months": 12,
+      "method_mean_skill": 0.17859594038965293,
+      "chain_mean_skill": 0.24774247461893442,
+      "method_minus_chain": -0.06914653422928149,
+      "intervals": {
+        "0.9000": [
+          -0.11479810765376595,
+          -0.02921245236972729
+        ],
+        "0.9667": [
+          -0.12951394060064964,
+          -0.016581392204595476
+        ]
+      }
+    },
+    {
+      "benchmark": "model-sample",
+      "horizon_months": 60,
+      "method_mean_skill": 0.0689640064251977,
+      "chain_mean_skill": 0.08848364299117878,
+      "method_minus_chain": -0.019519636565981074,
+      "intervals": {
+        "0.9000": [
+          -0.172749833639464,
+          0.07905229556071423
+        ],
+        "0.9667": [
+          -0.21119795034087174,
+          0.10781233145217786
+        ]
+      }
+    },
+    {
+      "benchmark": "model-sample",
+      "horizon_months": 120,
+      "method_mean_skill": -0.21091324039179402,
+      "chain_mean_skill": 0.03244573940681708,
+      "method_minus_chain": -0.2433589797986111,
+      "intervals": {
+        "0.9000": [
+          -0.3271069057846415,
+          -0.07186080468638438
+        ],
+        "0.9667": [
+          -0.8443461193280828,
+          -0.060291038296097
+        ]
+      }
+    },
+    {
+      "benchmark": "series-start",
+      "horizon_months": 12,
+      "method_mean_skill": 0.2672554495944556,
+      "chain_mean_skill": 0.325450515273877,
+      "method_minus_chain": -0.0581950656794214,
+      "intervals": {
+        "0.9000": [
+          -0.09606463382464715,
+          -0.026067909795524462
+        ],
+        "0.9667": [
+          -0.10626685909193732,
+          -0.015357575977627528
+        ]
+      }
+    },
+    {
+      "benchmark": "series-start",
+      "horizon_months": 60,
+      "method_mean_skill": 0.11941618408374788,
+      "chain_mean_skill": 0.13530951437057379,
+      "method_minus_chain": -0.015893330286825907,
+      "intervals": {
+        "0.9000": [
+          -0.17755702249107289,
+          0.07569317351310656
+        ],
+        "0.9667": [
+          -0.23184623534265125,
+          0.10296094408417898
+        ]
+      }
+    },
+    {
+      "benchmark": "series-start",
+      "horizon_months": 120,
+      "method_mean_skill": -0.16243443909991856,
+      "chain_mean_skill": 0.08138790252573319,
+      "method_minus_chain": -0.24382234162565175,
+      "intervals": {
+        "0.9000": [
+          -0.3289481070679523,
+          -0.07933468115706091
+        ],
+        "0.9667": [
+          -0.8448191172942372,
+          -0.07037648007831057
+        ]
+      }
+    }
+  ]
+}

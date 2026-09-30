@@ -128,6 +128,38 @@ def condition_chain_rates(
     )
 
 
+def condition_chain_at_every_horizon(
+    indicator: BinaryIndicator,
+    published_condition: pd.Series,
+    forecast_date: pd.Timestamp,
+    rates: ConditionalRates,
+    longest_horizon_in_months: int,
+) -> np.ndarray:
+    """The reference chain's probability at every horizon from one month to the longest.
+
+    At one regime, from the last condition published by ``forecast_date``, stepping
+    the months between that one and the forecast date before the window opens.
+    Element ``h - 1`` answers horizon ``h``. The one composition both the backtest's
+    ``condition_chain_probability`` column and today's blended grid (experiment
+    0008, arm B3) read, so the two cannot drift apart.
+    """
+    if published_condition.empty:
+        raise BacktestError(
+            f"indicator {indicator.name!r} has no published condition as of "
+            f"{forecast_date.date().isoformat()}, so the reference chain has nowhere to start. "
+            "Check the publication dating."
+        )
+    return indicator_forecast.compose_through_the_condition_chain_at_every_horizon(
+        indicator_forecast.SINGLE_REGIME_TRANSITION_MATRIX,
+        indicator_forecast.SINGLE_REGIME_DISTRIBUTION,
+        rates,
+        indicator.composition,
+        longest_horizon_in_months,
+        bool(published_condition.iloc[-1] > 0.5),
+        months_between(pd.Timestamp(published_condition.index[-1]), forecast_date),
+    )
+
+
 @dataclass(frozen=True)
 class FittedRegimeModel:
     """A model fitted at one refit date, with the rates learned alongside it."""
@@ -512,6 +544,12 @@ def run_walk_forward(
 
     ``condition_chain_cadence`` says when the reference chain's rates are learned;
     the default is rule 0007's R2. See ``ConditionChainCadence``.
+
+    With ``settings.blend_the_model_equally_with_the_condition_chain`` (experiment
+    0008, arm B3), ``predicted_probability`` is ``0.5 * model + 0.5 * R2``, where R2
+    is always the chain re-learned at this forecast date, whatever the cadence
+    argument: the argument changes only what the ``condition_chain_probability``
+    column holds. Every other column is computed exactly as without the blend.
     """
     # One pre-flight, before anything is fitted, so a schedule that breaks the
     # promise fails in seconds rather than fifteen minutes. This covers every path
@@ -568,26 +606,31 @@ def run_walk_forward(
                     "Its rates were learned at the refit, so this should be impossible; check "
                     "the publication dating."
                 )
-            chain_rates = (
-                fitted.condition_chain_rates_by_indicator[indicator.name]
-                if condition_chain_cadence is ConditionChainCadence.REFIT
-                else condition_chain_rates(
+            # Rule 0007's R2: the chain re-learned at this forecast date. It is what
+            # the column holds by default and, whatever the cadence argument, what
+            # experiment 0008's arm B3 blends with.
+            reference_chain_by_horizon = condition_chain_at_every_horizon(
+                indicator,
+                condition_now,
+                stamp,
+                condition_chain_rates(
                     indicator,
                     condition_now,
                     model_sample_starts,
                     settings.conditional_rate_shrinkage_strength,
-                )
+                ),
+                max(horizons),
             )
             chain_by_horizon = (
-                indicator_forecast.compose_through_the_condition_chain_at_every_horizon(
-                    indicator_forecast.SINGLE_REGIME_TRANSITION_MATRIX,
-                    indicator_forecast.SINGLE_REGIME_DISTRIBUTION,
-                    chain_rates,
-                    indicator.composition,
+                condition_chain_at_every_horizon(
+                    indicator,
+                    condition_now,
+                    stamp,
+                    fitted.condition_chain_rates_by_indicator[indicator.name],
                     max(horizons),
-                    condition_holds_now,
-                    months_between(pd.Timestamp(condition_now.index[-1]), stamp),
                 )
+                if condition_chain_cadence is ConditionChainCadence.REFIT
+                else reference_chain_by_horizon
             )
 
             for horizon in horizons:
@@ -599,12 +642,21 @@ def run_walk_forward(
                     horizon,
                     condition_holds_now,
                 )
+                # Experiment 0008, arm B3: the issued probability is the equal blend
+                # of the model and R2. Off, it is the model's alone, as on main.
+                predicted_probability = (
+                    indicator_forecast.blend_equally_with_the_condition_chain(
+                        composed.probability, float(reference_chain_by_horizon[horizon - 1])
+                    )
+                    if settings.blend_the_model_equally_with_the_condition_chain
+                    else composed.probability
+                )
                 rows.append(
                     {
                         "indicator": indicator.name,
                         "forecast_date": stamp,
                         "horizon_months": horizon,
-                        "predicted_probability": composed.probability,
+                        "predicted_probability": predicted_probability,
                         "climatology_probability": _lookup(
                             history.climatology_by_horizon[horizon], stamp
                         ),

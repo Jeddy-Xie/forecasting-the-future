@@ -1,0 +1,27 @@
+paired comparison against baseline 'reference-0008' (fec79a040f9ca6f9, 391 forecast dates from 1994-03-01) and this run (7647c129be85291e, 391 from 1994-03-01)
+statistic: the pre-registered verdict's mean Brier skill score over its fixed set of scoreable indicators, this run minus the baseline, on the resolved forecasts both runs made
+benchmark: the model-sample climatology (model_sample_climatology_probability)
+interval: 90% and 96.67% moving-block bootstrap of forecast dates, blocks as long as the horizon in months, every indicator on a date kept together, one draw of dates per resample applied to both runs and read at every level; 10000 resamples, seed 20260908
+
+resolved forecasts (indicator, forecast date, horizon): 9702 in both, 0 only in the baseline, 0 only in this run
+the two runs resolved the same forecasts; skill here is against the model-sample climatology, so it is not the number 0001's verdict reports
+
+horizon     in both  only baseline  only this run  baseline skill  this run skill  difference  90% interval        96.67% interval     independent obs  resamples
+----------  -------  -------------  -------------  --------------  --------------  ----------  ------------------  ------------------  ---------------  ---------
+12 months   3754     0              0              +0.1786         +0.2401         +0.0615     [+0.0403, +0.0875]  [+0.0341, +0.0961]  31.5             9953
+60 months   3274     0              0              +0.0690         +0.0970         +0.0280     [-0.0226, +0.1118]  [-0.0380, +0.1322]  5.5              7495
+120 months  2674     0              0              -0.2109         -0.0548         +0.1561     [+0.0536, +0.2080]  [+0.0473, +0.5225]  2.2              5443
+
+brier skill score by indicator, this run minus the baseline (point estimates; the interval belongs to the mean above):
+indicator                                                   12 months  60 months  120 months
+----------------------------------------------------------  ---------  ---------  ----------
+consumer_price_inflation_above_five_percent_within_horizon  -0.0269    -0.0767    +0.0535
+consumer_price_inflation_above_three_percent_at_horizon     -0.0270    -0.0251    -0.0272
+economy_in_recession_at_horizon_date                        +0.0201    -0.0087    -0.0118
+economy_in_recession_within_horizon                         +0.2215    +0.1764    +0.9683
+federal_funds_rate_above_four_percent_at_horizon            +0.1082    -0.0654    -0.0406
+federal_funds_rate_below_one_percent_within_horizon         -0.0197    -0.0590    -0.0339
+industrial_production_growth_above_two_percent_at_horizon   +0.0493    +0.0029    -0.0022
+treasury_yield_curve_inverted_within_horizon                +0.0351    +0.2821    +0.4614
+unemployment_rate_above_five_percent_at_horizon             +0.2131    +0.0111    +0.0052
+unemployment_rate_above_seven_percent_within_horizon        +0.0409    +0.0427    -0.0017

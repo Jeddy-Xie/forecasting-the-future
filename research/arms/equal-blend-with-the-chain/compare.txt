@@ -1,0 +1,228 @@
+baseline 'reference-0008' (fec79a040f9ca6f9, 391 forecast dates from 1994-03-01) against this run (7647c129be85291e, 391 from 1994-03-01)
+173 IDENTICAL  0 NUMERICAL  214 MOVED  0 REMOVED  0 ADDED
+a difference is NUMERICAL up to 1e-09 in absolute value and MOVED above it; every categorical difference is MOVED
+2 of the MOVED are categorical -- a verdict, a failing gate or the run's identity -- and are listed first
+
+categorical fields that moved -- read these first:
+band   section   row  field               baseline                        this run          difference
+-----  --------  ---  ------------------  ------------------------------  ----------------  ----------
+MOVED  horizons  60   failing_gates       skill, calibration, robustness  calibration
+MOVED  run            configuration_hash  fec79a040f9ca6f9                7647c129be85291e
+
+numeric fields, largest difference first:
+band   section     row                                                               field                       baseline          this run         difference
+-----  ----------  ----------------------------------------------------------------  --------------------------  ----------------  ---------------  ----------
+MOVED  indicators  economy_in_recession_within_horizon @ 120                         brier_skill_score           -1.874752125      -0.9086562031    +9.661e-01
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                brier_skill_score           -0.4685347356     -0.007098376554  +4.614e-01
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 brier_skill_score           -0.3250024368     -0.04293090697   +2.821e-01
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              brier_skill_score           -0.1285596924     0.0880616411     +2.166e-01
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              area_under_the_curve        0.4797018802      0.6921969398     +2.125e-01
+MOVED  horizons    120                                                               skill_lower_bound           -0.2576508203     -0.04773235601   +2.099e-01
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 logarithmic_loss            0.8985453084      0.7373191342     -1.612e-01
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   area_under_the_curve        0.457212819       0.2968897672     -1.603e-01
+MOVED  horizons    120                                                               mean_brier_skill_score      -0.1624344391     -0.00624577458   +1.562e-01
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              logarithmic_loss            0.8769464949      0.7233564337     -1.536e-01
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          logarithmic_loss            0.8989436672      0.7551626357     -1.438e-01
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          brier_skill_score           -0.003607234939   0.1399242746     +1.435e-01
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  expected_calibration_error  0.3537527641      0.2130609623     -1.407e-01
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          brier_skill_score           0.1994977488      0.3377141402     +1.382e-01
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 expected_calibration_error  0.3339009948      0.1998588147     -1.340e-01
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          logarithmic_loss            0.6374229572      0.5103649994     -1.271e-01
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                logarithmic_loss            0.5490994221      0.4240596073     -1.250e-01
+MOVED  horizons    60                                                                skill_lower_bound           -0.1086267325     0.005014690747   +1.136e-01
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            area_under_the_curve        0.1871428571      0.2998412698     +1.127e-01
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   area_under_the_curve        0.8713595583      0.759489303      -1.119e-01
+MOVED  indicators  economy_in_recession_within_horizon @ 120                         logarithmic_loss            0.3990562862      0.2900728307     -1.090e-01
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             brier_skill_score           0.3237450374      0.4319506258     +1.082e-01
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                expected_calibration_error  0.2799103393      0.1823475628     -9.756e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 reliability                 0.1557422593      0.06234720462    -9.340e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             area_under_the_curve        0.5896599026      0.5070242656     -8.264e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          logarithmic_loss            0.5850411469      0.6653530098     +8.031e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          expected_calibration_error  0.1440793796      0.06740075255    -7.668e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              resolution                  0.003451114394    0.07964773367    +7.620e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   brier_skill_score           0.1802170711      0.1060917962     -7.413e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        area_under_the_curve        0.4199235713      0.3468820566     -7.304e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 brier_score                 0.3427420701      0.269777842      -7.296e-02
+MOVED  indicators  economy_in_recession_at_horizon_date @ 60                         area_under_the_curve        0.6912251656      0.7625354778     +7.131e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 120                         expected_calibration_error  0.2636358614      0.1965587368     -6.708e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             brier_skill_score           0.300388281       0.234990142      -6.540e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             logarithmic_loss            0.5884775054      0.5233727248     -6.510e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              brier_score                 0.3251740733      0.2627585521     -6.242e-02
+MOVED  indicators  economy_in_recession_at_horizon_date @ 120                        area_under_the_curve        0.4736            0.536            +6.240e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          expected_calibration_error  0.2618494483      0.2009416023     -6.091e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          brier_skill_score           0.5943138293      0.5353198435     -5.899e-02
+MOVED  horizons    120                                                               skill_upper_bound           0.0305277393      0.08909256479    +5.856e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 expected_calibration_error  0.1055545488      0.04742832128    -5.813e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 120         logarithmic_loss            0.5371740331      0.5952790778     +5.811e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             area_under_the_curve        0.7324493217      0.7904282884     +5.798e-02
+MOVED  horizons    12                                                                skill_lower_bound           0.1651830458      0.2218951449     +5.671e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                reliability                 0.09107788745     0.0344071068     -5.667e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                brier_score                 0.1749777313      0.119997018      -5.498e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 logarithmic_loss            0.5321024404      0.4774835934     -5.462e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             logarithmic_loss            0.7408224169      0.7949929176     +5.417e-02
+MOVED  horizons    12                                                                mean_brier_skill_score      0.2672554496      0.3200557074     +5.280e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  area_under_the_curve        0.1211856432      0.06849038849    -5.270e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  brier_skill_score           -0.1948120149     -0.142122686     +5.269e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              expected_calibration_error  0.265403554       0.2145644954     -5.084e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             area_under_the_curve        0.3737053124      0.4243234213     +5.062e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    brier_skill_score           -0.04781788448    0.001582931285   +4.940e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    area_under_the_curve        0.5242521548      0.5735451524     +4.929e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            logarithmic_loss            0.8726568101      0.9215760809     +4.892e-02
+MOVED  horizons    12                                                                skill_upper_bound           0.3648929476      0.4134093996     +4.852e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          area_under_the_curve        0.5678233438      0.5205564462     -4.727e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          expected_calibration_error  0.279738045       0.3268611247     +4.712e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          brier_score                 0.3177395181      0.2722978044     -4.544e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          reliability                 0.0761926947      0.03222163612    -4.397e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          reliability                 0.1019570373      0.05814040524    -4.382e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         brier_skill_score           0.01018633977     0.05334197224    +4.316e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   logarithmic_loss            0.712872721       0.7553511101     +4.248e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         logarithmic_loss            0.7702980064      0.7289888985     -4.131e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         brier_skill_score           0.4361412476      0.4770812942     +4.094e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            brier_skill_score           0.3807830183      0.3401497941     -4.063e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     area_under_the_curve        0.5499368687      0.509469697      -4.047e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      area_under_the_curve        0.4715642179      0.5095785441     +3.801e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 area_under_the_curve        0.6608391608      0.6235937975     -3.725e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    expected_calibration_error  0.1882038083      0.1515166275     -3.669e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 120         expected_calibration_error  0.3701352853      0.406788087      +3.665e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 brier_skill_score           0.1785580095      0.2136647297     +3.511e-02
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         area_under_the_curve        0.2915306122      0.2564285714     -3.510e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          brier_score                 0.2018338884      0.1669848275     -3.485e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            reliability                 0.1843169491      0.2183193767     +3.400e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 120         brier_skill_score           0.7118096709      0.6778655942     -3.394e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 120                         brier_score                 0.09571458868     0.06354852018    -3.217e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             brier_score                 0.2009755354      0.1688180249     -3.216e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 120                         reliability                 0.0710296365      0.03915828339    -3.187e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          brier_score                 0.2167823717      0.2483063848     +3.152e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    logarithmic_loss            0.7476298449      0.7169647962     -3.067e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         area_under_the_curve        0.4053359049      0.3755223401     -2.981e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          area_under_the_curve        0.878221194       0.9076537498     +2.943e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             reliability                 0.09925709289     0.1286493409     +2.939e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  reliability                 0.1491574401      0.1200694752     -2.909e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     brier_skill_score           0.1474640871      0.1190860455     -2.838e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      area_under_the_curve        0.3904895461      0.4183239844     +2.783e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      brier_skill_score           0.1414397066      0.1144200496     -2.702e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         reliability                 0.1369762606      0.1101948185     -2.678e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      brier_skill_score           0.07267540688     0.04592956153    -2.675e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          reliability                 0.1194301406      0.1461061954     +2.668e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   brier_skill_score           0.5193102554      0.4934257903     -2.588e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   logarithmic_loss            0.2851335947      0.3108924889     +2.576e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             brier_score                 0.2735579827      0.2991295712     +2.557e-02
+MOVED  horizons    60                                                                mean_brier_skill_score      0.1194161841      0.1446533446     +2.524e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     expected_calibration_error  0.161529186       0.1867267077     +2.520e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             resolution                  0.06148837962     0.0864890985     +2.500e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         logarithmic_loss            0.3931002879      0.3681359188     -2.496e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      expected_calibration_error  0.1861560463      0.1620885815     -2.407e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 120         reliability                 0.1967988601      0.2201890664     +2.339e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 120         brier_score                 0.1975525061      0.2208209393     +2.327e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   brier_score                 0.253955659       0.2769184854     +2.296e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     reliability                 0.03024360389     0.05242754704    +2.218e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            brier_score                 0.3374515863      0.3595952716     +2.214e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   resolution                  0.03591859003     0.01446328161    -2.146e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         area_under_the_curve        0.8056650246      0.7847701149     -2.089e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          brier_skill_score           0.6751660052      0.6554401517     -1.973e-02
+MOVED  horizons    60                                                                skill_upper_bound           0.250680463       0.2311394597     -1.954e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 12              reliability                 0.07304224904     0.09182837209    +1.879e-02
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 resolution                  0.04160585726     0.02298527554    -1.862e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      reliability                 0.02064059983     0.03802087608    +1.738e-02
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         expected_calibration_error  0.07791732935     0.06148254275    -1.643e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     logarithmic_loss            0.6854690753      0.7018678234     +1.640e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      resolution                  0.01938563404     0.002999659328   -1.639e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         expected_calibration_error  0.1168580518      0.1009899775     -1.587e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          area_under_the_curve        0.3579317073      0.3427121951     -1.522e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   expected_calibration_error  0.1653419522      0.1501275708     -1.521e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    reliability                 0.04125717254     0.02655705365    -1.470e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             expected_calibration_error  0.2982161923      0.3128953037     +1.468e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        expected_calibration_error  0.126709637       0.1124422771     -1.427e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 60             resolution                  0.0128862669      0.0271268866     +1.424e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              area_under_the_curve        0.5269476658      0.5127118644     -1.424e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 60    area_under_the_curve        0.5886970173      0.6024145922     +1.372e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      logarithmic_loss            0.6829540165      0.6966438808     +1.369e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  logarithmic_loss            0.8023275648      0.7888823466     -1.345e-02
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    brier_score                 0.2740318255      0.261112218      -1.292e-02
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             expected_calibration_error  0.1491377221      0.1362354005     -1.290e-02
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  brier_score                 0.2816118113      0.2691931738     -1.242e-02
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         brier_score                 0.2803823594      0.2681577574     -1.222e-02
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         brier_skill_score           0.3750740623      0.3872157196     +1.214e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      expected_calibration_error  0.1279943236      0.1397583973     +1.176e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      logarithmic_loss            0.6476233442      0.6593133374     +1.169e-02
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      reliability                 0.0428820604      0.03131885051    -1.156e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 120                         area_under_the_curve        0.05108556833     0.0625798212     +1.149e-02
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              brier_skill_score           -0.008763646686   0.002724040426   +1.149e-02
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          expected_calibration_error  0.09368981825     0.1043015462     +1.061e-02
+MOVED  indicators  economy_in_recession_at_horizon_date @ 60                         expected_calibration_error  0.04359898969     0.0538040901     +1.021e-02
+MOVED  indicators  economy_in_recession_within_horizon @ 12                          resolution                  0.01108323988     0.001106255259   -9.977e-03
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          resolution                  0.1548536368      0.1450610362     -9.793e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         resolution                  0.1074008535      0.09769735715    -9.703e-03
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 12             reliability                 0.03199947202     0.02268344797    -9.316e-03
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 120  resolution                  0.09186832323     0.0825716637     -9.297e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         reliability                 0.02848106507     0.01947746845    -9.004e-03
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 60          resolution                  0.04435403709     0.03536697499    -8.987e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             reliability                 0.05989984058     0.06859287019    +8.693e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 120   area_under_the_curve        0.5166666667      0.5079977629     -8.669e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 120                        expected_calibration_error  0.06028560626     0.06867076793    +8.385e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              logarithmic_loss            0.8113558176      0.8030427993     -8.313e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              expected_calibration_error  0.2370699808      0.2288075425     -8.262e-03
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     brier_score                 0.2461525802      0.2543461684     +8.194e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         brier_score                 0.1099816895      0.1019962579     -7.985e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        reliability                 0.02102406005     0.02898653119    +7.962e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             resolution                  0.003945525636    0.01127929359    +7.334e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              reliability                 0.06047726316     0.0531444364     -7.333e-03
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      brier_score                 0.2261475282      0.2332645922     +7.117e-03
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 12      resolution                  0.01146841353     0.01854041443    +7.072e-03
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 60      brier_score                 0.2445966746      0.2516513185     +7.055e-03
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          brier_score                 0.1122334404      0.1190489229     +6.815e-03
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 reliability                 0.01291341692     0.006207008779   -6.706e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 120                        brier_skill_score           0.4342135445      0.4275741311     -6.639e-03
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 brier_score                 0.1549928472      0.1483687757     -6.624e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         logarithmic_loss            0.302168716       0.2959303562     -6.238e-03
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   resolution                  0.03608804517     0.02989768273    -6.190e-03
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 60   reliability                 0.06058021391     0.05478697072    -5.793e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 60                         brier_skill_score           0.3785415198      0.3730225941     -5.519e-03
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          logarithmic_loss            0.4101509814      0.4154212025     +5.270e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             brier_skill_score           0.08767565615     0.0927715012     +5.096e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 60         expected_calibration_error  0.2467114482      0.241618333      -5.093e-03
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            resolution                  0.02674897119     0.03154350523    +4.795e-03
+MOVED  indicators  consumer_price_inflation_above_three_percent_at_horizon @ 120     resolution                  0.007768763554    0.01237710507    +4.608e-03
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                area_under_the_curve        0.2011349306      0.2057061791     +4.571e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        logarithmic_loss            0.5979234243      0.6023262743     +4.403e-03
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 60                 area_under_the_curve        0.2564482291      0.2607264799     +4.278e-03
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   brier_score                 0.07892496446     0.08317496254    +4.250e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        resolution                  0.001994652384    0.006166841541   +4.172e-03
+MOVED  indicators  economy_in_recession_within_horizon @ 60                          resolution                  0.0202712503      0.02422165377    +3.950e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             logarithmic_loss            0.8152546012      0.811422371      -3.832e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         reliability                 0.008038292003    0.004268383335   -3.770e-03
+MOVED  indicators  federal_funds_rate_above_four_percent_at_horizon @ 120            expected_calibration_error  0.413875286       0.4102329619     -3.642e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 120                        logarithmic_loss            0.2829001668      0.2864798917     +3.580e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              brier_score                 0.3044002421      0.3009337664     -3.466e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 120   expected_calibration_error  0.2010037277      0.1976301295     -3.374e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 60                         logarithmic_loss            0.2972727588      0.3005762039     +3.303e-03
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          area_under_the_curve        0.8833973538      0.8802674634     -3.130e-03
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   expected_calibration_error  0.06048668145     0.06355943233    +3.073e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 60    brier_skill_score           -0.004787288691   -0.001879871285  +2.907e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 60    expected_calibration_error  0.1939027578      0.191637906      -2.265e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 120   brier_skill_score           -6.164641289e-05  -0.00229547689   -2.234e-03
+MOVED  indicators  consumer_price_inflation_above_five_percent_within_horizon @ 12   reliability                 0.00817176422     0.005942702041   -2.229e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 60    logarithmic_loss            0.7575469366      0.75569657       -1.850e-03
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        brier_skill_score           0.02611426374     0.02437929941    -1.735e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             brier_score                 0.3064170985      0.3047055865     -1.712e-03
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 60              resolution                  0.001655568448    5.965639738e-05  -1.596e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         brier_score                 0.07721200354     0.07571185507    -1.500e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 12    resolution                  0.0172720266      0.0158529468     -1.419e-03
+MOVED  indicators  federal_funds_rate_below_one_percent_within_horizon @ 12          reliability                 0.02011222396     0.01869500588    -1.417e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 120   logarithmic_loss            0.7640489532      0.7654389762     +1.390e-03
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 120                resolution                  0.00665216816     0.005293822261   -1.358e-03
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 120   reliability                 0.04040249853     0.03905766808    -1.345e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 120                        reliability                 0.003634354322    0.004715674368   +1.081e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 12                         resolution                  0.001339432089    0.0003390823199  -1.000e-03
+MOVED  indicators  economy_in_recession_at_horizon_date @ 60                         reliability                 0.001900871902    0.002894880111   +9.940e-04
+MOVED  indicators  economy_in_recession_at_horizon_date @ 120                        brier_score                 0.07241335578     0.0732631149     +8.498e-04
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 60    brier_score                 0.2811425106      0.2803290065     -8.135e-04
+MOVED  indicators  treasury_yield_curve_inverted_within_horizon @ 12                 resolution                  0.04261730613     0.04337084628    +7.535e-04
+MOVED  indicators  economy_in_recession_at_horizon_date @ 60                         brier_score                 0.0789969975      0.07969853844    +7.015e-04
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 120   brier_score                 0.2842565586      0.2848915004     +6.349e-04
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 120        brier_score                 0.190828928       0.1911688872     +3.400e-04
+MOVED  indicators  industrial_production_growth_above_two_percent_at_horizon @ 60    reliability                 0.04455111424     0.0443458184     -2.053e-04
+MOVED  indicators  unemployment_rate_above_seven_percent_within_horizon @ 12         resolution                  0.09895478587     0.09906667057    +1.119e-04
+MOVED  indicators  unemployment_rate_above_five_percent_at_horizon @ 120             expected_calibration_error  0.2312817465      0.2313722891     +9.054e-05
+
+173 further field(s) not shown: 173 IDENTICAL. Pass --tolerance-band all to see them.

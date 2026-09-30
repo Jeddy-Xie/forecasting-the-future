@@ -1006,3 +1006,16 @@ def test_the_audit_record_names_the_lags_it_perturbed_by(
         "SYNRATE": 45,
     }
     assert "publication lag" in perturbation["unavailable_means"]
+
+
+def test_the_synthetic_audit_exercises_research_arm_b3s_blend(
+    settings: RunSettings,
+    clean_audit: look_ahead_audit.LookAheadAudit,
+) -> None:
+    """Experiment 0008, arm B3. On its branch the issued probability is the equal blend
+    of the model and the reference chain, and the audits above run with it on: the
+    exit-0 test is the blend passing, and the injected leak is caught through it."""
+    assert settings.blend_the_model_equally_with_the_condition_chain is True
+    assert "predicted_probability" in look_ahead_audit.COMPARED_FIELDS
+    assert "condition_chain_probability" in look_ahead_audit.COMPARED_FIELDS
+    assert len(clean_audit.moved) == 0
