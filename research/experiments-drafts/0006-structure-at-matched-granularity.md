@@ -58,3 +58,24 @@ recaptured under the new default, this rule must be rewritten before the run, no
   0010, and this experiment cannot move it.
 - It is not a proposal to ship anything. Whatever it returns, the outcome is a sentence in ADR 0010
   and an entry in the impact ledger.
+
+## Amendment, 2026-09-29, before the run
+
+Committed and dated before the 2x3 arm runs, as the anchor condition above requires. Ordered by delegated
+decision P1-3 (claude-fable-5-1, delegated by Jeddy Xie; `research/ledger/delegated-decisions/`).
+
+**The anchor moved underneath this rule.** D14 (ADR 0011, recession status dated by its announcement)
+landed on 2026-09-21, the day after this file was registered. It moved the current code's one-year
+skill by -0.0071, and `baselines/main.json` predates it. Measured against that file, d6 would therefore
+fold D14 into the comparison, biased against STRUCTURE HELPS by about that much.
+
+- **The anchor becomes `baselines/main-single-chain-d14`.** These are the single-chain six-state
+  settings of `ad7fcc1affd0746a`, re-run on the code of the commit that adds this amendment, so D14
+  sits on both sides of d6.
+- **The comparison against `baselines/main.json` is reported as a secondary**, labelled pre-D14.
+- **The reading rule, its 90% level and its three outcomes are unchanged.** For the record: the rule
+  has no numeric threshold beyond "the one-year 90% interval lies entirely above zero". The +0.0295
+  that the delegated decision cites does not appear in this registration. Nothing is added.
+- **Benchmark.** d6 is read, as registered, against the series-start climatology. The model-sample
+  benchmark of rule 0007 is reported beside it as a secondary. This experiment predates 0007 and is
+  not re-read under it.
