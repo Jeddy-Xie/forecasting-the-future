@@ -244,6 +244,30 @@ and reporting the difference would replace an argument with a measurement.
 ---
 
 ## D5 · Outcomes and conditions are read from final data
+**Reopened, narrowed**, 2026-09-29, by delegated decision P1-10(2). The closing measurement
+below looked at the wrong series.
+- **What it missed.** It excluded `consumer_price_index` and `industrial_production` because they are
+  model inputs and get archival vintages. They do, as model *inputs*. But the *conditions* the
+  per-regime rates learn from, and the reference chain starts from, are read from final data by
+  `load_final_series` whatever the series is.
+- **Measured** by `research/derivations/condition_flips_on_model_inputs.py`, reproducing the
+  2026-09-25 review. Each indicator's own rule was applied to each forecast date's archival vintage
+  and to the final file, over all 391 forecast dates, on months published by then:
+
+| indicator | condition-months compared | differ |
+|---|---:|---:|
+| output growth above 2%, at the horizon | 421,369 | 4,161 (**0.987%**) |
+| consumer price inflation above 3%, at the horizon | 292,458 | 246 (0.084%) |
+| consumer price inflation above 5%, any time | 292,458 | 0 |
+
+- **Size.** Output growth flips about sixteen times as often as the unemployment conditions below.
+- **The fix, not made yet.** Thread `as_of` through the condition read, so every condition is read from
+  the vintage current at the date that uses it. It is scheduled **after experiment 0008 reports**,
+  because changing main mid-slate would move the reference every arm is judged against. When it lands
+  it is measured with `forecast baseline compare`, and no verdict may be claimed from it.
+
+The original closing text follows, unchanged.
+
 **closed** 2026-09-21 by measurement, not by implementation, which is what this entry
 asks for: "the expected effect is small, which is exactly why it has not been done, and
 also why doing it would close the question rather than leaving it argued."
