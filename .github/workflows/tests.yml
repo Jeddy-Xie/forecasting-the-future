@@ -1,0 +1,36 @@
+# Lint, types, the layer check and the offline test suite, on every push and pull request.
+# The suite needs no fetched data: tests that reach the Federal Reserve are marked
+# `network` and deselected, and the cache points at an empty directory.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Poetry
+        run: pipx install poetry==2.4.3
+      - name: Install the environment
+        run: poetry install --no-interaction
+      - name: Lint, format, types and layers
+        run: |
+          poetry run ruff check .
+          poetry run ruff format --check .
+          poetry run mypy
+          python3 scripts/layer_check.py
+      - name: Test suite
+        env:
+          ECONOMIC_REGIME_FORECASTING_CACHE: ${{ runner.temp }}/cache
+        run: poetry run pytest -m "not network"
