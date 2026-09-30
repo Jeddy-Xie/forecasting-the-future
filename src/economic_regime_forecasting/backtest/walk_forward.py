@@ -578,6 +578,11 @@ def run_walk_forward(
                     settings.conditional_rate_shrinkage_strength,
                 )
             )
+            # The months between the last published value of the condition and the
+            # forecast date: the reference chain steps them, and so does the model
+            # when research arm B1 composes point-in-time questions through its own
+            # regime-by-condition chain.
+            publication_gap = months_between(pd.Timestamp(condition_now.index[-1]), stamp)
             chain_by_horizon = (
                 indicator_forecast.compose_through_the_condition_chain_at_every_horizon(
                     indicator_forecast.SINGLE_REGIME_TRANSITION_MATRIX,
@@ -586,7 +591,7 @@ def run_walk_forward(
                     indicator.composition,
                     max(horizons),
                     condition_holds_now,
-                    months_between(pd.Timestamp(condition_now.index[-1]), stamp),
+                    publication_gap,
                 )
             )
 
@@ -598,6 +603,10 @@ def run_walk_forward(
                     fitted.rates_by_indicator[indicator.name],
                     horizon,
                     condition_holds_now,
+                    point_in_time_through_the_condition_chain=(
+                        settings.compose_point_in_time_questions_through_the_condition_chain
+                    ),
+                    months_since_condition_last_published=publication_gap,
                 )
                 rows.append(
                     {

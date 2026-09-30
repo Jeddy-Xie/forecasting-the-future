@@ -579,8 +579,11 @@ def test_a_model_and_a_sweep_table_from_different_runs_are_refused() -> None:
 def test_with_the_switch_off_the_hash_is_main_reference_runs() -> None:
     """At False the switch leaves no trace in the digest, so a run with it off
     claims main's identity only because it is main's configuration."""
-    main = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: False})
-    arm = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: True})
+    # Research arm B1 of experiment 0008 defaults its own switch on only on its own
+    # branch; main's reference runs composed point-in-time questions the old way.
+    b1_off = {"compose_point_in_time_questions_through_the_condition_chain": False}
+    main = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: False}, **b1_off)
+    arm = dataclasses.replace(DEFAULT_RUN_SETTINGS, **{SWITCH: True}, **b1_off)
     assert main.configuration_hash() == MAIN_REFERENCE_HASH
     assert arm.configuration_hash() != MAIN_REFERENCE_HASH
     assert getattr(DEFAULT_RUN_SETTINGS, SWITCH) is True

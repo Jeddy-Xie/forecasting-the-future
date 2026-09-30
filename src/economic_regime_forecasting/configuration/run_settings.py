@@ -134,6 +134,28 @@ class RunSettings:
     field is left out of the configuration hash, so every digest main has written
     is unchanged. This is True only on the branch ``research/two-timescale-chains``."""
 
+    compose_point_in_time_questions_through_the_condition_chain: bool = True
+    """Research arm B1 of experiment 0008
+    (proving/experiments/0008-condition-aware-regime-forecasts/experiment.json).
+
+    A point-in-time question -- does the condition hold in the single month at the
+    horizon -- is answered through the joint chain of regime and the indicator's own
+    monthly condition (``models/indicator_forecast.py``,
+    ``compose_through_the_condition_chain``) instead of by dotting the projected
+    regime distribution with the per-regime occupancy rate. The chain starts from
+    the model's filtered regime distribution and the last published value of the
+    condition, steps the months between that value and the forecast date, and then
+    the horizon, using the entry hazard and the persistence the any-time path
+    already estimates. Nothing new is estimated. Any-time questions are unchanged.
+
+    It applies wherever a point-in-time forecast is composed: every walk-forward
+    forecast date and today's grid behind ``forecast forecast-now``.
+
+    True is this branch's default, since it is this arm's behaviour. False
+    reproduces main exactly and is left out of the configuration hash, so every
+    digest main has written is unchanged. True only on the branch
+    ``research/point-in-time-through-the-condition-chain``."""
+
     cache: CacheLayout = field(default_factory=lambda: CacheLayout(_cache_root()))
 
     def configuration_hash(self) -> str:
@@ -167,6 +189,10 @@ SETTINGS_OMITTED_FROM_THE_HASH_WHEN_THEY_HOLD_THE_SHIPPED_VALUE: dict[str, objec
     # Research arm A4 (experiment 0002). False is main's single chain, the behaviour
     # of the code before the field existed, so the entry meets the rule below.
     "separate_chains_for_growth_and_for_inflation_with_rates": False,
+    # Research arm B1 (experiment 0008). False is main's point-in-time composition,
+    # the projected regime distribution dotted with the occupancy rate, which is the
+    # behaviour of the code before the field existed.
+    "compose_point_in_time_questions_through_the_condition_chain": False,
 }
 """Fields left out of the digest when they hold the behaviour that preceded them.
 

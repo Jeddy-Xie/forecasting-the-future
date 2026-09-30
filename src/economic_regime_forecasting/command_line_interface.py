@@ -374,10 +374,24 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
     )
     filtered = fitted.model.filtered_state_probabilities(matrix.values)
 
+    through_the_chain = settings.compose_point_in_time_questions_through_the_condition_chain
     rows = []
     for indicator in workspace.indicators:
         condition = walk_forward.condition_available_at(histories[indicator.name], today)
         holds_now = bool(condition.iloc[-1] > 0.5) if not condition.empty else False
+        # Research arm B1: the same publication gap the walk-forward steps, so today's
+        # grid is composed by exactly the method that was backtested.
+        publication_gap: int | None = None
+        if through_the_chain:
+            if condition.empty:
+                raise SystemExit(
+                    f"{indicator.name} has no published condition as of {today.isoformat()}, so "
+                    "its point-in-time chain has nowhere to start. Run `forecast fetch-data` and "
+                    "check the indicator's source series."
+                )
+            publication_gap = walk_forward.months_between(
+                pd.Timestamp(condition.index[-1]), pd.Timestamp(today)
+            )
         for horizon in settings.forecast_horizons_in_months:
             composed = indicator_forecast.forecast_indicator(
                 indicator,
@@ -386,6 +400,8 @@ def forecast_now(workspace: Workspace, today: date) -> tuple[int, pipeline_gates
                 fitted.rates_by_indicator[indicator.name],
                 horizon,
                 holds_now,
+                point_in_time_through_the_condition_chain=through_the_chain,
+                months_since_condition_last_published=publication_gap,
             )
             rows.append({**composed.as_row(), "question": indicator.question})
 

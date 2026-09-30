@@ -9,6 +9,10 @@ not cosmetic.
 
 A **point-in-time** question asks about the single month at the horizon. Its
 answer is the projected regime distribution dotted with the per-regime rate.
+Research arm B1 of experiment 0008 answers it instead through the joint chain of
+regime and condition below, which also knows whether the condition holds now;
+``RunSettings.compose_point_in_time_questions_through_the_condition_chain``
+chooses between the two.
 
 An **any-time-within-horizon** question asks whether the condition ever holds
 between now and then. Its answer must integrate over the whole regime path.
@@ -412,12 +416,45 @@ def forecast_indicator(
     rates: ConditionalRates,
     horizon_in_months: int,
     condition_holds_now: bool,
+    *,
+    point_in_time_through_the_condition_chain: bool = False,
+    months_since_condition_last_published: int | None = None,
 ) -> IndicatorForecast:
-    """Produce one probability by the composition path the registry declares."""
+    """Produce one probability by the composition path the registry declares.
+
+    With ``point_in_time_through_the_condition_chain`` (research arm B1 of
+    experiment 0008) a point-in-time question is answered by
+    :func:`compose_through_the_condition_chain` on the model's own transition
+    matrix and rates, started from ``filtered_distribution`` and the last published
+    condition, ``condition_holds_now``, and stepped over
+    ``months_since_condition_last_published`` before the horizon. The any-time path
+    is the same either way. So are the diagnostics: the effective sample size and
+    the distance to the stationary distribution describe the regime projection at
+    the horizon, which the composition does not change.
+    """
     projected = model.project_state_distribution(filtered_distribution, horizon_in_months)
     stationary = model.stationary_distribution()
 
-    if indicator.composition is Composition.POINT_IN_TIME:
+    if indicator.composition is Composition.POINT_IN_TIME and (
+        point_in_time_through_the_condition_chain
+    ):
+        if months_since_condition_last_published is None:
+            raise ForecastCompositionError(
+                f"{indicator.name} is to be composed through the condition chain, which starts "
+                "at the last published month of the condition, but no gap between that month "
+                "and the forecast date was given. Pass months_since_condition_last_published."
+            )
+        probability = compose_through_the_condition_chain(
+            model.transition_matrix,
+            filtered_distribution,
+            rates,
+            Composition.POINT_IN_TIME,
+            horizon_in_months,
+            condition_holds_now,
+            months_since_condition_last_published,
+        )
+        weights = projected
+    elif indicator.composition is Composition.POINT_IN_TIME:
         probability = compose_point_in_time(projected, rates)
         weights = projected
     else:
