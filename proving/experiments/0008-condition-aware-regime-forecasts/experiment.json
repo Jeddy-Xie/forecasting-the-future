@@ -1,0 +1,94 @@
+{
+  "name": "condition-aware-regime-forecasts",
+  "status": "registered",
+  "registered": "2026-09-29",
+  "registered_before": "any arm ran. The commit that adds this file contains no arm code and no arm output; reference-0008 is captured in the same commit.",
+  "decided_by": "claude-fable-5-1, delegated by Jeddy Xie on 2026-09-29 (decisions P1-3 and P1-11 in research/ledger/delegated-decisions/). Not the owner's own adjudication.",
+  "governed_by": "proving/experiments/0007-successor-evaluation-rule/experiment.json, registered before this file. 0001 and 0002 are untouched.",
+
+  "reference_run": {
+    "what": "main at the commit that adds this file: the two-chain default, baselines/reference-0008.json and baselines/reference-0008.forecasts.parquet, which carry both benchmarks and the reference chain.",
+    "configuration_hash": "fec79a040f9ca6f9",
+    "first_forecast_date": "1994-03-01",
+    "forecast_date_count": 391,
+    "state_count": "16 (4 x 4)",
+    "look_ahead": "The reference's own audit: exit 0 at the default cutoff (2000-03-01), run at e7755ef, whose numbers equal this commit's (baseline compare, 387 of 387 identical). The 2022-03-01 audit is required to pass before any arm's scored run is read."
+  },
+
+  "why": "The 2026-09-25 review found that a regime-free chain on each indicator's own monthly condition beats the adopted model at one year, and that the model's point-in-time composition ignores whether the condition holds now. The model wins where its inputs are the question (inflation, the zero lower bound) and loses where the answer is mostly persistence, or where the question is about something it never observes (unemployment, recession dating). Each arm tests one way of keeping what regimes add while taking what the chain has.",
+
+  "arms": {
+    "CONTROL": {
+      "change": "None. main, unchanged, through scripts/research_arm.sh.",
+      "required": "Paired difference exactly 0 on an interval of [0, 0] at every horizon against reference-0008, on both benchmarks. Otherwise the slate is VOID, because the harness would not be measuring what it claims to."
+    },
+    "B1-point-in-time-through-the-condition-chain": {
+      "hypothesis": "Point-in-time questions are dominated by whether the condition holds now, which the model's point-in-time composition ignores. Composing them through the joint regime-by-condition chain keeps what the regimes add and takes what persistence gives.",
+      "change": "Point-in-time questions only: compose through the joint (regime x condition) chain, models/indicator_forecast.py compose_through_the_condition_chain, using rates.entry_hazard and rates.persistence exactly as the any-time path already estimates them (no new estimation), started from the model's filtered regime distribution and the last published condition, stepping the publication gap and then the horizon. The any-time path is unchanged.",
+      "hyperparameters": "None new. Shrinkage 10, seed 20260908, state counts chosen as main chooses them.",
+      "required_checks": {
+        "function_level_identity": "At one regime, B1's joint composition equals the chain composition on the same rates, bit for bit (array equality). The composition is one function; tests/test_reference_forecasters.py pins it at one regime against the closed form.",
+        "end_to_end_identity": "B1 run with the state count fixed at one, through `forecast backtest` (never check-gates, whose regimes-exist gate fails at one state by construction, and never `baseline compare`), writes forecasts that equal, bit for bit by array equality, the reference chain at REFIT cadence (run_walk_forward(..., condition_chain_cadence=ConditionChainCadence.REFIT)) over the same POINT-IN-TIME rows. Restricted to point-in-time rows, and stated so before the run: B1 leaves the any-time path unchanged, and that path does not step the publication gap, so its rows cannot equal the chain's by construction. On any-time rows the one-regime run must instead equal the model's own unchanged any-time composition, which is what main computes at one regime. A failure of either is a defect in B1 or in the estimator, investigated before the scored run, and never loosened to a tolerance."
+      },
+      "secondaries_from_the_one_regime_run": {
+        "cadence_effect": "R2 at refit cadence minus R2 at every forecast date, paired, one year. Expected about -0.004.",
+        "pure_regime_effect": "B1's scored run minus B1 at one regime, paired, one year, on point-in-time rows and on all rows.",
+        "status": "Measurements, not endpoints."
+      },
+      "prediction": "Gains concentrate on unemployment above five percent at the horizon and the funds rate above four percent at the horizon; a one-year effect of order +0.03. PROMISING with probability 0.45."
+    },
+    "B2-observe-what-is-forecast": {
+      "hypothesis": "Four of ten questions resolve on unemployment or recession dating, and neither enters the model. Regimes defined partly by the variables asked about should forecast them better.",
+      "change": "Add the unemployment rate (UNRATE, level, archival vintages, publication lag 36 days, standardised on an expanding window like every other column) to the growth chain, and the ten-year minus three-month term spread (GS10 minus TB3MS, both market data and never revised, lag 32 days) to the levels chain. State counts are still chosen per chain, candidates 1..4, on the burn-in window.",
+      "hyperparameters": "Seed 20260908, shrinkage 10, candidates 1..4 per chain, 240-observation burn-in floor, unchanged.",
+      "required_checks": {
+        "honest_start": "The honest start must remain 1994-03 under the existing machinery. If any forecast date lacks a usable UNRATE archival vintage, the arm is INCONCLUSIVE, and it is never run on the publication-lag fallback ADR 0008 closed.",
+        "off_reproduces_main": "With the setting off, the arm reproduces reference-0008 exactly."
+      },
+      "prediction": "Recession and unemployment indicators improve, inflation unchanged; the sign of the mean is not predicted. No verdict with probability 0.6, HARMFUL with 0.15. The arm most likely to return nothing, and that is a finding: it would redirect the programme to B1 and B3 rather than richer regimes."
+    },
+    "B3-equal-blend-with-the-chain": {
+      "hypothesis": "The model and the chain are complementary, per the review's per-indicator table. An equal-weight blend of two complementary forecasters usually beats the better one, and it needs no fitted weight.",
+      "change": "p = 0.5 * p_model + 0.5 * p_R2 at every indicator and horizon, where p_R2 is the condition_chain_probability column (every-forecast-date cadence). The model is unchanged. A missing R2 value raises.",
+      "hyperparameters": "The weight is 0.5, fixed, never fitted.",
+      "required_checks": {
+        "look_ahead": "R2 reads only conditions published by the forecast date and no outcome at all, which is why this arm does not repeat A6's void: A6 blended in a climatology that read revised outcomes back to 1919."
+      },
+      "prediction": "PROMISING at one year with probability 0.55; the ten-year difference positive."
+    }
+  },
+
+  "metric": {
+    "primary": "Paired difference in mean Brier skill score, arm minus reference-0008, at ONE YEAR, skill measured against R1 (the model-sample climatology): `forecast baseline compare --require-own-artifacts --against reference-0008 --paired --benchmark model-sample`, over the intersection of resolved keys, moving-block bootstrap with 12-month blocks, 10,000 resamples, seed 20260908, identical resample indices applied to both runs.",
+    "harness": "RESEARCH_ARM_REFERENCE=reference-0008 RESEARCH_ARM_BENCHMARK=model-sample RESEARCH_ARM_FAMILY_LEVEL=0.9667 scripts/research_arm.sh run <arm>",
+    "secondary": [
+      "The same against the series-start climatology, for comparability with experiment 0002",
+      "Paired differences at five and ten years, used as harm guards",
+      "Pooled Brier skill beside the mean of ratios, per 0007",
+      "Arm minus R2 at one year, per 0007's regimes_help",
+      "0001's and 0007's verdicts for the arm at each horizon",
+      "Per-indicator paired skill differences"
+    ]
+  },
+
+  "decision_rule": {
+    "family_size": 3,
+    "family_note": "B1, B2 and B3. The control is not a hypothesis. Experiment 0006 runs in parallel as its own family of one, under its own registration.",
+    "PROMISING": "The one-year paired 90% interval lies entirely above zero.",
+    "CONFIRMED_IN_SAMPLE": "The one-year paired interval at the family-wise level, 1 - 0.10 / 3 = 96.67% (Bonferroni across three arms), lies entirely above zero.",
+    "HARMFUL": "At any horizon, the arm's paired 90% interval lies entirely below -0.02. A harmful arm is disqualified from adoption even if it is promising at one year.",
+    "VOID": "An arm is void unless BOTH checks pass, whose failure modes are uncorrelated: (a) `forecast audit-look-ahead` exits 0 on the arm's branch at both standing cutoffs, the default and 2022-03-01; (b) one independent judged look-ahead review, by an agent that did not write the arm, finds no class-A path and applies 0007's materiality floor to any class-B path. The reference itself must pass (a) at both cutoffs before any arm is read.",
+    "one_run_per_arm": "Each arm is run once with the values above. If a genuine bug is found after a run, the fix may not change any hyperparameter, and BOTH runs are reported.",
+    "adoption": "An arm becomes main's default only on CONFIRMED_IN_SAMPLE with a clean review and no HARMFUL horizon, and only by a separate recorded decision. The next re-ship is then governed by 0007."
+  },
+
+  "stated_in_advance": {
+    "expected_outcome": "Control passes (0.97). B3 PROMISING or better (0.55). B1 PROMISING (0.45). B2 no verdict (0.6) or HARMFUL (0.15).",
+    "the_forking_path_this_does_not_remove": "Every arm was designed after the review's per-indicator results were seen, and after measurement 0010 was computed on the reference (it was registered earlier the same day and finished before this file was written). Pre-registration closes the tuning path; it does not make the sample fresh. CONFIRMED_IN_SAMPLE is the ceiling, and forward registration is the only out-of-sample test."
+  },
+
+  "determinism": {
+    "seed": 20260908,
+    "requirement": "Two runs of one arm's configuration in the same environment produce byte-identical outputs."
+  }
+}
