@@ -1,0 +1,21 @@
+{
+  "configuration_hash": "ad7fcc1affd0746a",
+  "data_as_of": "2026-08-01",
+  "generated_on": "2026-09-29",
+  "indicator_count": 10,
+  "package_version": "1.0.0",
+  "pre_registration": "proving/experiments/0001-regime-conditional-forecast-skill/experiment.json",
+  "random_seed": 20260908,
+  "regimes": 4,
+  "second_largest_eigenvalue_modulus": 0.9695170795305701,
+  "verdict_by_horizon": {
+    "10_year": "SHIP BASE RATE",
+    "1_year": "SHIP BASE RATE",
+    "5_year": "SHIP BASE RATE"
+  },
+  "vintage_policy_counts": {
+    "archival_vintage": 2,
+    "publication_lag_fallback": 0,
+    "unrevised_series": 1
+  }
+}

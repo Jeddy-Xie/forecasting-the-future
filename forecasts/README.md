@@ -14,14 +14,36 @@ could be edited after the fact is not a forecast.
 
 ## Why this exists
 
-The walk-forward backtest scores 19,740 retrodictions. That measures the method
-against history. It does not measure this model against the future, and the two
-are different claims: a Brier skill score of +0.232 computed over 1971–2026 and
-the same number computed forward from 2026 are not the same evidence.
+The walk-forward backtest scores retrodictions. That measures the method against
+history. It does not measure a model against the future, and the two are different
+claims: a Brier skill score computed over 1994–2026 and the same number computed
+forward from 2026 are not the same evidence.
 
-`submission/forecasts.csv` already holds real claims about 2027, 2031 and 2036.
-Without this directory nothing would ever score them, because nothing would
-record when they were made or when they came due.
+`submission/forecasts.csv` holds real claims about 2027, 2031 and 2036. Without this
+directory nothing would ever score them, because nothing would record when they
+were made or when they came due.
+
+## What is on the register
+
+| rounds | configuration | what it is |
+|---|---|---|
+| 2026-09-09 | `9f95b12dba40d138` | the original shipped configuration, with two look-ahead paths since closed (ADR 0008) |
+| 2026-09-29 | `fec79a040f9ca6f9` | the two-chain default, shipped since 2026-09-29 under 0001 |
+| 2026-09-29 | `ad7fcc1affd0746a` | the single chain, beside it, so the two-chain adoption can be falsified forward |
+
+The single chain's grid is written with `forecast submit --destination
+forecasts/companions/single-chain-ad7fcc1affd0746a`. It ships the base rate at every horizon under
+0001. Its `model_probability` column is the single chain's own forecast, and it is that column the
+adoption's forward test compares (ADR 0010).
+
+**Read this before using the one-year rows.**
+
+- One-year rows ship the model under the frozen 2026-09-08 rule.
+- On 2026-09-25 a review measured a regime-free two-rate condition chain beating this model at one year
+  on the same sample: −0.0582, 98.33% [−0.1119, −0.0089], reproduced from committed code.
+- Against a climatology restricted to the model's own sample, its recession indicators score below zero.
+- The chain and that fair climatology join the register from the next monthly round.
+- The next re-ship is governed by rule 0007.
 
 ## Operating it
 

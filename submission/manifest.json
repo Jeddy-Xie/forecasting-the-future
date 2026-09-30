@@ -1,13 +1,22 @@
 {
-  "configuration_hash": "9f95b12dba40d138",
-  "data_as_of": "2026-07-01",
-  "generated_on": "2026-09-08",
+  "configuration_hash": "fec79a040f9ca6f9",
+  "data_as_of": "2026-08-01",
+  "generated_on": "2026-09-29",
   "indicator_count": 10,
   "package_version": "1.0.0",
   "pre_registration": "proving/experiments/0001-regime-conditional-forecast-skill/experiment.json",
   "random_seed": 20260908,
-  "regimes": 5,
-  "second_largest_eigenvalue_modulus": 0.9830874382780106,
+  "regimes": 16,
+  "regimes_by_chain": {
+    "growth": 4,
+    "inflation_and_rates": 4
+  },
+  "second_largest_eigenvalue_modulus": 0.9825732364652465,
+  "shipped_under_authorisation": {
+    "by": "claude-fable-5-1 (delegated by Jeddy Xie, 2026-09-29)",
+    "minted_at": "2026-09-30T01:51:00+00:00",
+    "reason": "delegated re-ship: the committed submission was produced by 9f95b12dba40d138, a configuration with two known look-ahead paths (ADR 0008); the default is the honest configuration"
+  },
   "verdict_by_horizon": {
     "10_year": "SHIP BASE RATE",
     "1_year": "SHIP MODEL",

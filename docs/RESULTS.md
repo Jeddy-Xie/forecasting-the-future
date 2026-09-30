@@ -1,5 +1,23 @@
 # Results
 
+> **Re-shipped 2026-09-29.** `submission/forecasts.csv` now comes from the two-chain default,
+> `fec79a040f9ca6f9`, re-shipped under the frozen 2026-09-08 rule (0001) by delegated decision P1-9
+> (claude-fable-5-1, delegated by Jeddy Xie). One-year rows ship the model; five and ten years ship the
+> base rate.
+>
+> - **A forecaster without regimes beats it.** On 2026-09-25 a review measured a regime-free two-rate
+>   condition chain beating this model at one year on the same sample. Reproduced from committed code:
+>   −0.0582, 98.33% [−0.1119, −0.0089].
+> - **Its recession skill is below zero against a fair benchmark.** Against a climatology restricted to
+>   the model's own sample, its recession indicators score below zero.
+> - **Registered forward.** Both this model and the single chain are registered forward beside the
+>   submission.
+> - **The next re-ship is governed by rule 0007** (ADR 0012), under which the one-year horizon would
+>   ship the base rate too.
+>
+> The tables below still describe the older shipped configuration `9f95b12dba40d138`, and are rewritten
+> around the current default in the same session.
+
 Everything here is produced by `forecast check-gates` and is regenerated, not
 typed. The numbers come from a walk-forward run of 19,740 forecasts issued
 monthly from December 1971 to September 2026, of which 17,712 have resolved.

@@ -24,14 +24,20 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-CONFIGURATION_HASH_APPROVED_FOR_SHIPPING = "9f95b12dba40d138"
-"""The configuration whose numbers Jeddy approved to ship.
+CONFIGURATION_HASH_APPROVED_FOR_SHIPPING = "fec79a040f9ca6f9"
+"""The configuration approved to ship.
 
-`submission/forecasts.csv` is the only artifact that leaves this repository. It
-was produced by this configuration. Since 2026-09-09 the pipeline default is a
-different, honest configuration, so shipping is no longer something a routine run
-may do by accident. Changing this line IS the re-ship decision: it belongs in the
-same commit as the regenerated submission, with the reason in docs/adr/."""
+`submission/forecasts.csv` is the only artifact that leaves this repository, and
+it was produced by this configuration. Changing this line IS the re-ship decision:
+it belongs in the same commit as the regenerated submission, with the reason in
+docs/adr/.
+
+- **Until 2026-09-29** this was `9f95b12dba40d138`, the configuration Jeddy
+  approved on 2026-09-08. It carried two look-ahead paths, closed by ADR 0008.
+- **Since 2026-09-29** it is the two-chain default, re-shipped under 0001 by
+  delegated decision P1-9 (claude-fable-5-1, delegated by Jeddy Xie; ADR 0012).
+  That is not the owner's own approval, and he may reverse it.
+- **The next re-ship is governed by rule 0007.**"""
 
 # ruff's S105 fires on any name containing "TOKEN". This is a repository-relative
 # file path, not a credential; the token it points at is a countersigned decision
